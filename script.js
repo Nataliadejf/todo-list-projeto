@@ -63,12 +63,20 @@ const filters = {
     periodEnd: ''
 };
 
+function normalizeStatus(status) {
+    const raw = String(status || '').trim().toLowerCase();
+    if (raw === 'concluido' || raw === 'concluído') return 'Concluído';
+    if (raw === 'em andamento') return 'Em andamento';
+    if (raw === 'a fazer' || raw === 'não iniciado' || raw === 'nao iniciado') return 'A fazer';
+    return status || 'A fazer';
+}
+
 function normalizeTodo(todo) {
     const normalized = { ...todo };
     if (!normalized.initiative && normalized.text) normalized.initiative = normalized.text;
     if (!normalized.description && normalized.desc) normalized.description = normalized.desc;
     normalized.id = normalized.id || `ID-${Date.now()}`;
-    normalized.status = normalized.status || 'A fazer';
+    normalized.status = normalizeStatus(normalized.status);
     normalized.completed = Boolean(normalized.completed);
     monthKeys.forEach((month) => {
         normalized[month] = Boolean(normalized[month]);
@@ -91,8 +99,9 @@ function getMonthsText(todo) {
 }
 
 function statusGroup(status) {
-    if (status === 'Concluído') return 'done';
-    if (status === 'Em andamento') return 'progress';
+    const normalized = normalizeStatus(status);
+    if (normalized === 'Concluído') return 'done';
+    if (normalized === 'Em andamento') return 'progress';
     return 'notStarted';
 }
 

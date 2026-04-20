@@ -5,6 +5,7 @@ body {
     font-family: 'Segoe UI', Arial, sans-serif;
     padding: 1.5rem 1rem;
     color: #2e2543;
+    overflow-x: hidden;
 }
 
 .planner-shell {
@@ -243,6 +244,8 @@ button[type="submit"]:hover {
     margin-top: 0.45rem;
     font-size: 0.88rem;
     color: #5f4c93;
+    line-height: 1.4;
+    word-break: break-word;
 }
 
 .edit-form {
@@ -353,6 +356,10 @@ button[type="submit"]:hover {
     .field-grid-3 {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+
+    .month-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
 }
 
 @media (max-width: 640px) {
@@ -361,11 +368,26 @@ button[type="submit"]:hover {
     }
 
     .container {
-        padding: 0.9rem;
+        padding: 0.85rem;
+        border-radius: 14px;
     }
 
     .dashboard {
         grid-template-columns: 1fr;
+    }
+
+    .metric-card {
+        padding: 0.6rem 0.75rem;
+    }
+
+    .metric-card p {
+        font-size: 1.6rem;
+    }
+
+    .filters-panel,
+    .form-section {
+        padding: 0.75rem;
+        border-radius: 12px;
     }
 
     .field-grid-2,
@@ -375,5 +397,62 @@ button[type="submit"]:hover {
 
     .month-grid {
         grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .month-grid-inline {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    #todo-list li {
+        padding: 0.75rem 0.8rem;
+    }
+
+    #todo-list li > span {
+        font-size: 0.95rem;
+    }
+
+    .todo-meta {
+        font-size: 0.82rem;
+    }
+
+    .todo-actions {
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .todo-actions button {
+        font-size: 0.95rem;
+        padding: 0.3rem 0.4rem;
+    }
+
+    button[type="submit"] {
+        width: 100%;
+    }
+}
+
+@media (max-width: 420px) {
+    h1 {
+        font-size: 1.15rem;
+    }
+
+    .metric-card h3 {
+        font-size: 0.78rem;
+    }
+
+    .metric-card p {
+        font-size: 1.45rem;
+    }
+
+    #todo-form input[type="text"],
+    #todo-form input[type="number"],
+    #todo-form input[type="date"],
+    #todo-form select,
+    #todo-form textarea {
+        font-size: 0.9rem;
+        padding: 0.58rem 0.62rem;
+    }
+
+    .month-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 }
