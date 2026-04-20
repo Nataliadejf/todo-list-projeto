@@ -7,44 +7,88 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
+    <div class="container planner-shell">
         <h1>Painel de Iniciativas</h1>
+        <section class="dashboard">
+            <article class="metric-card metric-total">
+                <h3>Total</h3>
+                <p id="total-count">0</p>
+            </article>
+            <article class="metric-card metric-not-started">
+                <h3>Não iniciado</h3>
+                <p id="not-started-count">0</p>
+            </article>
+            <article class="metric-card metric-progress">
+                <h3>Em andamento</h3>
+                <p id="in-progress-count">0</p>
+            </article>
+            <article class="metric-card metric-done">
+                <h3>Concluído</h3>
+                <p id="completed-count">0</p>
+            </article>
+        </section>
         <form id="todo-form">
-            <input type="text" id="todo-id" placeholder="ID" required />
-            <input type="text" id="todo-area" placeholder="Área" required />
-            <input type="text" id="todo-front" placeholder="Frente" required />
-            <input type="text" id="todo-initiative" placeholder="Iniciativa" required />
-            <input type="text" id="todo-owner" placeholder="Responsável" required />
-            <textarea id="todo-description" placeholder="Descrição (Breve Descritivo)" rows="2"></textarea>
-            <textarea id="todo-deliveries" placeholder="Entregas" rows="2"></textarea>
-            <input type="text" id="todo-gain-category" placeholder="Categoria Ganho" />
-            <textarea id="todo-gain-description" placeholder="Descritivo dos Ganhos da iniciativa" rows="2"></textarea>
-            <select id="todo-size">
-                <option value="">Tam</option>
-                <option value="P">P</option>
-                <option value="M">M</option>
-                <option value="G">G</option>
-            </select>
-            <input type="number" id="todo-weight" placeholder="Peso" min="0" step="0.1" />
-            <select id="todo-status" required>
-                <option value="A fazer">Status: A fazer</option>
-                <option value="Em andamento">Status: Em andamento</option>
-                <option value="Concluído">Status: Concluído</option>
-            </select>
-            <label for="todo-start-date">Data Início</label>
-            <input type="date" id="todo-start-date" />
-            <label for="todo-planned-end-date">Data Previsão de Fim</label>
-            <input type="date" id="todo-planned-end-date" />
-            <label for="todo-real-end-date">Data Fim Real</label>
-            <input type="date" id="todo-real-end-date" />
-            <input type="number" id="todo-deadline-days" placeholder="Prazo Dias" min="0" />
-            <input type="number" id="todo-deadline-percent" placeholder="% Prazo" min="0" max="100" />
-            <input type="number" id="todo-progress-percent" placeholder="% Conclusão" min="0" max="100" />
-            <input type="number" id="todo-severity" placeholder="Gravidade (1-5)" min="1" max="5" />
-            <input type="number" id="todo-urgency" placeholder="Urgência (1-5)" min="1" max="5" />
-            <input type="text" id="todo-strategy" placeholder="Estratégia" />
-            <input type="text" id="todo-priority" placeholder="Prioridade" />
-            <div class="month-grid">
+            <div class="form-section">
+                <h2>Identificação</h2>
+                <div class="field-grid field-grid-3">
+                    <input type="text" id="todo-id" placeholder="ID" required />
+                    <input type="text" id="todo-area" placeholder="Área" required />
+                    <input type="text" id="todo-front" placeholder="Frente" required />
+                </div>
+                <div class="field-grid field-grid-2">
+                    <input type="text" id="todo-initiative" placeholder="Iniciativa" required />
+                    <input type="text" id="todo-owner" placeholder="Responsável" required />
+                </div>
+                <textarea id="todo-description" placeholder="Descrição (Breve Descritivo)" rows="2"></textarea>
+            </div>
+
+            <div class="form-section">
+                <h2>Entregas e Ganhos</h2>
+                <textarea id="todo-deliveries" placeholder="Entregas" rows="2"></textarea>
+                <div class="field-grid field-grid-3">
+                    <input type="text" id="todo-gain-category" placeholder="Categoria Ganho" />
+                    <select id="todo-size">
+                        <option value="">Tam</option>
+                        <option value="P">P</option>
+                        <option value="M">M</option>
+                        <option value="G">G</option>
+                    </select>
+                    <input type="number" id="todo-weight" placeholder="Peso" min="0" step="0.1" />
+                </div>
+                <textarea id="todo-gain-description" placeholder="Descritivo dos Ganhos da iniciativa" rows="2"></textarea>
+                <input type="number" id="todo-weighted-delivery" placeholder="Entrega Ponderada2" min="0" step="0.1" />
+            </div>
+
+            <div class="form-section">
+                <h2>Status e Prazos</h2>
+                <div class="field-grid field-grid-3">
+                    <select id="todo-status" required>
+                        <option value="A fazer">Status: A fazer</option>
+                        <option value="Em andamento">Status: Em andamento</option>
+                        <option value="Concluído">Status: Concluído</option>
+                    </select>
+                    <input type="number" id="todo-deadline-days" placeholder="Prazo Dias" min="0" />
+                    <input type="number" id="todo-deadline-percent" placeholder="% Prazo" min="0" max="100" />
+                </div>
+                <div class="field-grid field-grid-3">
+                    <input type="date" id="todo-start-date" />
+                    <input type="date" id="todo-planned-end-date" />
+                    <input type="date" id="todo-real-end-date" />
+                </div>
+                <div class="field-grid field-grid-3">
+                    <input type="number" id="todo-progress-percent" placeholder="% Conclusão" min="0" max="100" />
+                    <input type="number" id="todo-severity" placeholder="Gravidade (1-5)" min="1" max="5" />
+                    <input type="number" id="todo-urgency" placeholder="Urgência (1-5)" min="1" max="5" />
+                </div>
+                <div class="field-grid field-grid-2">
+                    <input type="text" id="todo-strategy" placeholder="Estratégia" />
+                    <input type="text" id="todo-priority" placeholder="Prioridade" />
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h2>Planejamento mensal</h2>
+                <div class="month-grid">
                 <input type="checkbox" id="todo-jan" />
                 <label for="todo-jan">Jan</label>
                 <input type="checkbox" id="todo-fev" />
@@ -69,10 +113,14 @@
                 <label for="todo-nov">Nov</label>
                 <input type="checkbox" id="todo-dez" />
                 <label for="todo-dez">Dez</label>
+                </div>
             </div>
-            <textarea id="todo-impediment" placeholder="Impedimento" rows="2"></textarea>
-            <textarea id="todo-notes" placeholder="Observação" rows="2"></textarea>
-            <input type="number" id="todo-weighted-delivery" placeholder="Entrega Ponderada2" min="0" step="0.1" />
+
+            <div class="form-section">
+                <h2>Riscos e observações</h2>
+                <textarea id="todo-impediment" placeholder="Impedimento" rows="2"></textarea>
+                <textarea id="todo-notes" placeholder="Observação" rows="2"></textarea>
+            </div>
             <button type="submit">Adicionar</button>
         </form>
         <ul id="todo-list"></ul>

@@ -1,35 +1,112 @@
 body {
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: linear-gradient(135deg, #e8efff 0%, #f6f0ff 50%, #fefbff 100%);
     min-height: 100vh;
     margin: 0;
     font-family: 'Segoe UI', Arial, sans-serif;
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
-    padding: 1.5rem 0;
+    padding: 1.5rem 1rem;
+    color: #2e2543;
+}
+
+.planner-shell {
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(124, 98, 191, 0.22);
+    backdrop-filter: blur(3px);
 }
 
 .container {
-    background: #fff;
-    padding: 2rem 2.5rem;
-    border-radius: 16px;
-    box-shadow: 0 8px 32px rgba(44, 62, 80, 0.2);
+    margin: 0 auto;
+    padding: 1.5rem;
+    border-radius: 18px;
+    box-shadow: 0 16px 40px rgba(67, 44, 120, 0.12);
     width: 100%;
-    max-width: 760px;
+    max-width: 980px;
     min-width: 280px;
 }
 
 h1 {
     text-align: center;
-    color: #764ba2;
-    margin-bottom: 1.5rem;
+    color: #4d3e78;
+    margin: 0 0 1rem;
+    letter-spacing: 0.4px;
 }
 
 #todo-form {
     display: flex;
     flex-direction: column;
+    gap: 0.9rem;
+    margin-bottom: 1.2rem;
+}
+
+.dashboard {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 0.7rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.metric-card {
+    border-radius: 12px;
+    padding: 0.7rem 0.8rem;
+    color: #fff;
+    box-shadow: 0 8px 20px rgba(39, 29, 65, 0.15);
+}
+
+.metric-card h3 {
+    margin: 0;
+    font-size: 0.86rem;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.metric-card p {
+    margin: 0.2rem 0 0;
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.metric-total {
+    background: linear-gradient(135deg, #5d4f98, #7b6ac1);
+}
+
+.metric-not-started {
+    background: linear-gradient(135deg, #7c7f88, #92959e);
+}
+
+.metric-progress {
+    background: linear-gradient(135deg, #2b82d3, #49a3f0);
+}
+
+.metric-done {
+    background: linear-gradient(135deg, #09a857, #26c26f);
+}
+
+.form-section {
+    background: linear-gradient(180deg, #ffffff, #fbf9ff);
+    border: 1px solid #e3dcf6;
+    border-radius: 14px;
+    padding: 0.9rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.form-section h2 {
+    margin: 0;
+    font-size: 1rem;
+    color: #5a468d;
+}
+
+.field-grid {
+    display: grid;
+    gap: 0.55rem;
+}
+
+.field-grid-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.field-grid-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 #todo-form input[type="text"],
@@ -39,162 +116,159 @@ h1 {
 #todo-form textarea {
     width: 100%;
     box-sizing: border-box;
+    border: 1px solid #d5caef;
+    border-radius: 10px;
+    padding: 0.65rem 0.75rem;
+    font-size: 0.95rem;
+    color: #35295a;
+    background: #fff;
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-#todo-form button[type="submit"] {
-    width: 100%;
-    margin-top: 0.3rem;
+#todo-form textarea {
+    resize: vertical;
+    min-height: 70px;
 }
 
-#todo-input {
-    flex: 1;
-    padding: 0.75rem;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    font-size: 1rem;
+#todo-form input:focus,
+#todo-form select:focus,
+#todo-form textarea:focus {
     outline: none;
-    transition: border 0.2s;
-}
-
-#todo-input:focus {
-    border-color: #764ba2;
+    border-color: #9b84d9;
+    box-shadow: 0 0 0 3px rgba(155, 132, 217, 0.18);
 }
 
 button[type="submit"] {
-    background: #764ba2;
+    background: linear-gradient(135deg, #7256bd, #8c6fd7);
     color: #fff;
     border: none;
-    border-radius: 8px;
-    padding: 0 1.2rem;
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
     font-size: 1rem;
+    font-weight: 600;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: transform 0.15s, box-shadow 0.15s;
 }
 
 button[type="submit"]:hover {
-    background: #667eea;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 16px rgba(114, 86, 189, 0.25);
 }
 
 #todo-list {
     list-style: none;
     padding: 0;
     margin: 0;
+    display: grid;
+    gap: 0.75rem;
 }
 
 #todo-list li {
-    background: #f3f3f3;
-    margin-bottom: 0.7rem;
-    padding: 0.8rem 1rem;
-    border-radius: 8px;
-    display: block;
-    transition: background 0.2s;
+    background: #fff;
+    border: 1px solid #e0d8f3;
+    border-left: 5px solid #7f67c6;
+    padding: 0.85rem 1rem;
+    border-radius: 12px;
+    transition: box-shadow 0.2s, transform 0.2s;
+}
+
+#todo-list li:hover {
+    box-shadow: 0 8px 18px rgba(89, 64, 151, 0.14);
+    transform: translateY(-1px);
 }
 
 #todo-list li > span {
     display: block;
-    font-weight: 600;
-    color: #3b3158;
-    margin-bottom: 0.5rem;
+    font-weight: 700;
+    color: #3e2f65;
+    margin-bottom: 0.55rem;
     cursor: pointer;
 }
 
 #todo-list li.completed {
-    text-decoration: line-through;
-    color: #aaa;
-    background: #e0e0e0;
+    opacity: 0.72;
+    border-left-color: #9ea1aa;
+}
+
+.todo-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.3rem;
 }
 
 .todo-actions button {
-    background: none;
-    border: none;
-    color: #764ba2;
-    font-size: 1.1rem;
+    background: #f1ecfd;
+    border: 1px solid #daccf4;
+    border-radius: 8px;
+    color: #5b4494;
+    font-size: 1rem;
     cursor: pointer;
-    margin-left: 0.5rem;
-    transition: color 0.2s;
+    padding: 0.3rem 0.45rem;
 }
 
 .todo-actions button:hover {
-    color: #e74c3c;
+    background: #ebe2ff;
 }
 
-@media (max-width: 500px) {
-    .container {
-        padding: 1rem 0.5rem;
-        min-width: unset;
-    }
-    h1 {
-        font-size: 1.3rem;
-    }
-    #todo-input {
-        font-size: 0.95rem;
-    }
-    button[type="submit"] {
-        font-size: 0.95rem;
-        padding: 0 0.7rem;
-    }
+.todo-meta {
+    margin-top: 0.45rem;
+    font-size: 0.88rem;
+    color: #5f4c93;
 }
 
 .edit-form {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    width: 100%;
-    align-items: stretch;
-}
-
-.edit-form input[type="text"] {
-    padding: 0.6rem;
-    border: 1px solid #764ba2;
-    border-radius: 8px;
-    font-size: 1rem;
-    outline: none;
-}
-
-.edit-form textarea,
-.edit-form select,
-.edit-form input[type="date"] {
-    width: 100%;
-    box-sizing: border-box;
-    border: 1px solid #764ba2;
-    border-radius: 8px;
-    padding: 0.5rem 0.6rem;
-    font-family: inherit;
 }
 
 .edit-form label {
-    font-size: 0.9rem;
-    color: #5c4a86;
+    font-size: 0.88rem;
+    color: #604c96;
     font-weight: 600;
-    display: block;
+}
+
+.edit-form input,
+.edit-form textarea,
+.edit-form select {
+    margin-top: 0.22rem;
 }
 
 .edit-form .todo-actions {
-    display: flex;
-    gap: 0.2rem;
+    justify-content: flex-start;
 }
 
 .edit-form button {
-    background: #764ba2;
+    background: #7359be;
     color: #fff;
     border: none;
     border-radius: 8px;
-    padding: 0.3rem 0.7rem;
-    font-size: 1rem;
+    padding: 0.35rem 0.75rem;
     cursor: pointer;
-    transition: background 0.2s;
 }
 
 .edit-form button[title="Cancelar"] {
-    background: #e74c3c;
+    background: #d9534f;
 }
 
-.edit-form button:hover {
-    background: #667eea;
+.month-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 0.35rem 0.5rem;
+    align-items: center;
 }
 
-.edit-form button[title="Cancelar"]:hover {
-    background: #c0392b;
+.month-grid label {
+    margin: 0;
+    font-size: 0.83rem;
+    color: #4f3f7d;
+}
+
+.month-grid-inline {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.35rem;
+    font-size: 0.85rem;
 }
 
 .modal {
@@ -205,86 +279,72 @@ button[type="submit"]:hover {
     top: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(0,0,0,0.4);
+    background: rgba(35, 24, 60, 0.42);
     align-items: center;
     justify-content: center;
 }
+
 .modal-content {
     background: #fff;
-    padding: 2rem 1.5rem;
+    padding: 1.7rem 1.3rem;
     border-radius: 12px;
-    box-shadow: 0 4px 24px rgba(44,62,80,0.18);
-    max-width: 350px;
-    width: 90vw;
+    box-shadow: 0 8px 30px rgba(44, 33, 77, 0.22);
+    max-width: 480px;
+    width: 92vw;
     position: relative;
     animation: modalIn 0.2s;
 }
+
 @keyframes modalIn {
-    from { transform: scale(0.95); opacity: 0; }
+    from { transform: scale(0.97); opacity: 0; }
     to { transform: scale(1); opacity: 1; }
 }
+
 .close {
     position: absolute;
-    top: 0.7rem;
-    right: 1rem;
-    font-size: 1.5rem;
-    color: #764ba2;
+    top: 0.65rem;
+    right: 0.85rem;
+    font-size: 1.4rem;
+    color: #7158ba;
     cursor: pointer;
     font-weight: bold;
-}
-#todo-form label {
-    display: block;
-    font-weight: 500;
-    color: #764ba2;
-    margin-bottom: 0.2rem;
-    margin-top: 0.5rem;
-}
-#todo-form textarea {
-    resize: vertical;
-    border-radius: 8px;
-    border: 1px solid #ddd;
-    padding: 0.7rem;
-    font-size: 1rem;
-    margin-bottom: 0.5rem;
-    font-family: inherit;
-    outline: none;
-    transition: border 0.2s;
-    background: #f8f6fc;
-    color: #333;
-}
-#todo-form textarea:focus {
-    border-color: #764ba2;
-    background: #f3eaff;
-} 
-
-.month-grid {
-    display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 0.25rem 0.5rem;
-    align-items: center;
-}
-
-.month-grid label {
-    margin: 0;
-    font-size: 0.82rem;
-    color: #5f4f87;
-}
-
-.month-grid-inline {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 0.35rem;
-    font-size: 0.85rem;
-}
-
-.todo-meta {
-    margin-top: 0.35rem;
-    font-size: 0.9rem;
-    color: #764ba2;
 }
 
 #modal-fields {
     max-height: 55vh;
     overflow-y: auto;
     margin-top: 0.8rem;
+}
+
+@media (max-width: 900px) {
+    .dashboard {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .field-grid-3 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    body {
+        padding: 0.9rem 0.5rem;
+    }
+
+    .container {
+        padding: 0.9rem;
+    }
+
+    .dashboard {
+        grid-template-columns: 1fr;
+    }
+
+    .field-grid-2,
+    .field-grid-3 {
+        grid-template-columns: 1fr;
+    }
+
+    .month-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
 }

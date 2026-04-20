@@ -4,6 +4,10 @@ const modal = document.getElementById('modal');
 const closeModalBtn = document.getElementById('close-modal');
 const modalTitle = document.getElementById('modal-title');
 const modalFields = document.getElementById('modal-fields');
+const totalCount = document.getElementById('total-count');
+const notStartedCount = document.getElementById('not-started-count');
+const inProgressCount = document.getElementById('in-progress-count');
+const completedCount = document.getElementById('completed-count');
 
 const monthKeys = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 const labelMap = {
@@ -39,17 +43,13 @@ const editableKeys = [
     'severity', 'urgency', 'strategy', 'priority', 'impediment', 'notes', 'weightedDelivery'
 ];
 
-let todos = (JSON.parse(localStorage.getItem('todos')) || []).map(normalizeTodo);
-let editingIdx = null;
+let todos = [];
+let editingId = null;
 
 function normalizeTodo(todo) {
     const normalized = { ...todo };
-    if (!normalized.initiative && normalized.text) {
-        normalized.initiative = normalized.text;
-    }
-    if (!normalized.description && normalized.desc) {
-        normalized.description = normalized.desc;
-    }
+    if (!normalized.initiative && normalized.text) normalized.initiative = normalized.text;
+    if (!normalized.description && normalized.desc) normalized.description = normalized.desc;
     normalized.id = normalized.id || `ID-${Date.now()}`;
     normalized.status = normalized.status || 'A fazer';
     normalized.completed = Boolean(normalized.completed);
@@ -73,49 +73,68 @@ function getMonthsText(todo) {
     return enabled.length ? enabled.join(', ') : 'Nenhum';
 }
 
+function statusGroup(status) {
+    if (status === 'Concluído') return 'done';
+    if (status === 'Em andamento') return 'progress';
+    return 'notStarted';
+}
+
+function renderDashboard() {
+    const counts = { total: todos.length, notStarted: 0, progress: 0, done: 0 };
+    todos.forEach((todo) => {
+        const group = statusGroup(todo.status);
+        counts[group] += 1;
+    });
+    totalCount.textContent = String(counts.total);
+    notStartedCount.textContent = String(counts.notStarted);
+    inProgressCount.textContent = String(counts.progress);
+    completedCount.textContent = String(counts.done);
+}
+
 function renderTodos() {
     list.innerHTML = '';
-    todos.forEach((todo, idx) => {
+    todos.forEach((todo) => {
         const li = document.createElement('li');
         li.className = todo.completed ? 'completed' : '';
-        if (editingIdx === idx) {
+        const isEditing = editingId === todo.dbId;
+        if (isEditing) {
             const monthCheckboxes = monthKeys.map((month) => `
-                <label><input type="checkbox" id="edit-${month}-${idx}" ${todo[month] ? 'checked' : ''}/> ${month.toUpperCase()}</label>
+                <label><input type="checkbox" id="edit-${month}-${todo.dbId}" ${todo[month] ? 'checked' : ''}/> ${month.toUpperCase()}</label>
             `).join('');
             const fields = editableKeys.map((key) => {
                 const value = escapeHtml(todo[key] || '');
                 if (key === 'description' || key === 'deliveries' || key === 'gainDescription' || key === 'impediment' || key === 'notes') {
-                    return `<label>${labelMap[key]}<textarea id="edit-${key}-${idx}" rows="2">${value}</textarea></label>`;
+                    return `<label>${labelMap[key]}<textarea id="edit-${key}-${todo.dbId}" rows="2">${value}</textarea></label>`;
                 }
                 if (key.toLowerCase().includes('date')) {
-                    return `<label>${labelMap[key]}<input type="date" id="edit-${key}-${idx}" value="${value}" /></label>`;
+                    return `<label>${labelMap[key]}<input type="date" id="edit-${key}-${todo.dbId}" value="${value}" /></label>`;
                 }
                 if (key === 'status') {
-                    return `<label>${labelMap[key]}<select id="edit-status-${idx}">
+                    return `<label>${labelMap[key]}<select id="edit-status-${todo.dbId}">
                         <option value="A fazer" ${todo.status === 'A fazer' ? 'selected' : ''}>A fazer</option>
                         <option value="Em andamento" ${todo.status === 'Em andamento' ? 'selected' : ''}>Em andamento</option>
                         <option value="Concluído" ${todo.status === 'Concluído' ? 'selected' : ''}>Concluído</option>
                     </select></label>`;
                 }
                 if (key === 'size') {
-                    return `<label>${labelMap[key]}<select id="edit-size-${idx}">
+                    return `<label>${labelMap[key]}<select id="edit-size-${todo.dbId}">
                         <option value="" ${!todo.size ? 'selected' : ''}>-</option>
                         <option value="P" ${todo.size === 'P' ? 'selected' : ''}>P</option>
                         <option value="M" ${todo.size === 'M' ? 'selected' : ''}>M</option>
                         <option value="G" ${todo.size === 'G' ? 'selected' : ''}>G</option>
                     </select></label>`;
                 }
-                return `<label>${labelMap[key]}<input type="text" id="edit-${key}-${idx}" value="${value}" /></label>`;
+                return `<label>${labelMap[key]}<input type="text" id="edit-${key}-${todo.dbId}" value="${value}" /></label>`;
             }).join('');
-            li.innerHTML = `<form class="edit-form" onsubmit="return saveEdit(${idx})">${fields}<div class="month-grid-inline">${monthCheckboxes}</div><div class="todo-actions"><button type="submit" title="Salvar">💾</button><button type="button" title="Cancelar" onclick="cancelEdit()">✖️</button></div></form>`;
+            li.innerHTML = `<form class="edit-form" onsubmit="return saveEdit(${todo.dbId})">${fields}<div class="month-grid-inline">${monthCheckboxes}</div><div class="todo-actions"><button type="submit" title="Salvar">💾</button><button type="button" title="Cancelar" onclick="cancelEdit()">✖️</button></div></form>`;
         } else {
             li.innerHTML = `
-                <span onclick="startEdit(${idx})" title="Clique para editar">${escapeHtml(todo.id)} - ${escapeHtml(todo.initiative)}</span>
+                <span onclick="startEdit(${todo.dbId})" title="Clique para editar">${escapeHtml(todo.id)} - ${escapeHtml(todo.initiative)}</span>
                 <div class="todo-actions">
-                    <button title="Visualizar" onclick="showModal(${idx})">🔍</button>
-                    <button title="Editar" onclick="startEdit(${idx})">✏️</button>
-                    <button title="Concluir" onclick="toggleTodo(${idx})">✔️</button>
-                    <button title="Remover" onclick="removeTodo(${idx})">🗑️</button>
+                    <button title="Visualizar" onclick="showModal(${todo.dbId})">🔍</button>
+                    <button title="Editar" onclick="startEdit(${todo.dbId})">✏️</button>
+                    <button title="Concluir" onclick="toggleTodo(${todo.dbId})">✔️</button>
+                    <button title="Remover" onclick="removeTodo(${todo.dbId})">🗑️</button>
                 </div>
                 <div class="todo-meta">
                     <span><strong>Status:</strong> ${escapeHtml(todo.status || '-')}</span> |
@@ -126,6 +145,7 @@ function renderTodos() {
         }
         list.appendChild(li);
     });
+    renderDashboard();
 }
 
 function readFormTodo() {
@@ -142,55 +162,91 @@ function readFormTodo() {
     return normalizeTodo(todo);
 }
 
-function saveTodos() {
-    localStorage.setItem('todos', JSON.stringify(todos));
-}
-
 function clearForm() {
     form.reset();
 }
 
-function removeTodo(idx) {
-    if (editingIdx === idx) editingIdx = null;
-    todos.splice(idx, 1);
-    saveTodos();
+async function apiRequest(url, method = 'GET', payload) {
+    const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: payload ? JSON.stringify(payload) : undefined
+    });
+    if (!response.ok) throw new Error(`Erro na API (${response.status})`);
+    return response.status === 204 ? null : response.json();
+}
+
+async function loadTodos() {
+    todos = (await apiRequest('/api/todos')).map(normalizeTodo);
+    await migrateLocalDataIfNeeded();
     renderTodos();
 }
 
-function toggleTodo(idx) {
-    todos[idx].completed = !todos[idx].completed;
-    saveTodos();
+async function migrateLocalDataIfNeeded() {
+    if (todos.length > 0) return;
+    const localTodos = JSON.parse(localStorage.getItem('todos') || '[]');
+    if (!Array.isArray(localTodos) || localTodos.length === 0) return;
+    for (const localTodo of localTodos) {
+        const normalized = normalizeTodo(localTodo);
+        await apiRequest('/api/todos', 'POST', normalized);
+    }
+    localStorage.removeItem('todos');
+    todos = (await apiRequest('/api/todos')).map(normalizeTodo);
+}
+
+function findTodoByDbId(dbId) {
+    return todos.find((item) => item.dbId === dbId);
+}
+
+async function removeTodo(dbId) {
+    if (editingId === dbId) editingId = null;
+    await apiRequest(`/api/todos/${dbId}`, 'DELETE');
+    todos = todos.filter((todo) => todo.dbId !== dbId);
     renderTodos();
 }
 
-function startEdit(idx) {
-    editingIdx = idx;
+async function toggleTodo(dbId) {
+    const todo = findTodoByDbId(dbId);
+    if (!todo) return;
+    todo.completed = !todo.completed;
+    if (todo.completed) todo.status = 'Concluído';
+    await apiRequest(`/api/todos/${dbId}`, 'PUT', todo);
     renderTodos();
 }
 
-function saveEdit(idx) {
+function startEdit(dbId) {
+    editingId = dbId;
+    renderTodos();
+}
+
+async function saveEdit(dbId) {
+    const todo = findTodoByDbId(dbId);
+    if (!todo) return false;
+
     editableKeys.forEach((key) => {
-        const element = document.getElementById(`edit-${key}-${idx}`);
-        if (element) todos[idx][key] = element.value.trim();
+        const element = document.getElementById(`edit-${key}-${dbId}`);
+        if (element) todo[key] = element.value.trim();
     });
     monthKeys.forEach((month) => {
-        const element = document.getElementById(`edit-${month}-${idx}`);
-        todos[idx][month] = element ? element.checked : false;
+        const element = document.getElementById(`edit-${month}-${dbId}`);
+        todo[month] = element ? element.checked : false;
     });
-    todos[idx] = normalizeTodo(todos[idx]);
-    editingIdx = null;
-    saveTodos();
+
+    Object.assign(todo, normalizeTodo(todo));
+    await apiRequest(`/api/todos/${dbId}`, 'PUT', todo);
+    editingId = null;
     renderTodos();
     return false;
 }
 
 function cancelEdit() {
-    editingIdx = null;
+    editingId = null;
     renderTodos();
 }
 
-function showModal(idx) {
-    const todo = todos[idx];
+function showModal(dbId) {
+    const todo = findTodoByDbId(dbId);
+    if (!todo) return;
     modalTitle.textContent = `${todo.id} - ${todo.initiative}`;
     const rows = Object.keys(labelMap).map((key) => `<p><strong>${labelMap[key]}:</strong> ${escapeHtml(todo[key] || '-')}</p>`);
     rows.push(`<p><strong>Meses planejados:</strong> ${escapeHtml(getMonthsText(todo))}</p>`);
@@ -198,14 +254,12 @@ function showModal(idx) {
     modal.style.display = 'flex';
 }
 
-form.onsubmit = function (e) {
+form.onsubmit = async function (e) {
     e.preventDefault();
     const todo = readFormTodo();
-    if (!todo.id || !todo.area || !todo.front || !todo.initiative || !todo.owner) {
-        return;
-    }
-    todos.push(todo);
-    saveTodos();
+    if (!todo.id || !todo.area || !todo.front || !todo.initiative || !todo.owner) return;
+    const created = normalizeTodo(await apiRequest('/api/todos', 'POST', todo));
+    todos.push(created);
     renderTodos();
     clearForm();
 };
@@ -215,9 +269,7 @@ closeModalBtn.onclick = function () {
 };
 
 window.onclick = function (event) {
-    if (event.target === modal) {
-        modal.style.display = 'none';
-    }
+    if (event.target === modal) modal.style.display = 'none';
 };
 
 window.showModal = showModal;
@@ -227,4 +279,6 @@ window.startEdit = startEdit;
 window.saveEdit = saveEdit;
 window.cancelEdit = cancelEdit;
 
-renderTodos();
+loadTodos().catch(() => {
+    list.innerHTML = '<li>Erro ao carregar dados do banco. Verifique se o backend est&aacute; no ar.</li>';
+});

@@ -1,0 +1,13 @@
+{
+  "name": "todo-list-projeto",
+  "version": "1.0.0",
+  "description": "Planner de iniciativas com dashboard e banco de dados",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "sqlite3": "^5.1.7"
+  }
+}

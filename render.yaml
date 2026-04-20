@@ -1,5 +1,7 @@
 services:
   - type: web
     name: todolist-projeto-2
-    runtime: static
-    staticPublishPath: .
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
