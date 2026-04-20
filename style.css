@@ -80,6 +80,35 @@ h1 {
     background: linear-gradient(135deg, #09a857, #26c26f);
 }
 
+.filters-panel {
+    background: linear-gradient(180deg, #ffffff, #f7f3ff);
+    border: 1px solid #ded2f6;
+    border-radius: 14px;
+    padding: 0.9rem;
+    margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.filters-panel h2 {
+    margin: 0;
+    font-size: 1rem;
+    color: #5a468d;
+}
+
+.secondary-btn {
+    background: #ede5ff;
+    color: #5a4295;
+    border: 1px solid #ccbdf2;
+}
+
+.secondary-btn:hover {
+    box-shadow: none;
+    transform: none;
+    background: #e1d5ff;
+}
+
 .form-section {
     background: linear-gradient(180deg, #ffffff, #fbf9ff);
     border: 1px solid #e3dcf6;

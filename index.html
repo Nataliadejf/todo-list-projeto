@@ -27,6 +27,32 @@
                 <p id="completed-count">0</p>
             </article>
         </section>
+        <section class="filters-panel">
+            <h2>Filtros da Lista</h2>
+            <div class="field-grid field-grid-3">
+                <input type="text" id="filter-id" placeholder="Filtrar por ID" />
+                <select id="filter-owner">
+                    <option value="">Responsável (todos)</option>
+                </select>
+                <select id="filter-area">
+                    <option value="">Área (todas)</option>
+                </select>
+            </div>
+            <div class="field-grid field-grid-3">
+                <select id="filter-status">
+                    <option value="">Status (todos)</option>
+                    <option value="A fazer">A fazer</option>
+                    <option value="Em andamento">Em andamento</option>
+                    <option value="Concluído">Concluído</option>
+                </select>
+                <input type="text" id="filter-weight" placeholder="Filtrar por Peso" />
+                <button type="button" id="clear-filters-btn" class="secondary-btn">Limpar filtros</button>
+            </div>
+            <div class="field-grid field-grid-2">
+                <input type="date" id="filter-period-start" />
+                <input type="date" id="filter-period-end" />
+            </div>
+        </section>
         <form id="todo-form">
             <div class="form-section">
                 <h2>Identificação</h2>

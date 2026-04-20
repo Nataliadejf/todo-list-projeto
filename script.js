@@ -8,6 +8,14 @@ const totalCount = document.getElementById('total-count');
 const notStartedCount = document.getElementById('not-started-count');
 const inProgressCount = document.getElementById('in-progress-count');
 const completedCount = document.getElementById('completed-count');
+const filterIdInput = document.getElementById('filter-id');
+const filterOwnerInput = document.getElementById('filter-owner');
+const filterAreaInput = document.getElementById('filter-area');
+const filterStatusInput = document.getElementById('filter-status');
+const filterWeightInput = document.getElementById('filter-weight');
+const filterPeriodStartInput = document.getElementById('filter-period-start');
+const filterPeriodEndInput = document.getElementById('filter-period-end');
+const clearFiltersBtn = document.getElementById('clear-filters-btn');
 
 const monthKeys = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 const labelMap = {
@@ -45,6 +53,15 @@ const editableKeys = [
 
 let todos = [];
 let editingId = null;
+const filters = {
+    id: '',
+    owner: '',
+    area: '',
+    status: '',
+    weight: '',
+    periodStart: '',
+    periodEnd: ''
+};
 
 function normalizeTodo(todo) {
     const normalized = { ...todo };
@@ -91,9 +108,63 @@ function renderDashboard() {
     completedCount.textContent = String(counts.done);
 }
 
+function normalizeText(value) {
+    return String(value ?? '').trim().toLowerCase();
+}
+
+function parseDateString(value) {
+    if (!value) return null;
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function getFilteredTodos() {
+    return todos.filter((todo) => {
+        if (filters.id && !normalizeText(todo.id).includes(normalizeText(filters.id))) return false;
+        if (filters.owner && normalizeText(todo.owner) !== normalizeText(filters.owner)) return false;
+        if (filters.area && normalizeText(todo.area) !== normalizeText(filters.area)) return false;
+        if (filters.status && normalizeText(todo.status) !== normalizeText(filters.status)) return false;
+        if (filters.weight && !normalizeText(todo.weight).includes(normalizeText(filters.weight))) return false;
+
+        const rangeStart = parseDateString(filters.periodStart);
+        const rangeEnd = parseDateString(filters.periodEnd);
+        if (rangeStart || rangeEnd) {
+            const todoStart = parseDateString(todo.startDate);
+            const todoEnd = parseDateString(todo.plannedEndDate) || todoStart;
+            if (!todoStart && !todoEnd) return false;
+            if (rangeStart && todoEnd && todoEnd < rangeStart) return false;
+            if (rangeEnd && todoStart && todoStart > rangeEnd) return false;
+        }
+        return true;
+    });
+}
+
+function fillSelectOptions(selectElement, values, allLabel) {
+    const currentValue = selectElement.value;
+    selectElement.innerHTML = `<option value="">${allLabel}</option>`;
+    values.forEach((value) => {
+        if (!value) return;
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = value;
+        selectElement.appendChild(option);
+    });
+    if ([...selectElement.options].some((option) => option.value === currentValue)) {
+        selectElement.value = currentValue;
+    }
+}
+
+function updateFilterOptions() {
+    const owners = [...new Set(todos.map((todo) => todo.owner).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+    const areas = [...new Set(todos.map((todo) => todo.area).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+    fillSelectOptions(filterOwnerInput, owners, 'Responsável (todos)');
+    fillSelectOptions(filterAreaInput, areas, 'Área (todas)');
+}
+
 function renderTodos() {
     list.innerHTML = '';
-    todos.forEach((todo) => {
+    const filteredTodos = getFilteredTodos();
+    filteredTodos.forEach((todo) => {
         const li = document.createElement('li');
         li.className = todo.completed ? 'completed' : '';
         const isEditing = editingId === todo.dbId;
@@ -179,6 +250,7 @@ async function apiRequest(url, method = 'GET', payload) {
 async function loadTodos() {
     todos = (await apiRequest('/api/todos')).map(normalizeTodo);
     await migrateLocalDataIfNeeded();
+    updateFilterOptions();
     renderTodos();
 }
 
@@ -202,6 +274,7 @@ async function removeTodo(dbId) {
     if (editingId === dbId) editingId = null;
     await apiRequest(`/api/todos/${dbId}`, 'DELETE');
     todos = todos.filter((todo) => todo.dbId !== dbId);
+    updateFilterOptions();
     renderTodos();
 }
 
@@ -235,6 +308,7 @@ async function saveEdit(dbId) {
     Object.assign(todo, normalizeTodo(todo));
     await apiRequest(`/api/todos/${dbId}`, 'PUT', todo);
     editingId = null;
+    updateFilterOptions();
     renderTodos();
     return false;
 }
@@ -260,6 +334,7 @@ form.onsubmit = async function (e) {
     if (!todo.id || !todo.area || !todo.front || !todo.initiative || !todo.owner) return;
     const created = normalizeTodo(await apiRequest('/api/todos', 'POST', todo));
     todos.push(created);
+    updateFilterOptions();
     renderTodos();
     clearForm();
 };
@@ -278,6 +353,52 @@ window.toggleTodo = toggleTodo;
 window.startEdit = startEdit;
 window.saveEdit = saveEdit;
 window.cancelEdit = cancelEdit;
+
+filterIdInput.addEventListener('input', () => {
+    filters.id = filterIdInput.value;
+    renderTodos();
+});
+filterOwnerInput.addEventListener('change', () => {
+    filters.owner = filterOwnerInput.value;
+    renderTodos();
+});
+filterAreaInput.addEventListener('change', () => {
+    filters.area = filterAreaInput.value;
+    renderTodos();
+});
+filterStatusInput.addEventListener('change', () => {
+    filters.status = filterStatusInput.value;
+    renderTodos();
+});
+filterWeightInput.addEventListener('input', () => {
+    filters.weight = filterWeightInput.value;
+    renderTodos();
+});
+filterPeriodStartInput.addEventListener('change', () => {
+    filters.periodStart = filterPeriodStartInput.value;
+    renderTodos();
+});
+filterPeriodEndInput.addEventListener('change', () => {
+    filters.periodEnd = filterPeriodEndInput.value;
+    renderTodos();
+});
+clearFiltersBtn.addEventListener('click', () => {
+    filters.id = '';
+    filters.owner = '';
+    filters.area = '';
+    filters.status = '';
+    filters.weight = '';
+    filters.periodStart = '';
+    filters.periodEnd = '';
+    filterIdInput.value = '';
+    filterOwnerInput.value = '';
+    filterAreaInput.value = '';
+    filterStatusInput.value = '';
+    filterWeightInput.value = '';
+    filterPeriodStartInput.value = '';
+    filterPeriodEndInput.value = '';
+    renderTodos();
+});
 
 loadTodos().catch(() => {
     list.innerHTML = '<li>Erro ao carregar dados do banco. Verifique se o backend est&aacute; no ar.</li>';
