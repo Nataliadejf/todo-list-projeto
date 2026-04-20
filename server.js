@@ -85,7 +85,7 @@ db.serialize(() => {
             jun INTEGER DEFAULT 0,
             jul INTEGER DEFAULT 0,
             ago INTEGER DEFAULT 0,
-            set INTEGER DEFAULT 0,
+            "set" INTEGER DEFAULT 0,
             out INTEGER DEFAULT 0,
             nov INTEGER DEFAULT 0,
             dez INTEGER DEFAULT 0,
@@ -118,7 +118,7 @@ app.post('/api/todos', async (req, res) => {
                 id, area, front, initiative, owner, description, deliveries, gainCategory, gainDescription, size,
                 weight, status, startDate, plannedEndDate, realEndDate, deadlineDays, deadlinePercent, progressPercent,
                 severity, urgency, strategy, priority, impediment, notes, weightedDelivery,
-                jan, fev, mar, abr, mai, jun, jul, ago, set, out, nov, dez, completed
+                jan, fev, mar, abr, mai, jun, jul, ago, "set", out, nov, dez, completed
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
         const values = [
@@ -149,7 +149,7 @@ app.put('/api/todos/:id', async (req, res) => {
                 id = ?, area = ?, front = ?, initiative = ?, owner = ?, description = ?, deliveries = ?, gainCategory = ?, gainDescription = ?, size = ?,
                 weight = ?, status = ?, startDate = ?, plannedEndDate = ?, realEndDate = ?, deadlineDays = ?, deadlinePercent = ?, progressPercent = ?,
                 severity = ?, urgency = ?, strategy = ?, priority = ?, impediment = ?, notes = ?, weightedDelivery = ?,
-                jan = ?, fev = ?, mar = ?, abr = ?, mai = ?, jun = ?, jul = ?, ago = ?, set = ?, out = ?, nov = ?, dez = ?, completed = ?
+                jan = ?, fev = ?, mar = ?, abr = ?, mai = ?, jun = ?, jul = ?, ago = ?, "set" = ?, out = ?, nov = ?, dez = ?, completed = ?
             WHERE dbId = ?
         `;
         const values = [
