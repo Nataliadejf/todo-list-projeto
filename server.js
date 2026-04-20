@@ -1,10 +1,12 @@
 const express = require('express');
+const fs = require('fs');
 const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const dbPath = path.join(__dirname, 'data.sqlite');
+const seedPath = path.join(__dirname, 'seed-data.json');
 const db = new sqlite3.Database(dbPath);
 
 app.use(express.json({ limit: '1mb' }));
@@ -46,6 +48,37 @@ function normalizePayload(payload) {
     });
     item.completed = payload.completed ? 1 : 0;
     return item;
+}
+
+async function seedIfEmpty() {
+    const countRow = await all('SELECT COUNT(*) AS total FROM todos');
+    const total = countRow[0]?.total || 0;
+    if (total > 0) return;
+    if (!fs.existsSync(seedPath)) return;
+
+    const seedItems = JSON.parse(fs.readFileSync(seedPath, 'utf8'));
+    if (!Array.isArray(seedItems) || seedItems.length === 0) return;
+
+    for (const rawItem of seedItems) {
+        const todo = normalizePayload(rawItem);
+        await run(
+            `
+            INSERT INTO todos (
+                id, area, front, initiative, owner, description, deliveries, gainCategory, gainDescription, size,
+                weight, status, startDate, plannedEndDate, realEndDate, deadlineDays, deadlinePercent, progressPercent,
+                severity, urgency, strategy, priority, impediment, notes, weightedDelivery,
+                jan, fev, mar, abr, mai, jun, jul, ago, "set", out, nov, dez, completed
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `,
+            [
+                todo.id, todo.area, todo.front, todo.initiative, todo.owner, todo.description, todo.deliveries, todo.gainCategory, todo.gainDescription, todo.size,
+                todo.weight, todo.status, todo.startDate, todo.plannedEndDate, todo.realEndDate, todo.deadlineDays, todo.deadlinePercent, todo.progressPercent,
+                todo.severity, todo.urgency, todo.strategy, todo.priority, todo.impediment, todo.notes, todo.weightedDelivery,
+                todo.jan, todo.fev, todo.mar, todo.abr, todo.mai, todo.jun, todo.jul, todo.ago, todo.set, todo.out, todo.nov, todo.dez, todo.completed
+            ]
+        );
+    }
+    console.log(`Carga inicial aplicada: ${seedItems.length} iniciativas.`);
 }
 
 db.serialize(() => {
@@ -183,6 +216,13 @@ app.delete('/api/todos/:id', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
-    console.log(`Servidor rodando na porta ${PORT}`);
-});
+seedIfEmpty()
+    .then(() => {
+        app.listen(PORT, () => {
+            console.log(`Servidor rodando na porta ${PORT}`);
+        });
+    })
+    .catch((err) => {
+        console.error('Falha ao iniciar aplicação:', err);
+        process.exit(1);
+    });
