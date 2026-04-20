@@ -1,0 +1,21 @@
+1. Quero criar um todo list com html , css, javascript , crie uma interface bonita para o projeto e deixe-o responsivo
+
+2. Precisamos ter as funcionalidades de adicionar , remover, editar e completar e descompletar as tarefas. verifique o que falta para termos todas estas funcionalidades e implemente-as por favor
+
+3. salvar as alterações no index por favor
+
+4. Adicione a funcionalidade de status e complexidade e implemente-os no index por favor
+
+5. Agora quero que toda To Do tenha a possibilidade de abrir uma pagina ou uma visualização modal , adicione também o campo descrição da tarefa
+
+6. quando criar os To do devem ter a opção de descrever a descrição
+
+7. Não consigo ver o campo de descrição na criação da tarefa, pode torna-lo mais legivel
+
+8. é preciso arrumar as caixas de textos e os botões de status, complexidade e adiconar tarefa, para dentro do quadrante, por favor poder arrumar
+
+9. Ficou muito bom, obrigada adicione a assinatura de Natália França por favor
+
+10. ficou perfeito, muito obrigada
+
+11. Salvar os  prompts utilizados nesse projeto em txt na pasta 

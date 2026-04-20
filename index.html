@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Iniciativas</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Painel de Iniciativas</h1>
+        <form id="todo-form">
+            <input type="text" id="todo-id" placeholder="ID" required />
+            <input type="text" id="todo-area" placeholder="Área" required />
+            <input type="text" id="todo-front" placeholder="Frente" required />
+            <input type="text" id="todo-initiative" placeholder="Iniciativa" required />
+            <input type="text" id="todo-owner" placeholder="Responsável" required />
+            <textarea id="todo-description" placeholder="Descrição (Breve Descritivo)" rows="2"></textarea>
+            <textarea id="todo-deliveries" placeholder="Entregas" rows="2"></textarea>
+            <input type="text" id="todo-gain-category" placeholder="Categoria Ganho" />
+            <textarea id="todo-gain-description" placeholder="Descritivo dos Ganhos da iniciativa" rows="2"></textarea>
+            <select id="todo-size">
+                <option value="">Tam</option>
+                <option value="P">P</option>
+                <option value="M">M</option>
+                <option value="G">G</option>
+            </select>
+            <input type="number" id="todo-weight" placeholder="Peso" min="0" step="0.1" />
+            <select id="todo-status" required>
+                <option value="A fazer">Status: A fazer</option>
+                <option value="Em andamento">Status: Em andamento</option>
+                <option value="Concluído">Status: Concluído</option>
+            </select>
+            <label for="todo-start-date">Data Início</label>
+            <input type="date" id="todo-start-date" />
+            <label for="todo-planned-end-date">Data Previsão de Fim</label>
+            <input type="date" id="todo-planned-end-date" />
+            <label for="todo-real-end-date">Data Fim Real</label>
+            <input type="date" id="todo-real-end-date" />
+            <input type="number" id="todo-deadline-days" placeholder="Prazo Dias" min="0" />
+            <input type="number" id="todo-deadline-percent" placeholder="% Prazo" min="0" max="100" />
+            <input type="number" id="todo-progress-percent" placeholder="% Conclusão" min="0" max="100" />
+            <input type="number" id="todo-severity" placeholder="Gravidade (1-5)" min="1" max="5" />
+            <input type="number" id="todo-urgency" placeholder="Urgência (1-5)" min="1" max="5" />
+            <input type="text" id="todo-strategy" placeholder="Estratégia" />
+            <input type="text" id="todo-priority" placeholder="Prioridade" />
+            <div class="month-grid">
+                <input type="checkbox" id="todo-jan" />
+                <label for="todo-jan">Jan</label>
+                <input type="checkbox" id="todo-fev" />
+                <label for="todo-fev">Fev</label>
+                <input type="checkbox" id="todo-mar" />
+                <label for="todo-mar">Mar</label>
+                <input type="checkbox" id="todo-abr" />
+                <label for="todo-abr">Abr</label>
+                <input type="checkbox" id="todo-mai" />
+                <label for="todo-mai">Mai</label>
+                <input type="checkbox" id="todo-jun" />
+                <label for="todo-jun">Jun</label>
+                <input type="checkbox" id="todo-jul" />
+                <label for="todo-jul">Jul</label>
+                <input type="checkbox" id="todo-ago" />
+                <label for="todo-ago">Ago</label>
+                <input type="checkbox" id="todo-set" />
+                <label for="todo-set">Set</label>
+                <input type="checkbox" id="todo-out" />
+                <label for="todo-out">Out</label>
+                <input type="checkbox" id="todo-nov" />
+                <label for="todo-nov">Nov</label>
+                <input type="checkbox" id="todo-dez" />
+                <label for="todo-dez">Dez</label>
+            </div>
+            <textarea id="todo-impediment" placeholder="Impedimento" rows="2"></textarea>
+            <textarea id="todo-notes" placeholder="Observação" rows="2"></textarea>
+            <input type="number" id="todo-weighted-delivery" placeholder="Entrega Ponderada2" min="0" step="0.1" />
+            <button type="submit">Adicionar</button>
+        </form>
+        <ul id="todo-list"></ul>
+        <div id="modal" class="modal" style="display:none;">
+            <div class="modal-content">
+                <span class="close" id="close-modal">&times;</span>
+                <h2 id="modal-title"></h2>
+                <div id="modal-fields"></div>
+            </div>
+        </div>
+        <p style="text-align:center; color:#888; font-size:0.95rem; margin-top:1rem;">Clique no texto ou no ícone ✏️ para editar uma iniciativa.</p>
+        <p style="text-align:center; color:#bbb; font-size:0.95rem; margin-top:2.5rem;">Feito com ♥ por Natália França</p>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html> 
