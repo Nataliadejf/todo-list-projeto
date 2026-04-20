@@ -105,9 +105,9 @@ function statusGroup(status) {
     return 'notStarted';
 }
 
-function renderDashboard() {
-    const counts = { total: todos.length, notStarted: 0, progress: 0, done: 0 };
-    todos.forEach((todo) => {
+function renderDashboard(sourceTodos = todos) {
+    const counts = { total: sourceTodos.length, notStarted: 0, progress: 0, done: 0 };
+    sourceTodos.forEach((todo) => {
         const group = statusGroup(todo.status);
         counts[group] += 1;
     });
@@ -225,7 +225,7 @@ function renderTodos() {
         }
         list.appendChild(li);
     });
-    renderDashboard();
+    renderDashboard(filteredTodos);
 }
 
 function readFormTodo() {
