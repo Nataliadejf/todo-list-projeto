@@ -16,8 +16,23 @@ const filterWeightInput = document.getElementById('filter-weight');
 const filterPeriodStartInput = document.getElementById('filter-period-start');
 const filterPeriodEndInput = document.getElementById('filter-period-end');
 const clearFiltersBtn = document.getElementById('clear-filters-btn');
+const downloadSpreadsheetBtn = document.getElementById('download-spreadsheet-btn');
 
 const monthKeys = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+const monthExportLabels = {
+    jan: 'Mês Jan',
+    fev: 'Mês Fev',
+    mar: 'Mês Mar',
+    abr: 'Mês Abr',
+    mai: 'Mês Mai',
+    jun: 'Mês Jun',
+    jul: 'Mês Jul',
+    ago: 'Mês Ago',
+    set: 'Mês Set',
+    out: 'Mês Out',
+    nov: 'Mês Nov',
+    dez: 'Mês Dez'
+};
 const labelMap = {
     id: 'ID',
     area: 'Área',
@@ -96,6 +111,46 @@ function escapeHtml(value) {
 function getMonthsText(todo) {
     const enabled = monthKeys.filter((month) => todo[month]).map((month) => month.toUpperCase());
     return enabled.length ? enabled.join(', ') : 'Nenhum';
+}
+
+const spreadsheetExportKeys = [...editableKeys, ...monthKeys, 'completed'];
+
+function escapeCsvCell(value) {
+    const s = String(value ?? '');
+    if (/[;\r\n"]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+    return s;
+}
+
+function headerLabelForSpreadsheet(key) {
+    if (labelMap[key]) return labelMap[key];
+    if (monthExportLabels[key]) return monthExportLabels[key];
+    if (key === 'completed') return 'Marcado concluído';
+    return key;
+}
+
+function spreadsheetCellValue(todo, key) {
+    if (monthKeys.includes(key)) return todo[key] ? 'Sim' : 'Não';
+    if (key === 'completed') return todo.completed ? 'Sim' : 'Não';
+    return todo[key] ?? '';
+}
+
+function downloadAllInitiativesSpreadsheet() {
+    const headerLine = spreadsheetExportKeys.map((key) => escapeCsvCell(headerLabelForSpreadsheet(key))).join(';');
+    const dataLines = todos.map((todo) =>
+        spreadsheetExportKeys.map((key) => escapeCsvCell(spreadsheetCellValue(todo, key))).join(';')
+    );
+    const csv = `\uFEFF${[headerLine, ...dataLines].join('\r\n')}`;
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    a.download = `iniciativas-${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
 }
 
 function statusGroup(status) {
@@ -391,6 +446,10 @@ filterPeriodEndInput.addEventListener('change', () => {
     filters.periodEnd = filterPeriodEndInput.value;
     renderTodos();
 });
+if (downloadSpreadsheetBtn) {
+    downloadSpreadsheetBtn.addEventListener('click', () => downloadAllInitiativesSpreadsheet());
+}
+
 clearFiltersBtn.addEventListener('click', () => {
     filters.id = '';
     filters.owner = '';
