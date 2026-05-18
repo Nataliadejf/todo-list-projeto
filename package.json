@@ -5,6 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "prestart": "node scripts/ensure-frontend-build.js",
     "api": "node server.js",
     "dev:web": "npm run dev --prefix web",
     "dev": "npx concurrently -k \"npm run api\" \"npm run dev:web\"",

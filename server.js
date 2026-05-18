@@ -8,9 +8,10 @@ const PORT = process.env.PORT || 3001;
 const dbPath = path.join(__dirname, 'data.sqlite');
 const seedPath = path.join(__dirname, 'seed-data.json');
 const db = new sqlite3.Database(dbPath);
+const webOut = path.join(__dirname, 'web', 'out');
+const hasNextBuild = fs.existsSync(path.join(webOut, 'index.html'));
 
 app.use(express.json({ limit: '1mb' }));
-app.use(express.static(__dirname));
 
 const monthKeys = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 
@@ -216,29 +217,49 @@ app.delete('/api/todos/:id', async (req, res) => {
     }
 });
 
-const webOut = path.join(__dirname, 'web', 'out');
+function sendExportedPage(routePath, res) {
+    const normalized = routePath.endsWith('/') ? routePath.slice(0, -1) : routePath;
+    const candidates = normalized === '' || normalized === '/'
+        ? [path.join(webOut, 'index.html')]
+        : [
+            path.join(webOut, normalized.replace(/^\//, ''), 'index.html'),
+            path.join(webOut, `${normalized.replace(/^\//, '')}.html`),
+        ];
+
+    for (const filePath of candidates) {
+        if (fs.existsSync(filePath)) return res.sendFile(filePath);
+    }
+    return res.status(404).send('Página não encontrada');
+}
 
 function mountNextFrontend() {
-    if (!fs.existsSync(webOut)) {
-        console.log('Frontend Next.js não encontrado em web/out — servindo API e arquivos legados.');
+    if (!hasNextBuild) {
+        console.warn('Build do Next.js ausente (web/out). Execute: npm run build');
+        app.get('/', (req, res) => {
+            res.status(503).type('html').send(`
+                <h1>Frontend não compilado</h1>
+                <p>Execute <code>npm run build</code> e reinicie o servidor, ou use <code>npm run dev</code> para desenvolvimento.</p>
+            `);
+        });
         return;
     }
 
-    app.use(express.static(webOut));
+    app.use(express.static(webOut, { index: false }));
 
-    const sendSpa = (routePath, res) => {
-        const filePath = routePath === '/'
-            ? path.join(webOut, 'index.html')
-            : path.join(webOut, routePath.replace(/^\//, ''), 'index.html');
-        if (fs.existsSync(filePath)) return res.sendFile(filePath);
-        return res.status(404).send('Página não encontrada');
-    };
+    app.get('/', (req, res) => res.redirect(302, '/portfolio'));
 
-    ['/', '/portfolio', '/projetos', '/iniciativas'].forEach((routePath) => {
-        app.get(routePath, (req, res) => sendSpa(routePath, res));
+    ['/portfolio', '/projetos', '/iniciativas'].forEach((routePath) => {
+        app.get(routePath, (req, res) => sendExportedPage(routePath, res));
+        app.get(`${routePath}/`, (req, res) => sendExportedPage(routePath, res));
     });
 
-    console.log('Frontend Next.js servido a partir de web/out');
+    app.get('*', (req, res, next) => {
+        if (req.path.startsWith('/api')) return next();
+        if (req.path.includes('.')) return next();
+        return sendExportedPage(req.path, res);
+    });
+
+    console.log('Frontend GHT (Next.js) ativo em web/out');
 }
 
 mountNextFrontend();
@@ -247,6 +268,7 @@ seedIfEmpty()
     .then(() => {
         app.listen(PORT, () => {
             console.log(`Servidor rodando na porta ${PORT}`);
+            console.log(hasNextBuild ? 'UI: layout GHT (sidebar escura, 3 páginas)' : 'UI: aguardando build do frontend');
         });
     })
     .catch((err) => {
