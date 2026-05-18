@@ -13,6 +13,14 @@ const hasNextBuild = fs.existsSync(path.join(webOut, 'index.html'));
 
 app.use(express.json({ limit: '1mb' }));
 
+app.get('/api/health', (req, res) => {
+    res.json({
+        ok: true,
+        frontend: hasNextBuild,
+        port: PORT,
+    });
+});
+
 const monthKeys = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 
 const baseFields = [
@@ -264,14 +272,11 @@ function mountNextFrontend() {
 
 mountNextFrontend();
 
-seedIfEmpty()
-    .then(() => {
-        app.listen(PORT, () => {
-            console.log(`Servidor rodando na porta ${PORT}`);
-            console.log(hasNextBuild ? 'UI: layout GHT (sidebar escura, 3 páginas)' : 'UI: aguardando build do frontend');
-        });
-    })
-    .catch((err) => {
-        console.error('Falha ao iniciar aplicação:', err);
-        process.exit(1);
-    });
+app.listen(PORT, () => {
+    console.log(`Servidor rodando na porta ${PORT}`);
+    console.log(hasNextBuild ? 'UI: layout GHT (sidebar escura, 3 páginas)' : 'UI: web/out ausente — rode npm run build');
+});
+
+seedIfEmpty().catch((err) => {
+    console.error('Falha na carga inicial do banco:', err.message);
+});

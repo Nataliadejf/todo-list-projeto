@@ -15,7 +15,7 @@
 
 # next.js
 /.next/
-/out/
+# /out/ versionado para deploy confiável no Render
 
 # production
 /build

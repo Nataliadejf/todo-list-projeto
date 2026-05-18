@@ -5,8 +5,8 @@ services:
     plan: free
     branch: main
     autoDeploy: true
-    buildCommand: npm install && npm run build
-    startCommand: npm start
+    buildCommand: bash render-build.sh
+    startCommand: node server.js
     envVars:
       - key: NODE_ENV
         value: production
@@ -14,3 +14,5 @@ services:
         value: "1"
       - key: NPM_CONFIG_PRODUCTION
         value: "false"
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=512

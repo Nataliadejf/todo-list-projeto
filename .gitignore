@@ -1,6 +1,5 @@
 node_modules/
 data.sqlite
 web/.next/
-web/out/
 ~$*
 *.xlsx
