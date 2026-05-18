@@ -18,27 +18,30 @@ import { FadeIn } from "@/components/ui/fade-in";
 
 interface InitiativesChartProps {
   todos: Initiative[];
+  compact?: boolean;
 }
 
-export function InitiativesChart({ todos }: InitiativesChartProps) {
+export function InitiativesChart({ todos, compact = false }: InitiativesChartProps) {
   const data = getOwnerWeightChartData(todos);
 
   return (
     <FadeIn delay={0.08}>
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <BarChart3 className="h-5 w-5 text-blue-600" />
+        <CardHeader className={compact ? "space-y-1 pb-2" : undefined}>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <BarChart3 className="h-4 w-4 text-blue-600" />
             Iniciativas por Responsável × Peso
           </CardTitle>
-          <CardDescription>Distribuição de carga e prioridade por pessoa</CardDescription>
-          <div className="mt-3 flex flex-wrap gap-3 text-xs font-semibold">
+          {!compact ? (
+            <CardDescription>Distribuição de carga e prioridade por pessoa</CardDescription>
+          ) : null}
+          <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold">
             <span className="inline-flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-sm bg-rose-500" /> Alta</span>
             <span className="inline-flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-sm bg-orange-500" /> Média</span>
             <span className="inline-flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-sm bg-blue-500" /> Baixa</span>
           </div>
         </CardHeader>
-        <CardContent className="h-[320px] pb-4">
+        <CardContent className={compact ? "h-[200px] pb-2" : "h-[260px] pb-4"}>
           {data.length === 0 ? (
             <p className="py-16 text-center text-sm text-slate-500">Sem dados para exibir no gráfico.</p>
           ) : (

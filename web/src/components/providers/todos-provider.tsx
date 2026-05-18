@@ -22,6 +22,8 @@ interface TodosContextValue {
   loading: boolean;
   error: string | null;
   connected: boolean;
+  databaseType: string | null;
+  databasePersistent: boolean;
   filters: FilterState;
   setFilters: React.Dispatch<React.SetStateAction<FilterState>>;
   clearFilters: () => void;
@@ -38,15 +40,28 @@ export function TodosProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
+  const [databaseType, setDatabaseType] = useState<string | null>(null);
+  const [databasePersistent, setDatabasePersistent] = useState(false);
   const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await fetchInitiatives();
+      const [data, healthRes] = await Promise.all([
+        fetchInitiatives(),
+        fetch("/api/health", { cache: "no-store" }),
+      ]);
       setTodos(data);
       setConnected(true);
       setError(null);
+      if (healthRes.ok) {
+        const health = (await healthRes.json()) as {
+          database?: string;
+          persistent?: boolean;
+        };
+        setDatabaseType(health.database ?? null);
+        setDatabasePersistent(Boolean(health.persistent));
+      }
     } catch (err) {
       setConnected(false);
       setError(err instanceof Error ? err.message : "Erro ao conectar com a API");
@@ -61,9 +76,9 @@ export function TodosProvider({ children }: { children: ReactNode }) {
 
   const create = useCallback(async (payload: InitiativeInput) => {
     const created = await createInitiative(payload);
-    setTodos((prev) => [created, ...prev]);
+    await refresh();
     return created;
-  }, []);
+  }, [refresh]);
 
   const update = useCallback(async (dbId: number, payload: InitiativeInput) => {
     const updated = await updateInitiative(dbId, payload);
@@ -84,6 +99,8 @@ export function TodosProvider({ children }: { children: ReactNode }) {
       loading,
       error,
       connected,
+      databaseType,
+      databasePersistent,
       filters,
       setFilters,
       clearFilters,
@@ -92,7 +109,7 @@ export function TodosProvider({ children }: { children: ReactNode }) {
       update,
       remove,
     }),
-    [todos, loading, error, connected, filters, clearFilters, refresh, create, update, remove],
+    [todos, loading, error, connected, databaseType, databasePersistent, filters, clearFilters, refresh, create, update, remove],
   );
 
   return <TodosContext.Provider value={value}>{children}</TodosContext.Provider>;

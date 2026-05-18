@@ -13,20 +13,24 @@ import { useTodos } from "@/components/providers/todos-provider";
 interface InitiativesTableProps {
   todos: Initiative[];
   title?: string;
+  tall?: boolean;
 }
 
-export function InitiativesTable({ todos, title = "Todas as Iniciativas" }: InitiativesTableProps) {
+export function InitiativesTable({ todos, title = "Todas as Iniciativas", tall = false }: InitiativesTableProps) {
   const { remove } = useTodos();
 
   return (
     <FadeIn delay={0.12}>
-      <Card>
-        <CardHeader>
-          <CardTitle>{title}</CardTitle>
+      <Card className={tall ? "flex h-full flex-col" : undefined}>
+        <CardHeader className="shrink-0 py-3">
+          <CardTitle className="text-base">{title}</CardTitle>
         </CardHeader>
-        <CardContent className="overflow-x-auto p-0 pb-2">
+        <CardContent
+          className={`overflow-auto p-0 ${tall ? "min-h-0 flex-1" : "pb-2"}`}
+          style={tall ? { maxHeight: "min(62vh, 720px)" } : undefined}
+        >
           <table className="min-w-full text-left text-sm">
-            <thead className="border-y border-slate-100 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wide text-slate-500">
+            <thead className="sticky top-0 z-10 border-y border-slate-100 bg-slate-50 text-[11px] font-bold uppercase tracking-wide text-slate-500">
               <tr>
                 <th className="px-4 py-3">#</th>
                 <th className="px-4 py-3">Iniciativa</th>

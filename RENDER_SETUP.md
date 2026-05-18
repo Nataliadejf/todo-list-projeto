@@ -1,37 +1,38 @@
-# Configuração manual no Render (obrigatório)
+# Configuração no Render
 
-O serviço **não usa automaticamente** o `render.yaml` se foi criado antes do Blueprint.
-Abra **Dashboard → todolist-projeto-2 → Settings → Build & Deploy** e configure:
+## 1. Banco PostgreSQL (obrigatório para dados entre computadores)
 
-| Campo | Valor exato |
-|--------|-------------|
-| **Branch** | `main` |
+No painel Render:
+
+1. **Create → PostgreSQL** (plano Free)
+2. Nome: `todolist-db`
+3. No serviço web **todolist-projeto-2** → **Environment**:
+   - Adicione `DATABASE_URL` = **Internal Database URL** do Postgres
+4. **Save** e **Manual Deploy**
+
+Confirme em: `https://todo-list-projeto2.onrender.com/api/health`
+
+```json
+{
+  "ok": true,
+  "database": "postgres",
+  "persistent": true
+}
+```
+
+Sem `DATABASE_URL`, o SQLite fica no disco **efêmero** do Render — os dados somem ao reiniciar e não são compartilhados de forma confiável.
+
+## 2. Build & Deploy
+
+| Campo | Valor |
+|--------|--------|
 | **Build Command** | `bash render-build.sh` |
 | **Start Command** | `node server.js` |
 
-**Environment** (Environment Variables):
+Variáveis: `STATIC_EXPORT=1`, `NPM_CONFIG_PRODUCTION=false`
 
-| Key | Value |
-|-----|--------|
-| `STATIC_EXPORT` | `1` |
-| `NPM_CONFIG_PRODUCTION` | `false` |
-| `NODE_OPTIONS` | `--max-old-space-size=512` |
+## 3. Teste entre computadores
 
-Depois: **Manual Deploy → Clear build cache & deploy**.
-
-## Conferir deploy
-
-Nos logs de **Start** deve aparecer em segundos:
-
-```
-Servidor rodando na porta 10000
-UI: layout GHT (sidebar escura, 3 páginas)
-```
-
-**Não** deve aparecer:
-
-- `prestart` / `ensure-frontend-build`
-- `Gerando export estático do Next.js` no passo **Start** (só no **Build**)
-- `Port scan timeout`
-
-Teste: `https://todo-list-projeto2.onrender.com/api/health` → `{"ok":true,"frontend":true}`
+1. Cadastre a iniciativa `234` em **Iniciativas**
+2. No outro PC, abra o mesmo link e clique **Atualizar** nos filtros
+3. Deve aparecer na lista e em `/api/todos`

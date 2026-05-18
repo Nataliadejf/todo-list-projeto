@@ -15,7 +15,7 @@ const iconMap = {
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const { connected, error } = useTodos();
+  const { connected, error, databaseType, databasePersistent } = useTodos();
 
   return (
     <aside className="flex w-full shrink-0 flex-col bg-[#0b1120] text-slate-200 lg:fixed lg:inset-y-0 lg:left-0 lg:z-40 lg:w-64">
@@ -24,7 +24,13 @@ export function AppSidebar() {
           {BRAND.name} • {BRAND.subtitle}
         </p>
         <h1 className="mt-2 text-2xl font-bold text-white">{BRAND.appTitle}</h1>
-        <p className="mt-1 text-xs text-slate-400">{BRAND.connectionLabel}</p>
+        <p className="mt-1 text-xs text-slate-400">
+          {databaseType === "postgres"
+            ? "PostgreSQL (persistente)"
+            : databasePersistent
+              ? "SQLite (disco persistente)"
+              : "SQLite (somente nesta máquina)"}
+        </p>
       </div>
 
       <nav className="flex-1 px-3 py-4" aria-label="Navegação principal">
@@ -71,7 +77,13 @@ export function AppSidebar() {
           )}
         >
           <span className={cn("h-2 w-2 rounded-full", connected ? "bg-emerald-400" : "bg-rose-400")} />
-          {connected ? "Banco conectado" : error ? "Erro de conexão" : "Conectando..."}
+          {connected
+            ? databasePersistent
+              ? "Banco persistente"
+              : "Conectado (dados podem sumir)"
+            : error
+              ? "Erro de conexão"
+              : "Conectando..."}
         </div>
       </div>
     </aside>

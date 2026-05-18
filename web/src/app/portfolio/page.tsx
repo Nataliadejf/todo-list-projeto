@@ -13,21 +13,25 @@ export default function PortfolioPage() {
   const filtered = filterInitiatives(todos, filters);
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-4">
       <PageHeader title="Portfólio" />
+      <FiltersPanel layout="horizontal" showArea showPeriod />
 
-      <div className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
-        <FiltersPanel showArea showPeriod />
-        <div className="space-y-6">
-          {error ? (
-            <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-              {error}. Inicie a API com <code className="font-mono">npm run api</code> na raiz do projeto.
-            </p>
-          ) : null}
-          {loading ? <p className="text-sm text-slate-500">Carregando iniciativas...</p> : null}
-          <MetricsRow todos={filtered} />
-          <InitiativesChart todos={filtered} />
-          <InitiativesTable todos={filtered} />
+      {error ? (
+        <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          {error}. Configure PostgreSQL no Render (variável DATABASE_URL).
+        </p>
+      ) : null}
+      {loading ? <p className="text-sm text-slate-500">Carregando iniciativas...</p> : null}
+
+      <MetricsRow todos={filtered} compact />
+
+      <div className="grid gap-4 xl:grid-cols-12">
+        <div className="xl:col-span-4">
+          <InitiativesChart todos={filtered} compact />
+        </div>
+        <div className="min-h-[min(62vh,720px)] xl:col-span-8">
+          <InitiativesTable todos={filtered} tall />
         </div>
       </div>
     </div>
