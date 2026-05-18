@@ -1,0 +1,37 @@
+name: CI e build de produção
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            web/package-lock.json
+
+      - name: Instalar dependências da API
+        run: npm ci
+
+      - name: Instalar dependências do frontend
+        run: npm ci --prefix web
+
+      - name: Build do Next.js (export estático)
+        run: npm run build:export --prefix web
+        env:
+          NODE_ENV: production
+
+      - name: Verificar artefato estático
+        run: test -f web/out/index.html

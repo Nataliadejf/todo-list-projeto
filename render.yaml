@@ -3,5 +3,10 @@ services:
     name: todolist-projeto-2
     runtime: node
     plan: free
-    buildCommand: npm install
+    branch: main
+    autoDeploy: true
+    buildCommand: npm install && npm install --prefix web && npm run build:export --prefix web
     startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production

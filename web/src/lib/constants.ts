@@ -1,0 +1,115 @@
+import type { MonthKey } from "./types";
+
+export const BRAND = {
+  name: "GHT",
+  subtitle: "PLANEJAMENTO ESTRATÉGICO",
+  appTitle: "Portfólio",
+  connectionLabel: "Conectado ao SQLite",
+  version: "MVP v4.0 — Live Database",
+} as const;
+
+export const NAV_ITEMS = [
+  { href: "/portfolio", label: "Portfólio", icon: "folder" as const },
+  { href: "/projetos", label: "Projetos", icon: "rocket" as const },
+  { href: "/iniciativas", label: "Iniciativas", icon: "list" as const },
+] as const;
+
+export const LABEL_MAP: Record<string, string> = {
+  id: "ID",
+  area: "Área",
+  front: "Frente",
+  initiative: "Iniciativa",
+  owner: "Responsável",
+  description: "Descrição (Breve Descritivo)",
+  deliveries: "Entregas",
+  gainCategory: "Categoria Ganho",
+  gainDescription: "Descritivo dos Ganhos da iniciativa",
+  size: "Tam",
+  weight: "Peso",
+  status: "Status",
+  startDate: "Data Início",
+  plannedEndDate: "Data Previsão de Fim",
+  realEndDate: "Data Fim Real",
+  deadlineDays: "Prazo Dias",
+  deadlinePercent: "% Prazo",
+  progressPercent: "% Conclusão",
+  severity: "Gravidade",
+  urgency: "Urgência",
+  strategy: "Estratégia",
+  priority: "Prioridade",
+  impediment: "Impedimento",
+  notes: "Observação",
+  weightedDelivery: "Entrega Ponderada2",
+};
+
+export const EDITABLE_KEYS = [
+  "id",
+  "area",
+  "front",
+  "initiative",
+  "owner",
+  "description",
+  "deliveries",
+  "gainCategory",
+  "gainDescription",
+  "size",
+  "weight",
+  "status",
+  "startDate",
+  "plannedEndDate",
+  "realEndDate",
+  "deadlineDays",
+  "deadlinePercent",
+  "progressPercent",
+  "severity",
+  "urgency",
+  "strategy",
+  "priority",
+  "impediment",
+  "notes",
+  "weightedDelivery",
+] as const;
+
+export const MONTH_LABELS: Record<MonthKey, string> = {
+  jan: "Jan",
+  fev: "Fev",
+  mar: "Mar",
+  abr: "Abr",
+  mai: "Mai",
+  jun: "Jun",
+  jul: "Jul",
+  ago: "Ago",
+  set: "Set",
+  out: "Out",
+  nov: "Nov",
+  dez: "Dez",
+};
+
+export const STATUS_OPTIONS = [
+  { value: "", label: "Todos" },
+  { value: "A fazer", label: "Não Iniciado" },
+  { value: "Em andamento", label: "Em Andamento" },
+  { value: "Concluído", label: "Concluído" },
+] as const;
+
+export const WEIGHT_OPTIONS = [
+  { value: "", label: "Todos" },
+  { value: "5", label: "Alta (5)" },
+  { value: "3", label: "Média (3)" },
+  { value: "1", label: "Baixa (1)" },
+] as const;
+
+export const DEADLINE_OPTIONS = [
+  { value: "", label: "Todos" },
+  { value: "overdue", label: "Atrasados" },
+  { value: "month", label: "Este mês" },
+  { value: "quarter", label: "Próx. 3 meses" },
+  { value: "year", label: "Este ano" },
+] as const;
+
+export const KANBAN_COLUMNS = [
+  { id: "planejamento", title: "Planejamento", dotClass: "bg-blue-500" },
+  { id: "andamento", title: "Em Andamento", dotClass: "bg-amber-400" },
+  { id: "revisao", title: "Em Revisão", dotClass: "bg-orange-500" },
+  { id: "concluido", title: "Concluído", dotClass: "bg-emerald-500" },
+] as const;

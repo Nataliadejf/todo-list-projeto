@@ -1,13 +1,21 @@
 {
   "name": "todo-list-projeto",
-  "version": "1.0.0",
-  "description": "Planner de iniciativas com dashboard e banco de dados",
+  "version": "2.0.0",
+  "description": "Planner de iniciativas com dashboard Next.js e API SQLite",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "api": "node server.js",
+    "dev:web": "npm run dev --prefix web",
+    "dev": "npx concurrently -k \"npm run api\" \"npm run dev:web\"",
+    "build": "npm install --prefix web && npm run build:export --prefix web",
+    "build:web": "npm run build --prefix web"
   },
   "dependencies": {
     "express": "^4.21.2",
     "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
   }
 }

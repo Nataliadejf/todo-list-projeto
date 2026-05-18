@@ -4,7 +4,7 @@ const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 const dbPath = path.join(__dirname, 'data.sqlite');
 const seedPath = path.join(__dirname, 'seed-data.json');
 const db = new sqlite3.Database(dbPath);
@@ -215,6 +215,33 @@ app.delete('/api/todos/:id', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+
+const webOut = path.join(__dirname, 'web', 'out');
+
+function mountNextFrontend() {
+    if (!fs.existsSync(webOut)) {
+        console.log('Frontend Next.js não encontrado em web/out — servindo API e arquivos legados.');
+        return;
+    }
+
+    app.use(express.static(webOut));
+
+    const sendSpa = (routePath, res) => {
+        const filePath = routePath === '/'
+            ? path.join(webOut, 'index.html')
+            : path.join(webOut, routePath.replace(/^\//, ''), 'index.html');
+        if (fs.existsSync(filePath)) return res.sendFile(filePath);
+        return res.status(404).send('Página não encontrada');
+    };
+
+    ['/', '/portfolio', '/projetos', '/iniciativas'].forEach((routePath) => {
+        app.get(routePath, (req, res) => sendSpa(routePath, res));
+    });
+
+    console.log('Frontend Next.js servido a partir de web/out');
+}
+
+mountNextFrontend();
 
 seedIfEmpty()
     .then(() => {
