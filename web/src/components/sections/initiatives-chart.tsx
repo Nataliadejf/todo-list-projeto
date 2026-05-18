@@ -41,7 +41,7 @@ export function InitiativesChart({ todos, compact = false }: InitiativesChartPro
             <span className="inline-flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-sm bg-blue-500" /> Baixa</span>
           </div>
         </CardHeader>
-        <CardContent className={compact ? "h-[200px] pb-2" : "h-[260px] pb-4"}>
+        <CardContent className={compact ? "h-[200px] pb-2" : "h-[240px] pb-4"}>
           {data.length === 0 ? (
             <p className="py-16 text-center text-sm text-slate-500">Sem dados para exibir no gráfico.</p>
           ) : (

@@ -26,14 +26,9 @@ export default function PortfolioPage() {
 
       <MetricsRow todos={filtered} compact />
 
-      <div className="grid gap-4 xl:grid-cols-12">
-        <div className="xl:col-span-4">
-          <InitiativesChart todos={filtered} compact />
-        </div>
-        <div className="min-h-[min(62vh,720px)] xl:col-span-8">
-          <InitiativesTable todos={filtered} tall />
-        </div>
-      </div>
+      <InitiativesChart todos={filtered} />
+
+      <InitiativesTable todos={filtered} tall />
     </div>
   );
 }

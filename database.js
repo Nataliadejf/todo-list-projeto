@@ -40,7 +40,7 @@ const createTableSql = `
         jul BOOLEAN DEFAULT false,
         ago BOOLEAN DEFAULT false,
         "set" BOOLEAN DEFAULT false,
-        out BOOLEAN DEFAULT false,
+        "out" BOOLEAN DEFAULT false,
         nov BOOLEAN DEFAULT false,
         dez BOOLEAN DEFAULT false,
         completed BOOLEAN DEFAULT false
@@ -109,10 +109,11 @@ function run(sql, params = []) {
         let pgSql = toPgParams(sql);
         const isInsert = /^\s*INSERT/i.test(pgSql.trim());
         if (isInsert && !/RETURNING/i.test(pgSql)) {
-            pgSql = `${pgSql} RETURNING "dbId"`;
+            pgSql = `${pgSql} RETURNING *`;
         }
         return adapter.pool.query(pgSql, params).then((result) => ({
-            lastID: result.rows[0]?.dbId ?? null,
+            lastID: result.rows[0]?.dbId ?? result.rows[0]?.dbid ?? null,
+            row: result.rows[0] ? formatRow(result.rows[0]) : null,
             changes: result.rowCount,
         }));
     }

@@ -46,7 +46,7 @@ async function seedIfEmpty() {
                 id, area, front, initiative, owner, description, deliveries, gainCategory, gainDescription, size,
                 weight, status, startDate, plannedEndDate, realEndDate, deadlineDays, deadlinePercent, progressPercent,
                 severity, urgency, strategy, priority, impediment, notes, weightedDelivery,
-                jan, fev, mar, abr, mai, jun, jul, ago, "set", out, nov, dez, completed
+                jan, fev, mar, abr, mai, jun, jul, ago, "set", "out", nov, dez, completed
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `,
             [
@@ -94,7 +94,7 @@ app.post('/api/todos', async (req, res) => {
                 id, area, front, initiative, owner, description, deliveries, gainCategory, gainDescription, size,
                 weight, status, startDate, plannedEndDate, realEndDate, deadlineDays, deadlinePercent, progressPercent,
                 severity, urgency, strategy, priority, impediment, notes, weightedDelivery,
-                jan, fev, mar, abr, mai, jun, jul, ago, "set", out, nov, dez, completed
+                jan, fev, mar, abr, mai, jun, jul, ago, "set", "out", nov, dez, completed
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `,
             [
@@ -105,10 +105,18 @@ app.post('/api/todos', async (req, res) => {
             ],
         );
 
-        const rows = await db.all('SELECT * FROM todos WHERE dbId = ?', [result.lastID]);
-        res.status(201).json(rows[0]);
+        let created = result.row;
+        if (!created) {
+            const rows = await db.all('SELECT * FROM todos WHERE dbId = ?', [result.lastID]);
+            created = rows[0];
+        }
+        if (!created) {
+            return res.status(500).json({ error: 'Não foi possível recuperar a iniciativa criada.' });
+        }
+        return res.status(201).json(created);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('POST /api/todos:', err);
+        return res.status(500).json({ error: err.message || 'Erro ao salvar iniciativa' });
     }
 });
 
@@ -122,7 +130,7 @@ app.put('/api/todos/:id', async (req, res) => {
                 id = ?, area = ?, front = ?, initiative = ?, owner = ?, description = ?, deliveries = ?, gainCategory = ?, gainDescription = ?, size = ?,
                 weight = ?, status = ?, startDate = ?, plannedEndDate = ?, realEndDate = ?, deadlineDays = ?, deadlinePercent = ?, progressPercent = ?,
                 severity = ?, urgency = ?, strategy = ?, priority = ?, impediment = ?, notes = ?, weightedDelivery = ?,
-                jan = ?, fev = ?, mar = ?, abr = ?, mai = ?, jun = ?, jul = ?, ago = ?, "set" = ?, out = ?, nov = ?, dez = ?, completed = ?
+                jan = ?, fev = ?, mar = ?, abr = ?, mai = ?, jun = ?, jul = ?, ago = ?, "set" = ?, "out" = ?, nov = ?, dez = ?, completed = ?
             WHERE dbId = ?
             `,
             [
