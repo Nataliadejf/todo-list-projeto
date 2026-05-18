@@ -25,13 +25,11 @@ jobs:
       - name: Instalar dependências da API
         run: npm ci
 
-      - name: Instalar dependências do frontend
-        run: npm ci --prefix web
-
-      - name: Build do Next.js (export estático)
-        run: npm run build:export --prefix web
+      - name: Build do frontend (Next.js export)
+        run: npm run build
         env:
-          NODE_ENV: production
+          STATIC_EXPORT: "1"
+          NPM_CONFIG_PRODUCTION: "false"
 
       - name: Verificar artefato estático
         run: test -f web/out/index.html

@@ -5,8 +5,12 @@ services:
     plan: free
     branch: main
     autoDeploy: true
-    buildCommand: npm install && npm install --prefix web && npm run build:export --prefix web
+    buildCommand: npm install && npm run build
     startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
+      - key: STATIC_EXPORT
+        value: "1"
+      - key: NPM_CONFIG_PRODUCTION
+        value: "false"

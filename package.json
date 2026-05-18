@@ -4,13 +4,15 @@
   "description": "Planner de iniciativas com dashboard Next.js e API SQLite",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "prestart": "node scripts/ensure-frontend-build.js",
+    "start": "node scripts/start-production.js",
     "api": "node server.js",
     "dev:web": "npm run dev --prefix web",
     "dev": "npx concurrently -k \"npm run api\" \"npm run dev:web\"",
-    "build": "npm install --prefix web && npm run build:export --prefix web",
+    "build": "node scripts/build-frontend.js",
     "build:web": "npm run build --prefix web"
+  },
+  "engines": {
+    "node": ">=20"
   },
   "dependencies": {
     "express": "^4.21.2",

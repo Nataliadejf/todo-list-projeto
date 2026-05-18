@@ -7,11 +7,12 @@ A cada **push** ou **pull request** na branch `main`, o workflow `.github/workfl
 ## Render (produção)
 
 1. Acesse [render.com](https://render.com) e conecte o repositório `todo-list-projeto`.
-2. O arquivo `render.yaml` já define:
-   - **autoDeploy: true** — novo deploy a cada push em `main`
-   - **buildCommand** — instala dependências e gera `web/out`
-   - **startCommand** — `npm start` (API + frontend na mesma URL)
-3. Após o deploy, a aplicação fica em uma URL `*.onrender.com`.
+2. No painel do serviço, confira:
+   - **Build Command:** `npm install && npm run build`
+   - **Start Command:** `npm start`
+   - **Variáveis:** `STATIC_EXPORT=1` e `NPM_CONFIG_PRODUCTION=false`
+3. O arquivo `render.yaml` define o mesmo para Blueprint/sync.
+4. Se o build falhar no plano gratuito (memória), o `npm start` tenta compilar o frontend na subida como fallback.
 
 ### Banco de dados em produção
 
