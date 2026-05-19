@@ -159,6 +159,50 @@ function getAdapter() {
     return adapter;
 }
 
+const INSERT_COLUMNS = `
+    id, area, front, initiative, owner, description, deliveries, gainCategory, gainDescription, size,
+    weight, status, startDate, plannedEndDate, realEndDate, deadlineDays, deadlinePercent, progressPercent,
+    severity, urgency, strategy, priority, impediment, notes, weightedDelivery,
+    jan, fev, mar, abr, mai, jun, jul, ago, "set", "out", nov, dez, completed
+`;
+
+const INSERT_PLACEHOLDERS = Array(38).fill('?').join(', ');
+
+const INSERT_SQL = `INSERT INTO todos (${INSERT_COLUMNS}) VALUES (${INSERT_PLACEHOLDERS})`;
+
+function buildInsertParams(item) {
+    return [
+        item.id, item.area, item.front, item.initiative, item.owner, item.description, item.deliveries,
+        item.gainCategory, item.gainDescription, item.size, item.weight, item.status, item.startDate,
+        item.plannedEndDate, item.realEndDate, item.deadlineDays, item.deadlinePercent, item.progressPercent,
+        item.severity, item.urgency, item.strategy, item.priority, item.impediment, item.notes, item.weightedDelivery,
+        item.jan, item.fev, item.mar, item.abr, item.mai, item.jun, item.jul, item.ago, item.set, item.out,
+        item.nov, item.dez, item.completed,
+    ];
+}
+
+async function insertTodo(item) {
+    const params = buildInsertParams(item);
+    if (params.length !== 38) {
+        throw new Error(`Parâmetros inválidos no insert (${params.length}/38).`);
+    }
+
+    const result = await run(INSERT_SQL, params);
+
+    if (result.row) return result.row;
+
+    const lastId = Number(result.lastID);
+    if (!Number.isFinite(lastId) || lastId <= 0) {
+        throw new Error('Insert executado, mas o ID gerado não foi retornado.');
+    }
+
+    const rows = await all('SELECT * FROM todos WHERE "dbId" = ?', [lastId]);
+    if (!rows[0]) {
+        throw new Error(`Insert com ID ${lastId}, mas registro não encontrado após leitura.`);
+    }
+    return rows[0];
+}
+
 module.exports = {
     monthKeys,
     initDatabase,
@@ -167,4 +211,6 @@ module.exports = {
     getMeta,
     getAdapter,
     formatRow,
+    insertTodo,
+    buildInsertParams,
 };

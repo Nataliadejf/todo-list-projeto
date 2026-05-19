@@ -40,22 +40,7 @@ async function seedIfEmpty() {
 
     for (const rawItem of seedItems) {
         const todo = normalizePayload(rawItem);
-        await db.run(
-            `
-            INSERT INTO todos (
-                id, area, front, initiative, owner, description, deliveries, gainCategory, gainDescription, size,
-                weight, status, startDate, plannedEndDate, realEndDate, deadlineDays, deadlinePercent, progressPercent,
-                severity, urgency, strategy, priority, impediment, notes, weightedDelivery,
-                jan, fev, mar, abr, mai, jun, jul, ago, "set", "out", nov, dez, completed
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `,
-            [
-                todo.id, todo.area, todo.front, todo.initiative, todo.owner, todo.description, todo.deliveries, todo.gainCategory, todo.gainDescription, todo.size,
-                todo.weight, todo.status, todo.startDate, todo.plannedEndDate, todo.realEndDate, todo.deadlineDays, todo.deadlinePercent, todo.progressPercent,
-                todo.severity, todo.urgency, todo.strategy, todo.priority, todo.impediment, todo.notes, todo.weightedDelivery,
-                todo.jan, todo.fev, todo.mar, todo.abr, todo.mai, todo.jun, todo.jul, todo.ago, todo.set, todo.out, todo.nov, todo.dez, todo.completed,
-            ],
-        );
+        await db.insertTodo(todo);
     }
     console.log(`Carga inicial aplicada: ${seedItems.length} iniciativas.`);
 }
@@ -88,31 +73,7 @@ app.get('/api/todos', async (req, res) => {
 app.post('/api/todos', async (req, res) => {
     try {
         const todo = normalizePayload(req.body || {});
-        const result = await db.run(
-            `
-            INSERT INTO todos (
-                id, area, front, initiative, owner, description, deliveries, gainCategory, gainDescription, size,
-                weight, status, startDate, plannedEndDate, realEndDate, deadlineDays, deadlinePercent, progressPercent,
-                severity, urgency, strategy, priority, impediment, notes, weightedDelivery,
-                jan, fev, mar, abr, mai, jun, jul, ago, "set", "out", nov, dez, completed
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `,
-            [
-                todo.id, todo.area, todo.front, todo.initiative, todo.owner, todo.description, todo.deliveries, todo.gainCategory, todo.gainDescription, todo.size,
-                todo.weight, todo.status, todo.startDate, todo.plannedEndDate, todo.realEndDate, todo.deadlineDays, todo.deadlinePercent, todo.progressPercent,
-                todo.severity, todo.urgency, todo.strategy, todo.priority, todo.impediment, todo.notes, todo.weightedDelivery,
-                todo.jan, todo.fev, todo.mar, todo.abr, todo.mai, todo.jun, todo.jul, todo.ago, todo.set, todo.out, todo.nov, todo.dez, todo.completed,
-            ],
-        );
-
-        let created = result.row;
-        if (!created) {
-            const rows = await db.all('SELECT * FROM todos WHERE "dbId" = ?', [result.lastID]);
-            created = rows[0];
-        }
-        if (!created) {
-            return res.status(500).json({ error: 'Não foi possível recuperar a iniciativa criada.' });
-        }
+        const created = await db.insertTodo(todo);
         return res.status(201).json(created);
     } catch (err) {
         console.error('POST /api/todos:', err);
@@ -205,15 +166,12 @@ function mountNextFrontend() {
 
 async function start() {
     await db.initDatabase();
+    await seedIfEmpty();
     mountNextFrontend();
 
     app.listen(PORT, () => {
         console.log(`Servidor rodando na porta ${PORT}`);
         console.log(hasNextBuild ? 'UI: layout GHT (sidebar escura, 3 páginas)' : 'UI: web/out ausente');
-    });
-
-    seedIfEmpty().catch((err) => {
-        console.error('Falha na carga inicial do banco:', err.message);
     });
 }
 
