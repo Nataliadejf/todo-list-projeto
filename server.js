@@ -27,6 +27,8 @@ function normalizePayload(payload) {
         item[month] = isPg ? Boolean(payload[month]) : (payload[month] ? 1 : 0);
     });
     item.completed = isPg ? Boolean(payload.completed) : (payload.completed ? 1 : 0);
+    item.approved = isPg ? Boolean(payload.approved) : (payload.approved ? 1 : 0);
+    item.deprioritized = isPg ? Boolean(payload.deprioritized) : (payload.deprioritized ? 1 : 0);
     return item;
 }
 
@@ -40,6 +42,8 @@ async function seedIfEmpty() {
 
     for (const rawItem of seedItems) {
         const todo = normalizePayload(rawItem);
+        todo.approved = db.getAdapter()?.type === 'postgres' ? true : 1;
+        todo.deprioritized = db.getAdapter()?.type === 'postgres' ? false : 0;
         await db.insertTodo(todo);
     }
     console.log(`Carga inicial aplicada: ${seedItems.length} iniciativas.`);
@@ -73,6 +77,12 @@ app.get('/api/todos', async (req, res) => {
 app.post('/api/todos', async (req, res) => {
     try {
         const todo = normalizePayload(req.body || {});
+        if (req.body?.approved === undefined) {
+            todo.approved = db.getAdapter()?.type === 'postgres' ? false : 0;
+        }
+        if (req.body?.deprioritized === undefined) {
+            todo.deprioritized = db.getAdapter()?.type === 'postgres' ? false : 0;
+        }
         const created = await db.insertTodo(todo);
         return res.status(201).json(created);
     } catch (err) {
@@ -91,7 +101,8 @@ app.put('/api/todos/:id', async (req, res) => {
                 id = ?, area = ?, front = ?, initiative = ?, owner = ?, description = ?, deliveries = ?, gainCategory = ?, gainDescription = ?, size = ?,
                 weight = ?, status = ?, startDate = ?, plannedEndDate = ?, realEndDate = ?, deadlineDays = ?, deadlinePercent = ?, progressPercent = ?,
                 severity = ?, urgency = ?, strategy = ?, priority = ?, impediment = ?, notes = ?, weightedDelivery = ?,
-                jan = ?, fev = ?, mar = ?, abr = ?, mai = ?, jun = ?, jul = ?, ago = ?, "set" = ?, "out" = ?, nov = ?, dez = ?, completed = ?
+                jan = ?, fev = ?, mar = ?, abr = ?, mai = ?, jun = ?, jul = ?, ago = ?, "set" = ?, "out" = ?, nov = ?, dez = ?, completed = ?,
+                approved = ?, deprioritized = ?
             WHERE "dbId" = ?
             `,
             [
@@ -99,6 +110,7 @@ app.put('/api/todos/:id', async (req, res) => {
                 todo.weight, todo.status, todo.startDate, todo.plannedEndDate, todo.realEndDate, todo.deadlineDays, todo.deadlinePercent, todo.progressPercent,
                 todo.severity, todo.urgency, todo.strategy, todo.priority, todo.impediment, todo.notes, todo.weightedDelivery,
                 todo.jan, todo.fev, todo.mar, todo.abr, todo.mai, todo.jun, todo.jul, todo.ago, todo.set, todo.out, todo.nov, todo.dez, todo.completed,
+                todo.approved, todo.deprioritized,
                 dbId,
             ],
         );

@@ -18,6 +18,8 @@ export function normalizeInitiative(
   normalized.id = normalized.id || `ID-${Date.now()}`;
   normalized.status = normalizeStatus(normalized.status || "");
   normalized.completed = Boolean(normalized.completed);
+  normalized.approved = Boolean(normalized.approved);
+  normalized.deprioritized = Boolean(normalized.deprioritized);
   MONTH_KEYS.forEach((month) => {
     normalized[month] = Boolean(normalized[month]);
   });
@@ -111,7 +113,7 @@ export function getMetrics(todos: Initiative[]) {
     if (status === "Concluído" || todo.completed) done += 1;
     else if (status === "Em andamento") inProgress += 1;
     else notStarted += 1;
-    if (normalizeText(todo.strategy) === "sim" && status !== "Concluído") inApproval += 1;
+    if (!todo.approved && !todo.deprioritized && status !== "Concluído") inApproval += 1;
   });
 
   return {
@@ -123,7 +125,14 @@ export function getMetrics(todos: Initiative[]) {
   };
 }
 
+export function toInitiativeInput(todo: Initiative): Omit<Initiative, "dbId"> {
+  const { dbId: _dbId, ...rest } = todo;
+  return rest;
+}
+
 export function getKanbanStage(todo: Initiative): KanbanStage {
+  if (todo.deprioritized) return "despriorizados";
+  if (!todo.approved) return "aprovacao";
   const status = normalizeStatus(todo.status);
   if (status === "Concluído" || todo.completed) return "concluido";
   if (status === "A fazer") return "planejamento";

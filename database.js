@@ -43,7 +43,9 @@ const createTableSql = `
         "out" BOOLEAN DEFAULT false,
         nov BOOLEAN DEFAULT false,
         dez BOOLEAN DEFAULT false,
-        completed BOOLEAN DEFAULT false
+        completed BOOLEAN DEFAULT false,
+        approved BOOLEAN DEFAULT true,
+        deprioritized BOOLEAN DEFAULT false
     )
 `;
 
@@ -71,10 +73,43 @@ function formatRow(row) {
     const output = { ...row };
     output.dbId = Number(output.dbId ?? output.dbid);
     output.completed = Boolean(output.completed);
+    output.approved = Boolean(output.approved);
+    output.deprioritized = Boolean(output.deprioritized);
     monthKeys.forEach((month) => {
         output[month] = Boolean(output[month]);
     });
     return output;
+}
+
+async function ensureApprovalColumns() {
+    const isPg = adapter.type === 'postgres';
+    let columnNames = [];
+
+    if (isPg) {
+        const result = await adapter.pool.query(
+            `SELECT column_name FROM information_schema.columns
+             WHERE table_schema = 'public' AND table_name = 'todos'`,
+        );
+        columnNames = result.rows.map((row) => row.column_name);
+    } else {
+        const rows = await new Promise((resolve, reject) => {
+            adapter.db.all('PRAGMA table_info(todos)', (err, data) => (err ? reject(err) : resolve(data || [])));
+        });
+        columnNames = rows.map((row) => row.name);
+    }
+
+    if (columnNames.includes('approved')) return;
+
+    if (isPg) {
+        await adapter.pool.query('ALTER TABLE todos ADD COLUMN IF NOT EXISTS approved BOOLEAN DEFAULT true');
+        await adapter.pool.query('ALTER TABLE todos ADD COLUMN IF NOT EXISTS deprioritized BOOLEAN DEFAULT false');
+        await adapter.pool.query('UPDATE todos SET approved = true WHERE approved IS NULL');
+        await adapter.pool.query('UPDATE todos SET deprioritized = false WHERE deprioritized IS NULL');
+    } else {
+        await run('ALTER TABLE todos ADD COLUMN approved INTEGER DEFAULT 1');
+        await run('ALTER TABLE todos ADD COLUMN deprioritized INTEGER DEFAULT 0');
+    }
+    console.log('Colunas approved/deprioritized adicionadas ao banco.');
 }
 
 function resolveDataDir() {
@@ -148,6 +183,7 @@ async function initDatabase() {
         });
         await pool.query(createTableSql);
         adapter = { type: 'postgres', pool, persistent: true };
+        await ensureApprovalColumns();
         console.log('Banco PostgreSQL conectado (persistente).');
         return adapter;
     }
@@ -165,6 +201,7 @@ async function initDatabase() {
     await ensureSqliteSchema(db);
 
     adapter = { type: 'sqlite', db, dbPath, persistent };
+    await ensureApprovalColumns();
     console.log(`Banco SQLite em ${dbPath}${persistent ? ' (disco persistente)' : ''}.`);
     if (!persistent && process.env.NODE_ENV === 'production') {
         console.warn('AVISO: SQLite sem DATA_DIR/DATABASE_URL — dados podem sumir ao reiniciar no Render.');
@@ -226,10 +263,10 @@ const INSERT_COLUMNS = `
     id, area, front, initiative, owner, description, deliveries, gainCategory, gainDescription, size,
     weight, status, startDate, plannedEndDate, realEndDate, deadlineDays, deadlinePercent, progressPercent,
     severity, urgency, strategy, priority, impediment, notes, weightedDelivery,
-    jan, fev, mar, abr, mai, jun, jul, ago, "set", "out", nov, dez, completed
+    jan, fev, mar, abr, mai, jun, jul, ago, "set", "out", nov, dez, completed, approved, deprioritized
 `;
 
-const INSERT_PLACEHOLDERS = Array(38).fill('?').join(', ');
+const INSERT_PLACEHOLDERS = Array(40).fill('?').join(', ');
 
 const INSERT_SQL = `INSERT INTO todos (${INSERT_COLUMNS}) VALUES (${INSERT_PLACEHOLDERS})`;
 
@@ -240,14 +277,14 @@ function buildInsertParams(item) {
         item.plannedEndDate, item.realEndDate, item.deadlineDays, item.deadlinePercent, item.progressPercent,
         item.severity, item.urgency, item.strategy, item.priority, item.impediment, item.notes, item.weightedDelivery,
         item.jan, item.fev, item.mar, item.abr, item.mai, item.jun, item.jul, item.ago, item.set, item.out,
-        item.nov, item.dez, item.completed,
+        item.nov, item.dez, item.completed, item.approved, item.deprioritized,
     ];
 }
 
 async function insertTodo(item) {
     const params = buildInsertParams(item);
-    if (params.length !== 38) {
-        throw new Error(`Parâmetros inválidos no insert (${params.length}/38).`);
+    if (params.length !== 40) {
+        throw new Error(`Parâmetros inválidos no insert (${params.length}/40).`);
     }
 
     const result = await run(INSERT_SQL, params);

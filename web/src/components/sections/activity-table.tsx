@@ -18,7 +18,7 @@ export function ActivityTable({ todos }: ActivityTableProps) {
   return (
     <FadeIn delay={0.1}>
       <Card>
-        <CardHeader>
+        <CardHeader className="px-5 py-4">
           <CardTitle>Lista Geral de Atividades</CardTitle>
         </CardHeader>
         <CardContent className="overflow-x-auto p-0 pb-2">
@@ -49,7 +49,12 @@ export function ActivityTable({ todos }: ActivityTableProps) {
                   return (
                     <tr key={todo.dbId} className="border-b border-slate-100 hover:bg-slate-50/60">
                       <td className="px-4 py-3 font-medium">{todo.id}</td>
-                      <td className="max-w-[240px] px-4 py-3 font-medium text-slate-900">{todo.initiative}</td>
+                      <td className="max-w-[260px] px-5 py-3.5">
+                        <p className="pl-0.5 font-medium leading-snug text-slate-900">{todo.initiative}</p>
+                        {todo.front ? (
+                          <p className="mt-1.5 pl-0.5 text-xs leading-relaxed text-slate-500">{todo.front}</p>
+                        ) : null}
+                      </td>
                       <td className="px-4 py-3">{todo.owner || "—"}</td>
                       <td className="px-4 py-3">{todo.plannedEndDate || "—"}</td>
                       <td className="px-4 py-3">

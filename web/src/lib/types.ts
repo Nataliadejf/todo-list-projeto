@@ -17,7 +17,13 @@ export type MonthKey = (typeof MONTH_KEYS)[number];
 
 export type InitiativeStatus = "A fazer" | "Em andamento" | "Concluído";
 
-export type KanbanStage = "planejamento" | "andamento" | "revisao" | "concluido";
+export type KanbanStage =
+  | "aprovacao"
+  | "despriorizados"
+  | "planejamento"
+  | "andamento"
+  | "revisao"
+  | "concluido";
 
 export interface Initiative {
   dbId: number;
@@ -47,6 +53,8 @@ export interface Initiative {
   notes: string;
   weightedDelivery: string;
   completed: boolean;
+  approved: boolean;
+  deprioritized: boolean;
   jan: boolean;
   fev: boolean;
   mar: boolean;

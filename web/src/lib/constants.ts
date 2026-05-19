@@ -108,6 +108,8 @@ export const DEADLINE_OPTIONS = [
 ] as const;
 
 export const KANBAN_COLUMNS = [
+  { id: "aprovacao", title: "Em Aprovação", dotClass: "bg-violet-500" },
+  { id: "despriorizados", title: "Despriorizados", dotClass: "bg-slate-400" },
   { id: "planejamento", title: "Planejamento", dotClass: "bg-blue-500" },
   { id: "andamento", title: "Em Andamento", dotClass: "bg-amber-400" },
   { id: "revisao", title: "Em Revisão", dotClass: "bg-orange-500" },

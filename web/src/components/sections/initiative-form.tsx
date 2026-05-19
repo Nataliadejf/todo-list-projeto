@@ -61,6 +61,8 @@ function emptyInitiative(): InitiativeInput {
     notes: "",
     weightedDelivery: "",
     completed: false,
+    approved: false,
+    deprioritized: false,
   } as InitiativeInput;
   MONTH_KEYS.forEach((month) => {
     base[month] = false;
