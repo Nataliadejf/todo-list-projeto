@@ -78,7 +78,7 @@ app.get('/api/health', async (req, res) => {
 
 app.get('/api/todos', async (req, res) => {
     try {
-        const rows = await db.all('SELECT * FROM todos ORDER BY dbId DESC');
+        const rows = await db.all('SELECT * FROM todos ORDER BY "dbId" DESC');
         res.json(rows);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -107,7 +107,7 @@ app.post('/api/todos', async (req, res) => {
 
         let created = result.row;
         if (!created) {
-            const rows = await db.all('SELECT * FROM todos WHERE dbId = ?', [result.lastID]);
+            const rows = await db.all('SELECT * FROM todos WHERE "dbId" = ?', [result.lastID]);
             created = rows[0];
         }
         if (!created) {
@@ -131,7 +131,7 @@ app.put('/api/todos/:id', async (req, res) => {
                 weight = ?, status = ?, startDate = ?, plannedEndDate = ?, realEndDate = ?, deadlineDays = ?, deadlinePercent = ?, progressPercent = ?,
                 severity = ?, urgency = ?, strategy = ?, priority = ?, impediment = ?, notes = ?, weightedDelivery = ?,
                 jan = ?, fev = ?, mar = ?, abr = ?, mai = ?, jun = ?, jul = ?, ago = ?, "set" = ?, "out" = ?, nov = ?, dez = ?, completed = ?
-            WHERE dbId = ?
+            WHERE "dbId" = ?
             `,
             [
                 todo.id, todo.area, todo.front, todo.initiative, todo.owner, todo.description, todo.deliveries, todo.gainCategory, todo.gainDescription, todo.size,
@@ -141,7 +141,7 @@ app.put('/api/todos/:id', async (req, res) => {
                 dbId,
             ],
         );
-        const rows = await db.all('SELECT * FROM todos WHERE dbId = ?', [dbId]);
+        const rows = await db.all('SELECT * FROM todos WHERE "dbId" = ?', [dbId]);
         if (!rows.length) return res.status(404).json({ error: 'Iniciativa não encontrada' });
         return res.json(rows[0]);
     } catch (err) {
@@ -152,7 +152,7 @@ app.put('/api/todos/:id', async (req, res) => {
 app.delete('/api/todos/:id', async (req, res) => {
     try {
         const dbId = Number(req.params.id);
-        await db.run('DELETE FROM todos WHERE dbId = ?', [dbId]);
+        await db.run('DELETE FROM todos WHERE "dbId" = ?', [dbId]);
         res.status(204).send();
     } catch (err) {
         res.status(500).json({ error: err.message });

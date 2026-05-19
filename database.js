@@ -61,6 +61,11 @@ function toPgParams(sql) {
     });
 }
 
+function normalizeSql(sql) {
+    if (!adapter || adapter.type !== 'postgres') return sql;
+    return sql.replace(/\bdbId\b/g, '"dbId"');
+}
+
 function formatRow(row) {
     if (!row) return row;
     const output = { ...row };
@@ -106,7 +111,7 @@ async function initDatabase() {
 
 function run(sql, params = []) {
     if (adapter.type === 'postgres') {
-        let pgSql = toPgParams(sql);
+        let pgSql = toPgParams(normalizeSql(sql));
         const isInsert = /^\s*INSERT/i.test(pgSql.trim());
         if (isInsert && !/RETURNING/i.test(pgSql)) {
             pgSql = `${pgSql} RETURNING *`;
@@ -128,7 +133,7 @@ function run(sql, params = []) {
 
 function all(sql, params = []) {
     if (adapter.type === 'postgres') {
-        const pgSql = toPgParams(sql);
+        const pgSql = toPgParams(normalizeSql(sql));
         return adapter.pool.query(pgSql, params).then((result) => result.rows.map(formatRow));
     }
 

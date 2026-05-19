@@ -76,9 +76,9 @@ export function TodosProvider({ children }: { children: ReactNode }) {
 
   const create = useCallback(async (payload: InitiativeInput) => {
     const created = await createInitiative(payload);
-    await refresh();
+    setTodos((prev) => [created, ...prev.filter((item) => item.dbId !== created.dbId)]);
     return created;
-  }, [refresh]);
+  }, []);
 
   const update = useCallback(async (dbId: number, payload: InitiativeInput) => {
     const updated = await updateInitiative(dbId, payload);
