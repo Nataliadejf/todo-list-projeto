@@ -48,7 +48,7 @@ const createTableSql = `
 `;
 
 const createTableSqlite = createTableSql
-    .replace('dbId SERIAL PRIMARY KEY', 'dbId INTEGER PRIMARY KEY AUTOINCREMENT')
+    .replace('"dbId" SERIAL PRIMARY KEY', '"dbId" INTEGER PRIMARY KEY AUTOINCREMENT')
     .replace(/BOOLEAN DEFAULT false/g, 'INTEGER DEFAULT 0');
 
 let adapter = null;
@@ -77,6 +77,68 @@ function formatRow(row) {
     return output;
 }
 
+function resolveDataDir() {
+    if (process.env.DATA_DIR) return process.env.DATA_DIR;
+    if (process.env.NODE_ENV === 'production' && fs.existsSync('/var/data')) return '/var/data';
+    return __dirname;
+}
+
+async function ensureSqliteSchema(db) {
+    const columns = await new Promise((resolve, reject) => {
+        db.all('PRAGMA table_info(todos)', (err, rows) => (err ? reject(err) : resolve(rows || [])));
+    });
+    const dbIdCol = columns.find((col) => col.name === 'dbId');
+    const type = String(dbIdCol?.type || '').toUpperCase();
+    if (dbIdCol && type.includes('INT')) return;
+
+    const countRow = await new Promise((resolve, reject) => {
+        db.get('SELECT COUNT(*) AS total FROM todos', (err, row) => (err ? reject(err) : resolve(row)));
+    });
+    const total = Number(countRow?.total || 0);
+
+    if (total === 0) {
+        await new Promise((resolve, reject) => {
+            db.run('DROP TABLE IF EXISTS todos', (err) => (err ? reject(err) : resolve()));
+        });
+        await new Promise((resolve, reject) => {
+            db.run(createTableSqlite, (err) => (err ? reject(err) : resolve()));
+        });
+        console.log('Schema SQLite recriado (dbId INTEGER AUTOINCREMENT).');
+        return;
+    }
+
+    console.warn('Schema SQLite antigo detectado; migrando registros...');
+    await new Promise((resolve, reject) => {
+        db.serialize(() => {
+            db.run('ALTER TABLE todos RENAME TO todos_legacy', (err) => {
+                if (err) return reject(err);
+                db.run(createTableSqlite, (err2) => {
+                    if (err2) return reject(err2);
+                    db.run(
+                        `INSERT INTO todos (
+                            id, area, front, initiative, owner, description, deliveries, gainCategory, gainDescription, size,
+                            weight, status, startDate, plannedEndDate, realEndDate, deadlineDays, deadlinePercent, progressPercent,
+                            severity, urgency, strategy, priority, impediment, notes, weightedDelivery,
+                            jan, fev, mar, abr, mai, jun, jul, ago, "set", "out", nov, dez, completed
+                        )
+                        SELECT
+                            id, area, front, initiative, owner, description, deliveries, gainCategory, gainDescription, size,
+                            weight, status, startDate, plannedEndDate, realEndDate, deadlineDays, deadlinePercent, progressPercent,
+                            severity, urgency, strategy, priority, impediment, notes, weightedDelivery,
+                            jan, fev, mar, abr, mai, jun, jul, ago, "set", "out", nov, dez, completed
+                        FROM todos_legacy ORDER BY rowid`,
+                        (err3) => {
+                            if (err3) return reject(err3);
+                            db.run('DROP TABLE todos_legacy', (err4) => (err4 ? reject(err4) : resolve()));
+                        },
+                    );
+                });
+            });
+        });
+    });
+    console.log('Migração SQLite concluída.');
+}
+
 async function initDatabase() {
     if (process.env.DATABASE_URL) {
         const { Pool } = require('pg');
@@ -91,15 +153,16 @@ async function initDatabase() {
     }
 
     const sqlite3 = require('sqlite3').verbose();
-    const dataDir = process.env.DATA_DIR || __dirname;
+    const dataDir = resolveDataDir();
     if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
     const dbPath = path.join(dataDir, 'data.sqlite');
-    const persistent = Boolean(process.env.DATA_DIR);
+    const persistent = Boolean(process.env.DATA_DIR) || dataDir === '/var/data';
 
     const db = new sqlite3.Database(dbPath);
     await new Promise((resolve, reject) => {
         db.run(createTableSqlite, (err) => (err ? reject(err) : resolve()));
     });
+    await ensureSqliteSchema(db);
 
     adapter = { type: 'sqlite', db, dbPath, persistent };
     console.log(`Banco SQLite em ${dbPath}${persistent ? ' (disco persistente)' : ''}.`);
@@ -196,7 +259,10 @@ async function insertTodo(item) {
         throw new Error('Insert executado, mas o ID gerado não foi retornado.');
     }
 
-    const rows = await all('SELECT * FROM todos WHERE "dbId" = ?', [lastId]);
+    const lookupSql = adapter.type === 'sqlite'
+        ? 'SELECT * FROM todos WHERE rowid = ?'
+        : 'SELECT * FROM todos WHERE "dbId" = ?';
+    const rows = await all(lookupSql, [lastId]);
     if (!rows[0]) {
         throw new Error(`Insert com ID ${lastId}, mas registro não encontrado após leitura.`);
     }
