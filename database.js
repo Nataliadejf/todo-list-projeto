@@ -360,6 +360,13 @@ async function deleteTodo(dbId) {
     await run('DELETE FROM todos WHERE "dbId" = ?', [Number(dbId)]);
 }
 
+async function insertTodosBulk(items) {
+    for (const item of items) {
+        await insertTodo(item);
+    }
+    return items.length;
+}
+
 function formatTask(row) {
     if (!row) return row;
     return {
@@ -442,6 +449,7 @@ module.exports = {
     getAdapter,
     formatRow,
     insertTodo,
+    insertTodosBulk,
     buildInsertParams,
     listTodos,
     getTodo,

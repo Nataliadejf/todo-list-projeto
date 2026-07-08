@@ -223,6 +223,45 @@ async function insertTodo(item, forcedDbId) {
     return getTodo(dbId);
 }
 
+async function insertTodosBulk(items) {
+    if (!items || items.length === 0) return 0;
+    const startId = await nextTodoId();
+    const chunkSize = 50;
+    const columnsSql = todoColumns.map(col).join(', ');
+    let inserted = 0;
+
+    for (let offset = 0; offset < items.length; offset += chunkSize) {
+        const chunk = items.slice(offset, offset + chunkSize);
+        const params = {};
+        const types = {};
+        const valuesRows = chunk.map((item, j) => {
+            const idx = offset + j;
+            const placeholders = todoColumns.map((name) => {
+                const pname = `${name}_${idx}`;
+                if (name === 'dbId') {
+                    params[pname] = startId + idx;
+                    types[pname] = 'INT64';
+                } else if (textFields.includes(name)) {
+                    params[pname] = item[name] ?? '';
+                    types[pname] = 'STRING';
+                } else {
+                    params[pname] = Boolean(item[name]);
+                    types[pname] = 'BOOL';
+                }
+                return `@${pname}`;
+            });
+            return `(${placeholders.join(', ')})`;
+        });
+        await query(
+            `INSERT INTO ${tableRef('todos')} (${columnsSql}) VALUES ${valuesRows.join(', ')}`,
+            params,
+            types,
+        );
+        inserted += chunk.length;
+    }
+    return inserted;
+}
+
 async function updateTodo(dbId, item) {
     const { params, types } = buildTodoParams(item, dbId);
     const assignments = [...textFields, ...boolFields].map((name) => `${col(name)} = @${name}`).join(', ');
@@ -342,6 +381,7 @@ module.exports = {
     listTodos,
     getTodo,
     insertTodo,
+    insertTodosBulk,
     updateTodo,
     deleteTodo,
     listTasks,

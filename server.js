@@ -42,13 +42,14 @@ async function seedIfEmpty() {
     if (!Array.isArray(seedItems) || seedItems.length === 0) return;
 
     const useBool = store.wantsBooleans();
-    for (const rawItem of seedItems) {
+    const items = seedItems.map((rawItem) => {
         const todo = normalizePayload(rawItem);
         todo.approved = useBool ? true : 1;
         todo.deprioritized = useBool ? false : 0;
-        await store.insertTodo(todo);
-    }
-    console.log(`Carga inicial aplicada: ${seedItems.length} iniciativas.`);
+        return todo;
+    });
+    await store.insertTodosBulk(items);
+    console.log(`Carga inicial aplicada: ${items.length} iniciativas.`);
 }
 
 app.get('/api/health', async (req, res) => {

@@ -47,6 +47,7 @@ module.exports = {
     listTodos: (...args) => backend.listTodos(...args),
     getTodo: (...args) => backend.getTodo(...args),
     insertTodo: (...args) => backend.insertTodo(...args),
+    insertTodosBulk: (...args) => backend.insertTodosBulk(...args),
     updateTodo: (...args) => backend.updateTodo(...args),
     deleteTodo: (...args) => backend.deleteTodo(...args),
     listTasks: (...args) => backend.listTasks(...args),
