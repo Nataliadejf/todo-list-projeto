@@ -1,7 +1,7 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
-const db = require('./database');
+const store = require('./repository');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -18,40 +18,42 @@ const baseFields = [
 ];
 
 function normalizePayload(payload) {
-    const isPg = db.getAdapter()?.type === 'postgres';
+    const useBool = store.wantsBooleans();
+    const bool = (value) => (useBool ? Boolean(value) : (value ? 1 : 0));
     const item = {};
     baseFields.forEach((field) => {
         item[field] = payload[field] ?? '';
     });
-    db.monthKeys.forEach((month) => {
-        item[month] = isPg ? Boolean(payload[month]) : (payload[month] ? 1 : 0);
+    store.monthKeys.forEach((month) => {
+        item[month] = bool(payload[month]);
     });
-    item.completed = isPg ? Boolean(payload.completed) : (payload.completed ? 1 : 0);
-    item.approved = isPg ? Boolean(payload.approved) : (payload.approved ? 1 : 0);
-    item.deprioritized = isPg ? Boolean(payload.deprioritized) : (payload.deprioritized ? 1 : 0);
+    item.completed = bool(payload.completed);
+    item.approved = bool(payload.approved);
+    item.deprioritized = bool(payload.deprioritized);
     return item;
 }
 
 async function seedIfEmpty() {
-    const meta = await db.getMeta();
+    const meta = await store.getMeta();
     if (meta.total > 0) return;
     if (!fs.existsSync(seedPath)) return;
 
     const seedItems = JSON.parse(fs.readFileSync(seedPath, 'utf8'));
     if (!Array.isArray(seedItems) || seedItems.length === 0) return;
 
+    const useBool = store.wantsBooleans();
     for (const rawItem of seedItems) {
         const todo = normalizePayload(rawItem);
-        todo.approved = db.getAdapter()?.type === 'postgres' ? true : 1;
-        todo.deprioritized = db.getAdapter()?.type === 'postgres' ? false : 0;
-        await db.insertTodo(todo);
+        todo.approved = useBool ? true : 1;
+        todo.deprioritized = useBool ? false : 0;
+        await store.insertTodo(todo);
     }
     console.log(`Carga inicial aplicada: ${seedItems.length} iniciativas.`);
 }
 
 app.get('/api/health', async (req, res) => {
     try {
-        const meta = await db.getMeta();
+        const meta = await store.getMeta();
         res.json({
             ok: true,
             frontend: hasNextBuild,
@@ -67,7 +69,7 @@ app.get('/api/health', async (req, res) => {
 
 app.get('/api/todos', async (req, res) => {
     try {
-        const rows = await db.all('SELECT * FROM todos ORDER BY "dbId" DESC');
+        const rows = await store.listTodos();
         res.json(rows);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -77,13 +79,14 @@ app.get('/api/todos', async (req, res) => {
 app.post('/api/todos', async (req, res) => {
     try {
         const todo = normalizePayload(req.body || {});
+        const useBool = store.wantsBooleans();
         if (req.body?.approved === undefined) {
-            todo.approved = db.getAdapter()?.type === 'postgres' ? false : 0;
+            todo.approved = useBool ? false : 0;
         }
         if (req.body?.deprioritized === undefined) {
-            todo.deprioritized = db.getAdapter()?.type === 'postgres' ? false : 0;
+            todo.deprioritized = useBool ? false : 0;
         }
-        const created = await db.insertTodo(todo);
+        const created = await store.insertTodo(todo);
         return res.status(201).json(created);
     } catch (err) {
         console.error('POST /api/todos:', err);
@@ -95,28 +98,9 @@ app.put('/api/todos/:id', async (req, res) => {
     try {
         const dbId = Number(req.params.id);
         const todo = normalizePayload(req.body || {});
-        await db.run(
-            `
-            UPDATE todos SET
-                id = ?, area = ?, front = ?, initiative = ?, owner = ?, description = ?, deliveries = ?, gainCategory = ?, gainDescription = ?, size = ?,
-                weight = ?, status = ?, startDate = ?, plannedEndDate = ?, realEndDate = ?, deadlineDays = ?, deadlinePercent = ?, progressPercent = ?,
-                severity = ?, urgency = ?, strategy = ?, priority = ?, impediment = ?, notes = ?, weightedDelivery = ?,
-                jan = ?, fev = ?, mar = ?, abr = ?, mai = ?, jun = ?, jul = ?, ago = ?, "set" = ?, "out" = ?, nov = ?, dez = ?, completed = ?,
-                approved = ?, deprioritized = ?
-            WHERE "dbId" = ?
-            `,
-            [
-                todo.id, todo.area, todo.front, todo.initiative, todo.owner, todo.description, todo.deliveries, todo.gainCategory, todo.gainDescription, todo.size,
-                todo.weight, todo.status, todo.startDate, todo.plannedEndDate, todo.realEndDate, todo.deadlineDays, todo.deadlinePercent, todo.progressPercent,
-                todo.severity, todo.urgency, todo.strategy, todo.priority, todo.impediment, todo.notes, todo.weightedDelivery,
-                todo.jan, todo.fev, todo.mar, todo.abr, todo.mai, todo.jun, todo.jul, todo.ago, todo.set, todo.out, todo.nov, todo.dez, todo.completed,
-                todo.approved, todo.deprioritized,
-                dbId,
-            ],
-        );
-        const rows = await db.all('SELECT * FROM todos WHERE "dbId" = ?', [dbId]);
-        if (!rows.length) return res.status(404).json({ error: 'Iniciativa não encontrada' });
-        return res.json(rows[0]);
+        const updated = await store.updateTodo(dbId, todo);
+        if (!updated) return res.status(404).json({ error: 'Iniciativa não encontrada' });
+        return res.json(updated);
     } catch (err) {
         return res.status(500).json({ error: err.message });
     }
@@ -125,7 +109,70 @@ app.put('/api/todos/:id', async (req, res) => {
 app.delete('/api/todos/:id', async (req, res) => {
     try {
         const dbId = Number(req.params.id);
-        await db.run('DELETE FROM todos WHERE "dbId" = ?', [dbId]);
+        await store.deleteTodo(dbId);
+        res.status(204).send();
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ---------------------------------------------------------------------------
+// Tarefas (vinculadas a iniciativas)
+// ---------------------------------------------------------------------------
+
+function normalizeTaskPayload(payload) {
+    const useBool = store.wantsBooleans();
+    return {
+        initiativeDbId: payload.initiativeDbId != null && payload.initiativeDbId !== ''
+            ? Number(payload.initiativeDbId)
+            : null,
+        title: payload.title ?? '',
+        description: payload.description ?? '',
+        owner: payload.owner ?? '',
+        status: payload.status ?? 'A fazer',
+        priority: payload.priority ?? '',
+        dueDate: payload.dueDate ?? '',
+        done: useBool ? Boolean(payload.done) : (payload.done ? 1 : 0),
+    };
+}
+
+app.get('/api/tasks', async (req, res) => {
+    try {
+        const rows = await store.listTasks(req.query.initiativeDbId);
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/tasks', async (req, res) => {
+    try {
+        const task = normalizeTaskPayload(req.body || {});
+        if (!task.title.trim()) {
+            return res.status(400).json({ error: 'O título da tarefa é obrigatório.' });
+        }
+        const created = await store.insertTask(task);
+        return res.status(201).json(created);
+    } catch (err) {
+        console.error('POST /api/tasks:', err);
+        return res.status(500).json({ error: err.message || 'Erro ao salvar tarefa' });
+    }
+});
+
+app.put('/api/tasks/:id', async (req, res) => {
+    try {
+        const task = normalizeTaskPayload(req.body || {});
+        const updated = await store.updateTask(req.params.id, task);
+        if (!updated) return res.status(404).json({ error: 'Tarefa não encontrada' });
+        return res.json(updated);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete('/api/tasks/:id', async (req, res) => {
+    try {
+        await store.deleteTask(req.params.id);
         res.status(204).send();
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -162,7 +209,7 @@ function mountNextFrontend() {
     app.use(express.static(webOut, { index: false }));
     app.get('/', (req, res) => res.redirect(302, '/portfolio'));
 
-    ['/portfolio', '/projetos', '/iniciativas'].forEach((routePath) => {
+    ['/portfolio', '/projetos', '/iniciativas', '/tarefas'].forEach((routePath) => {
         app.get(routePath, (req, res) => sendExportedPage(routePath, res));
         app.get(`${routePath}/`, (req, res) => sendExportedPage(routePath, res));
     });
@@ -177,7 +224,7 @@ function mountNextFrontend() {
 }
 
 async function start() {
-    await db.initDatabase();
+    await store.initStore();
     await seedIfEmpty();
     mountNextFrontend();
 

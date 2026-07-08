@@ -71,6 +71,35 @@ export interface Initiative {
 
 export type InitiativeInput = Omit<Initiative, "dbId">;
 
+export type TaskStatus = "A fazer" | "Em andamento" | "Concluído";
+
+export interface Task {
+  id: string;
+  initiativeDbId: number | null;
+  title: string;
+  description: string;
+  owner: string;
+  status: string;
+  priority: string;
+  dueDate: string;
+  done: boolean;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export type TaskInput = Omit<Task, "id" | "createdAt" | "updatedAt">;
+
+export const EMPTY_TASK: TaskInput = {
+  initiativeDbId: null,
+  title: "",
+  description: "",
+  owner: "",
+  status: "A fazer",
+  priority: "",
+  dueDate: "",
+  done: false,
+};
+
 export interface FilterState {
   search: string;
   status: string;

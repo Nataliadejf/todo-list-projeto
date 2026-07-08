@@ -12,6 +12,20 @@ export const NAV_ITEMS = [
   { href: "/portfolio", label: "Portfólio", icon: "folder" as const },
   { href: "/projetos", label: "Projetos", icon: "rocket" as const },
   { href: "/iniciativas", label: "Iniciativas", icon: "list" as const },
+  { href: "/tarefas", label: "Tarefas", icon: "check" as const },
+] as const;
+
+export const TASK_STATUS_OPTIONS = [
+  { value: "A fazer", label: "A fazer" },
+  { value: "Em andamento", label: "Em andamento" },
+  { value: "Concluído", label: "Concluído" },
+] as const;
+
+export const TASK_PRIORITY_OPTIONS = [
+  { value: "", label: "Sem prioridade" },
+  { value: "Alta", label: "Alta" },
+  { value: "Média", label: "Média" },
+  { value: "Baixa", label: "Baixa" },
 ] as const;
 
 export const LABEL_MAP: Record<string, string> = {

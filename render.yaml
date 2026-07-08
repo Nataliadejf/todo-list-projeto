@@ -1,8 +1,6 @@
-databases:
-  - name: todolist-db
-    plan: free
-    databaseName: todolist
-    user: todolist
+# Persistência agora é o Google BigQuery (não usamos mais o PostgreSQL do Render).
+# Configure GOOGLE_APPLICATION_CREDENTIALS_JSON no painel do Render (aba Environment)
+# com o JSON do service account (puro ou base64). Veja RENDER_SETUP.md.
 
 services:
   - type: web
@@ -13,10 +11,6 @@ services:
     autoDeploy: true
     buildCommand: bash render-build.sh
     startCommand: node server.js
-    disk:
-      name: todolist-data
-      mountPath: /var/data
-      sizeGB: 1
     envVars:
       - key: NODE_ENV
         value: production
@@ -26,9 +20,11 @@ services:
         value: "false"
       - key: NODE_OPTIONS
         value: --max-old-space-size=512
-      - key: DATABASE_URL
-        fromDatabase:
-          name: todolist-db
-          property: connectionString
-      - key: DATA_DIR
-        value: /var/data
+      - key: USE_BIGQUERY
+        value: "1"
+      - key: BQ_DATASET
+        value: todolist
+      - key: BQ_LOCATION
+        value: US
+      - key: GOOGLE_APPLICATION_CREDENTIALS_JSON
+        sync: false

@@ -53,6 +53,26 @@ const createTableSqlite = createTableSql
     .replace('"dbId" SERIAL PRIMARY KEY', '"dbId" INTEGER PRIMARY KEY AUTOINCREMENT')
     .replace(/BOOLEAN DEFAULT false/g, 'INTEGER DEFAULT 0');
 
+const createTasksSql = `
+    CREATE TABLE IF NOT EXISTS tasks (
+        id TEXT PRIMARY KEY,
+        initiativeDbId BIGINT,
+        title TEXT,
+        description TEXT,
+        owner TEXT,
+        status TEXT,
+        priority TEXT,
+        dueDate TEXT,
+        done BOOLEAN DEFAULT false,
+        createdAt TEXT,
+        updatedAt TEXT
+    )
+`;
+
+const createTasksSqlite = createTasksSql
+    .replace('BIGINT', 'INTEGER')
+    .replace('BOOLEAN DEFAULT false', 'INTEGER DEFAULT 0');
+
 let adapter = null;
 
 function toPgParams(sql) {
@@ -182,6 +202,7 @@ async function initDatabase() {
             ssl: process.env.PG_SSL === 'false' ? false : { rejectUnauthorized: false },
         });
         await pool.query(createTableSql);
+        await pool.query(createTasksSql);
         adapter = { type: 'postgres', pool, persistent: true };
         await ensureApprovalColumns();
         console.log('Banco PostgreSQL conectado (persistente).');
@@ -197,6 +218,9 @@ async function initDatabase() {
     const db = new sqlite3.Database(dbPath);
     await new Promise((resolve, reject) => {
         db.run(createTableSqlite, (err) => (err ? reject(err) : resolve()));
+    });
+    await new Promise((resolve, reject) => {
+        db.run(createTasksSqlite, (err) => (err ? reject(err) : resolve()));
     });
     await ensureSqliteSchema(db);
 
@@ -306,6 +330,109 @@ async function insertTodo(item) {
     return rows[0];
 }
 
+async function listTodos() {
+    return all('SELECT * FROM todos ORDER BY "dbId" DESC');
+}
+
+async function getTodo(dbId) {
+    const rows = await all('SELECT * FROM todos WHERE "dbId" = ?', [Number(dbId)]);
+    return rows[0] || null;
+}
+
+const UPDATE_SQL = `
+    UPDATE todos SET
+        id = ?, area = ?, front = ?, initiative = ?, owner = ?, description = ?, deliveries = ?, gainCategory = ?, gainDescription = ?, size = ?,
+        weight = ?, status = ?, startDate = ?, plannedEndDate = ?, realEndDate = ?, deadlineDays = ?, deadlinePercent = ?, progressPercent = ?,
+        severity = ?, urgency = ?, strategy = ?, priority = ?, impediment = ?, notes = ?, weightedDelivery = ?,
+        jan = ?, fev = ?, mar = ?, abr = ?, mai = ?, jun = ?, jul = ?, ago = ?, "set" = ?, "out" = ?, nov = ?, dez = ?, completed = ?,
+        approved = ?, deprioritized = ?
+    WHERE "dbId" = ?
+`;
+
+async function updateTodo(dbId, item) {
+    const params = buildInsertParams(item);
+    params.push(Number(dbId));
+    await run(UPDATE_SQL, params);
+    return getTodo(dbId);
+}
+
+async function deleteTodo(dbId) {
+    await run('DELETE FROM todos WHERE "dbId" = ?', [Number(dbId)]);
+}
+
+function formatTask(row) {
+    if (!row) return row;
+    return {
+        id: row.id,
+        initiativeDbId: row.initiativeDbId ?? row.initiativedbid ?? null,
+        title: row.title ?? '',
+        description: row.description ?? '',
+        owner: row.owner ?? '',
+        status: row.status ?? '',
+        priority: row.priority ?? '',
+        dueDate: row.dueDate ?? row.duedate ?? '',
+        done: Boolean(row.done),
+        createdAt: row.createdAt ?? row.createdat ?? null,
+        updatedAt: row.updatedAt ?? row.updatedat ?? null,
+    };
+}
+
+async function listTasks(initiativeDbId) {
+    if (initiativeDbId != null && initiativeDbId !== '') {
+        const rows = await all(
+            'SELECT * FROM tasks WHERE initiativeDbId = ? ORDER BY createdAt DESC',
+            [Number(initiativeDbId)],
+        );
+        return rows.map(formatTask);
+    }
+    const rows = await all('SELECT * FROM tasks ORDER BY createdAt DESC');
+    return rows.map(formatTask);
+}
+
+async function getTask(id) {
+    const rows = await all('SELECT * FROM tasks WHERE id = ?', [String(id)]);
+    return rows[0] ? formatTask(rows[0]) : null;
+}
+
+function taskBool(value) {
+    return adapter.type === 'postgres' ? Boolean(value) : (value ? 1 : 0);
+}
+
+async function insertTask(task) {
+    const id = task.id || require('crypto').randomUUID();
+    const now = new Date().toISOString();
+    await run(
+        `INSERT INTO tasks (id, initiativeDbId, title, description, owner, status, priority, dueDate, done, createdAt, updatedAt)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+            id,
+            task.initiativeDbId != null ? Number(task.initiativeDbId) : null,
+            task.title ?? '', task.description ?? '', task.owner ?? '', task.status ?? '', task.priority ?? '',
+            task.dueDate ?? '', taskBool(task.done), now, now,
+        ],
+    );
+    return getTask(id);
+}
+
+async function updateTask(id, task) {
+    const now = new Date().toISOString();
+    await run(
+        `UPDATE tasks SET
+            initiativeDbId = ?, title = ?, description = ?, owner = ?, status = ?, priority = ?, dueDate = ?, done = ?, updatedAt = ?
+         WHERE id = ?`,
+        [
+            task.initiativeDbId != null ? Number(task.initiativeDbId) : null,
+            task.title ?? '', task.description ?? '', task.owner ?? '', task.status ?? '', task.priority ?? '',
+            task.dueDate ?? '', taskBool(task.done), now, String(id),
+        ],
+    );
+    return getTask(id);
+}
+
+async function deleteTask(id) {
+    await run('DELETE FROM tasks WHERE id = ?', [String(id)]);
+}
+
 module.exports = {
     monthKeys,
     initDatabase,
@@ -316,4 +443,13 @@ module.exports = {
     formatRow,
     insertTodo,
     buildInsertParams,
+    listTodos,
+    getTodo,
+    updateTodo,
+    deleteTodo,
+    listTasks,
+    getTask,
+    insertTask,
+    updateTask,
+    deleteTask,
 };

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CheckCircle2, FolderKanban, ListChecks, Rocket } from "lucide-react";
+import { CheckCircle2, FolderKanban, ListChecks, ListTodo, Rocket } from "lucide-react";
 import { BRAND, NAV_ITEMS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { useTodos } from "@/components/providers/todos-provider";
@@ -11,6 +11,7 @@ const iconMap = {
   folder: FolderKanban,
   rocket: Rocket,
   list: ListChecks,
+  check: ListTodo,
 } as const;
 
 export function AppSidebar() {

@@ -1,38 +1,62 @@
-# Configuração no Render
+# Configuração no Render (persistência no BigQuery)
 
-## 1. Banco PostgreSQL (obrigatório para dados entre computadores)
+A aplicação agora persiste **iniciativas** e **tarefas** no **Google BigQuery**.
+O PostgreSQL do Render não é mais usado. Em desenvolvimento local, sem credenciais,
+o app cai automaticamente no SQLite (`data.sqlite`).
 
-No painel Render:
+## 1. Pré-requisitos no Google Cloud
 
-1. **Create → PostgreSQL** (plano Free)
-2. Nome: `todolist-db`
-3. No serviço web **todolist-projeto-2** → **Environment**:
-   - Adicione `DATABASE_URL` = **Internal Database URL** do Postgres
-4. **Save** e **Manual Deploy**
+1. Projeto GCP com **BigQuery API** habilitada.
+2. Um **service account** com papel `BigQuery Data Editor` + `BigQuery Job User`.
+3. Baixe a chave JSON do service account.
 
-Confirme em: `https://todo-list-projeto2.onrender.com/api/health`
+O dataset (`todolist`) e as tabelas (`todos`, `tasks`) são criados automaticamente
+na primeira subida (`ensureSchema`).
+
+## 2. Variáveis de ambiente no Render
+
+No serviço web **todolist-projeto-2** → **Environment**:
+
+| Variável | Valor |
+|----------|-------|
+| `USE_BIGQUERY` | `1` |
+| `BQ_DATASET` | `todolist` (ou o nome desejado) |
+| `BQ_LOCATION` | `US` (mesma região do dataset) |
+| `GOOGLE_APPLICATION_CREDENTIALS_JSON` | conteúdo do JSON do service account (JSON puro **ou** base64) |
+| `STATIC_EXPORT` | `1` |
+| `NPM_CONFIG_PRODUCTION` | `false` |
+
+`GOOGLE_APPLICATION_CREDENTIALS_JSON` está marcada como `sync: false` no `render.yaml`
+(é segredo). Cole o valor manualmente no painel.
+
+Confirme em `https://<seu-app>.onrender.com/api/health`:
 
 ```json
-{
-  "ok": true,
-  "database": "postgres",
-  "persistent": true
-}
+{ "ok": true, "database": "bigquery", "persistent": true }
 ```
 
-Sem `DATABASE_URL`, o SQLite fica no disco **efêmero** do Render — os dados somem ao reiniciar e não são compartilhados de forma confiável.
-
-## 2. Build & Deploy
+## 3. Build & Deploy
 
 | Campo | Valor |
-|--------|--------|
+|-------|-------|
 | **Build Command** | `bash render-build.sh` |
 | **Start Command** | `node server.js` |
 
-Variáveis: `STATIC_EXPORT=1`, `NPM_CONFIG_PRODUCTION=false`
+## 4. Migrar os dados existentes (uma vez)
 
-## 3. Teste entre computadores
+Copia as iniciativas que hoje estão no PostgreSQL do Render (ou no SQLite local)
+para o BigQuery:
 
-1. Cadastre a iniciativa `234` em **Iniciativas**
-2. No outro PC, abra o mesmo link e clique **Atualizar** nos filtros
-3. Deve aparecer na lista e em `/api/todos`
+```bash
+# a partir do PostgreSQL do Render:
+DATABASE_URL="postgres://..." \
+GOOGLE_APPLICATION_CREDENTIALS_JSON="$(cat service-account.json)" \
+BQ_DATASET=todolist \
+node scripts/migrate-to-bigquery.js --reset
+
+# ou a partir do arquivo de carga inicial:
+GOOGLE_APPLICATION_CREDENTIALS_JSON="$(cat service-account.json)" \
+node scripts/migrate-to-bigquery.js --from-seed
+```
+
+`--reset` trunca a tabela `todos` no BigQuery antes de inserir.
