@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CheckCircle2, Circle, Pencil, Trash2 } from "lucide-react";
+import { CheckCircle2, Circle, Download, Pencil, Search, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,10 +10,12 @@ import { Label } from "@/components/ui/label";
 import { SelectField } from "@/components/ui/select-field";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Autocomplete, type AutocompleteOption } from "@/components/ui/autocomplete";
 import { useTasks } from "@/components/providers/tasks-provider";
 import { useTodos } from "@/components/providers/todos-provider";
 import { EMPTY_TASK, type Task, type TaskInput } from "@/lib/types";
 import { TASK_PRIORITY_OPTIONS, TASK_STATUS_OPTIONS } from "@/lib/constants";
+import { downloadTasksCsv } from "@/lib/csv-export";
 
 function statusVariant(status: string): "default" | "success" | "warning" | "info" {
   if (status === "Concluído") return "success";
@@ -28,28 +30,67 @@ function priorityVariant(priority: string): "default" | "danger" | "warning" | "
   return "default";
 }
 
+function normalize(text: string) {
+  return text
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase();
+}
+
 export function TarefasClient() {
   const { todos } = useTodos();
   const { tasks, loading, error, create, update, remove } = useTasks();
 
   const [form, setForm] = useState<TaskInput>(EMPTY_TASK);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [filterInitiative, setFilterInitiative] = useState<string>("");
+  const [filterInitiative, setFilterInitiative] = useState<string | null>(null);
+  const [filterOwner, setFilterOwner] = useState<string>("");
+  const [search, setSearch] = useState("");
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
+  const initiativeLabel = (dbId: number) => {
+    const todo = todos.find((t) => t.dbId === dbId);
+    return todo ? todo.initiative || todo.id || `Iniciativa ${dbId}` : `#${dbId}`;
+  };
+
   const initiativeName = useMemo(() => {
     const map = new Map<number, string>();
-    todos.forEach((todo) => {
-      map.set(todo.dbId, todo.initiative || todo.id || `Iniciativa ${todo.dbId}`);
-    });
+    todos.forEach((todo) => map.set(todo.dbId, todo.initiative || todo.id || `Iniciativa ${todo.dbId}`));
     return map;
   }, [todos]);
 
+  const initiativeOptions: AutocompleteOption[] = useMemo(
+    () =>
+      todos.map((todo) => ({
+        value: String(todo.dbId),
+        label: todo.initiative || todo.id || `Iniciativa ${todo.dbId}`,
+        hint: todo.owner ? `Responsável: ${todo.owner}` : todo.area || undefined,
+      })),
+    [todos],
+  );
+
+  const ownerOptions = useMemo(() => {
+    const set = new Set<string>();
+    tasks.forEach((task) => {
+      if (task.owner?.trim()) set.add(task.owner.trim());
+    });
+    return [...set].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [tasks]);
+
   const filtered = useMemo(() => {
-    if (!filterInitiative) return tasks;
-    return tasks.filter((task) => String(task.initiativeDbId) === filterInitiative);
-  }, [tasks, filterInitiative]);
+    const q = normalize(search.trim());
+    return tasks.filter((task) => {
+      if (filterInitiative && String(task.initiativeDbId) !== filterInitiative) return false;
+      if (filterOwner && task.owner !== filterOwner) return false;
+      if (q) {
+        const iniName = task.initiativeDbId != null ? initiativeName.get(task.initiativeDbId) ?? "" : "";
+        const haystack = normalize(`${task.title} ${task.description} ${task.owner} ${iniName}`);
+        if (!haystack.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [tasks, filterInitiative, filterOwner, search, initiativeName]);
 
   const resetForm = () => {
     setForm(EMPTY_TASK);
@@ -67,10 +108,23 @@ export function TarefasClient() {
       status: task.status || "A fazer",
       priority: task.priority,
       dueDate: task.dueDate,
+      startDate: task.startDate,
+      endDate: task.endDate,
       done: task.done,
     });
     setFormError(null);
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const onSelectInitiative = (value: string | null) => {
+    const dbId = value ? Number(value) : null;
+    const todo = dbId != null ? todos.find((t) => t.dbId === dbId) : null;
+    setForm((prev) => ({
+      ...prev,
+      initiativeDbId: dbId,
+      // vincula o responsável da iniciativa (mantém o que o usuário digitou se já houver)
+      owner: todo?.owner?.trim() ? todo.owner : prev.owner,
+    }));
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -82,15 +136,9 @@ export function TarefasClient() {
     setSaving(true);
     setFormError(null);
     try {
-      const payload: TaskInput = {
-        ...form,
-        done: form.status === "Concluído" ? true : form.done,
-      };
-      if (editingId) {
-        await update(editingId, payload);
-      } else {
-        await create(payload);
-      }
+      const payload: TaskInput = { ...form, done: form.status === "Concluído" ? true : form.done };
+      if (editingId) await update(editingId, payload);
+      else await create(payload);
       resetForm();
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Erro ao salvar tarefa.");
@@ -109,6 +157,8 @@ export function TarefasClient() {
       status: done ? "Concluído" : task.status === "Concluído" ? "Em andamento" : task.status,
       priority: task.priority,
       dueDate: task.dueDate,
+      startDate: task.startDate,
+      endDate: task.endDate,
       done,
     });
   };
@@ -118,15 +168,18 @@ export function TarefasClient() {
     await remove(task.id);
   };
 
+  const clearFilters = () => {
+    setFilterInitiative(null);
+    setFilterOwner("");
+    setSearch("");
+  };
+
   const pending = tasks.filter((task) => !task.done).length;
+  const hasFilters = Boolean(filterInitiative || filterOwner || search);
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Tarefas"
-        subtitle={`${tasks.length} tarefas · ${pending} pendentes`}
-        showNewButton={false}
-      />
+      <PageHeader title="Tarefas" subtitle={`${tasks.length} tarefas · ${pending} pendentes`} showNewButton={false} />
 
       <div className="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
         <Card className="h-fit">
@@ -146,23 +199,24 @@ export function TarefasClient() {
                 />
               </div>
 
-              <SelectField
+              <Autocomplete
                 label="Iniciativa vinculada"
-                value={form.initiativeDbId != null ? String(form.initiativeDbId) : ""}
-                onChange={(e) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    initiativeDbId: e.target.value ? Number(e.target.value) : null,
-                  }))
-                }
-              >
-                <option value="">Sem vínculo</option>
-                {todos.map((todo) => (
-                  <option key={todo.dbId} value={todo.dbId}>
-                    {todo.initiative || todo.id || `Iniciativa ${todo.dbId}`}
-                  </option>
-                ))}
-              </SelectField>
+                placeholder="Digite para buscar a iniciativa..."
+                options={initiativeOptions}
+                value={form.initiativeDbId != null ? String(form.initiativeDbId) : null}
+                onChange={onSelectInitiative}
+                emptyLabel="Nenhuma iniciativa encontrada"
+              />
+
+              <div className="space-y-1.5">
+                <Label htmlFor="task-owner">Responsável</Label>
+                <Input
+                  id="task-owner"
+                  value={form.owner}
+                  onChange={(e) => setForm((prev) => ({ ...prev, owner: e.target.value }))}
+                  placeholder="Preenchido pela iniciativa"
+                />
+              </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <SelectField
@@ -191,21 +245,21 @@ export function TarefasClient() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label htmlFor="task-owner">Responsável</Label>
+                  <Label htmlFor="task-start">Início</Label>
                   <Input
-                    id="task-owner"
-                    value={form.owner}
-                    onChange={(e) => setForm((prev) => ({ ...prev, owner: e.target.value }))}
-                    placeholder="Nome"
+                    id="task-start"
+                    type="date"
+                    value={form.startDate}
+                    onChange={(e) => setForm((prev) => ({ ...prev, startDate: e.target.value }))}
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="task-due">Prazo</Label>
+                  <Label htmlFor="task-end">Término</Label>
                   <Input
-                    id="task-due"
+                    id="task-end"
                     type="date"
-                    value={form.dueDate}
-                    onChange={(e) => setForm((prev) => ({ ...prev, dueDate: e.target.value }))}
+                    value={form.endDate}
+                    onChange={(e) => setForm((prev) => ({ ...prev, endDate: e.target.value }))}
                   />
                 </div>
               </div>
@@ -237,21 +291,60 @@ export function TarefasClient() {
         </Card>
 
         <div className="space-y-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div className="w-full sm:max-w-xs">
-              <SelectField
+          <Card>
+            <CardContent className="grid gap-3 py-4 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_200px_200px]">
+              <div className="space-y-1.5">
+                <Label>Buscar tarefas</Label>
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Input
+                    className="pl-9"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Título, descrição, responsável ou iniciativa"
+                  />
+                </div>
+              </div>
+              <Autocomplete
                 label="Filtrar por iniciativa"
+                placeholder="Todas as iniciativas"
+                options={initiativeOptions}
                 value={filterInitiative}
-                onChange={(e) => setFilterInitiative(e.target.value)}
+                onChange={(value) => setFilterInitiative(value)}
+                emptyLabel="Nenhuma iniciativa"
+              />
+              <SelectField
+                label="Filtrar por responsável"
+                value={filterOwner}
+                onChange={(e) => setFilterOwner(e.target.value)}
               >
-                <option value="">Todas as iniciativas</option>
-                {todos.map((todo) => (
-                  <option key={todo.dbId} value={todo.dbId}>
-                    {todo.initiative || todo.id || `Iniciativa ${todo.dbId}`}
+                <option value="">Todos os responsáveis</option>
+                {ownerOptions.map((owner) => (
+                  <option key={owner} value={owner}>
+                    {owner}
                   </option>
                 ))}
               </SelectField>
-            </div>
+            </CardContent>
+          </Card>
+
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm text-slate-500">
+              {filtered.length} de {tasks.length} tarefas
+              {hasFilters ? (
+                <button type="button" onClick={clearFilters} className="ml-2 text-blue-600 hover:underline">
+                  limpar filtros
+                </button>
+              ) : null}
+            </p>
+            <Button
+              variant="secondary"
+              onClick={() => downloadTasksCsv(filtered, initiativeName)}
+              disabled={filtered.length === 0}
+            >
+              <Download className="h-4 w-4" />
+              Exportar CSV
+            </Button>
           </div>
 
           {error ? <p className="text-sm text-rose-600">{error}</p> : null}
@@ -259,7 +352,7 @@ export function TarefasClient() {
           {!loading && filtered.length === 0 ? (
             <Card>
               <CardContent className="py-10 text-center text-sm text-slate-500">
-                Nenhuma tarefa {filterInitiative ? "para esta iniciativa" : "cadastrada"} ainda.
+                Nenhuma tarefa {hasFilters ? "para os filtros atuais" : "cadastrada"} ainda.
               </CardContent>
             </Card>
           ) : null}
@@ -284,35 +377,25 @@ export function TarefasClient() {
 
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <p
-                          className={
-                            task.done
-                              ? "font-semibold text-slate-400 line-through"
-                              : "font-semibold text-slate-900"
-                          }
-                        >
+                        <p className={task.done ? "font-semibold text-slate-400 line-through" : "font-semibold text-slate-900"}>
                           {task.title}
                         </p>
                         <Badge variant={statusVariant(task.status)}>{task.status || "A fazer"}</Badge>
-                        {task.priority ? (
-                          <Badge variant={priorityVariant(task.priority)}>{task.priority}</Badge>
-                        ) : null}
+                        {task.priority ? <Badge variant={priorityVariant(task.priority)}>{task.priority}</Badge> : null}
                       </div>
 
-                      {task.description ? (
-                        <p className="mt-1 text-sm text-slate-500">{task.description}</p>
-                      ) : null}
+                      {task.description ? <p className="mt-1 text-sm text-slate-500">{task.description}</p> : null}
 
                       <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
                         {task.initiativeDbId != null ? (
                           <span>
                             Iniciativa:{" "}
-                            <span className="font-medium text-slate-700">
-                              {initiativeName.get(task.initiativeDbId) ?? `#${task.initiativeDbId}`}
-                            </span>
+                            <span className="font-medium text-slate-700">{initiativeLabel(task.initiativeDbId)}</span>
                           </span>
                         ) : null}
                         {task.owner ? <span>Responsável: {task.owner}</span> : null}
+                        {task.startDate ? <span>Início: {task.startDate}</span> : null}
+                        {task.endDate ? <span>Término: {task.endDate}</span> : null}
                         {task.dueDate ? <span>Prazo: {task.dueDate}</span> : null}
                       </div>
                     </div>

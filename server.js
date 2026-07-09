@@ -133,6 +133,8 @@ function normalizeTaskPayload(payload) {
         status: payload.status ?? 'A fazer',
         priority: payload.priority ?? '',
         dueDate: payload.dueDate ?? '',
+        startDate: payload.startDate ?? '',
+        endDate: payload.endDate ?? '',
         done: useBool ? Boolean(payload.done) : (payload.done ? 1 : 0),
     };
 }

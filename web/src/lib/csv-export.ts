@@ -1,5 +1,5 @@
 import { EDITABLE_KEYS, LABEL_MAP, MONTH_LABELS } from "./constants";
-import { MONTH_KEYS, type Initiative } from "./types";
+import { MONTH_KEYS, type Initiative, type Task } from "./types";
 
 const EXPORT_KEYS = [...EDITABLE_KEYS, ...MONTH_KEYS, "completed"] as const;
 
@@ -20,6 +20,59 @@ function cellValue(todo: Initiative, key: string) {
   if ((MONTH_KEYS as readonly string[]).includes(key)) return todo[key as keyof Initiative] ? "Sim" : "Não";
   if (key === "completed") return todo.completed ? "Sim" : "Não";
   return todo[key as keyof Initiative] ?? "";
+}
+
+function triggerDownload(csv: string, prefix: string) {
+  const blob = new Blob([`﻿${csv}`], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  anchor.download = `${prefix}-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}.csv`;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
+
+const TASK_HEADERS = [
+  "Iniciativa",
+  "ID Iniciativa",
+  "Responsável",
+  "Tarefa",
+  "Descrição",
+  "Status",
+  "Prioridade",
+  "Início",
+  "Término",
+  "Prazo",
+  "Concluída",
+  "Criada em",
+];
+
+export function downloadTasksCsv(tasks: Task[], initiativeName: Map<number, string>) {
+  const headerLine = TASK_HEADERS.map((h) => escapeCsvCell(h)).join(";");
+  const dataLines = tasks.map((task) => {
+    const initiative = task.initiativeDbId != null ? initiativeName.get(task.initiativeDbId) ?? "" : "";
+    return [
+      initiative,
+      task.initiativeDbId ?? "",
+      task.owner,
+      task.title,
+      task.description,
+      task.status,
+      task.priority,
+      task.startDate,
+      task.endDate,
+      task.dueDate,
+      task.done ? "Sim" : "Não",
+      task.createdAt ? new Date(task.createdAt).toLocaleString("pt-BR") : "",
+    ]
+      .map((cell) => escapeCsvCell(cell))
+      .join(";");
+  });
+  triggerDownload([headerLine, ...dataLines].join("\r\n"), "tarefas");
 }
 
 export function downloadInitiativesCsv(todos: Initiative[]) {

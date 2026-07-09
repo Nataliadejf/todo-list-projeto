@@ -63,6 +63,8 @@ const createTasksSql = `
         status TEXT,
         priority TEXT,
         dueDate TEXT,
+        startDate TEXT,
+        endDate TEXT,
         done BOOLEAN DEFAULT false,
         createdAt TEXT,
         updatedAt TEXT
@@ -130,6 +132,39 @@ async function ensureApprovalColumns() {
         await run('ALTER TABLE todos ADD COLUMN deprioritized INTEGER DEFAULT 0');
     }
     console.log('Colunas approved/deprioritized adicionadas ao banco.');
+}
+
+async function ensureTaskColumns() {
+    const isPg = adapter.type === 'postgres';
+    let columnNames = [];
+
+    if (isPg) {
+        const result = await adapter.pool.query(
+            `SELECT column_name FROM information_schema.columns
+             WHERE table_schema = 'public' AND table_name = 'tasks'`,
+        );
+        columnNames = result.rows.map((row) => row.column_name);
+    } else {
+        const rows = await new Promise((resolve, reject) => {
+            adapter.db.all('PRAGMA table_info(tasks)', (err, data) => (err ? reject(err) : resolve(data || [])));
+        });
+        columnNames = rows.map((row) => row.name);
+    }
+
+    const lower = columnNames.map((name) => name.toLowerCase());
+    const toAdd = [];
+    if (!lower.includes('startdate')) toAdd.push('startDate');
+    if (!lower.includes('enddate')) toAdd.push('endDate');
+    if (toAdd.length === 0) return;
+
+    for (const column of toAdd) {
+        if (isPg) {
+            await adapter.pool.query(`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS ${column} TEXT`);
+        } else {
+            await run(`ALTER TABLE tasks ADD COLUMN ${column} TEXT`);
+        }
+    }
+    console.log(`Colunas de tarefa adicionadas: ${toAdd.join(', ')}.`);
 }
 
 function resolveDataDir() {
@@ -205,6 +240,7 @@ async function initDatabase() {
         await pool.query(createTasksSql);
         adapter = { type: 'postgres', pool, persistent: true };
         await ensureApprovalColumns();
+        await ensureTaskColumns();
         console.log('Banco PostgreSQL conectado (persistente).');
         return adapter;
     }
@@ -226,6 +262,7 @@ async function initDatabase() {
 
     adapter = { type: 'sqlite', db, dbPath, persistent };
     await ensureApprovalColumns();
+    await ensureTaskColumns();
     console.log(`Banco SQLite em ${dbPath}${persistent ? ' (disco persistente)' : ''}.`);
     if (!persistent && process.env.NODE_ENV === 'production') {
         console.warn('AVISO: SQLite sem DATA_DIR/DATABASE_URL — dados podem sumir ao reiniciar no Render.');
@@ -378,6 +415,8 @@ function formatTask(row) {
         status: row.status ?? '',
         priority: row.priority ?? '',
         dueDate: row.dueDate ?? row.duedate ?? '',
+        startDate: row.startDate ?? row.startdate ?? '',
+        endDate: row.endDate ?? row.enddate ?? '',
         done: Boolean(row.done),
         createdAt: row.createdAt ?? row.createdat ?? null,
         updatedAt: row.updatedAt ?? row.updatedat ?? null,
@@ -409,13 +448,13 @@ async function insertTask(task) {
     const id = task.id || require('crypto').randomUUID();
     const now = new Date().toISOString();
     await run(
-        `INSERT INTO tasks (id, initiativeDbId, title, description, owner, status, priority, dueDate, done, createdAt, updatedAt)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO tasks (id, initiativeDbId, title, description, owner, status, priority, dueDate, startDate, endDate, done, createdAt, updatedAt)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
             id,
             task.initiativeDbId != null ? Number(task.initiativeDbId) : null,
             task.title ?? '', task.description ?? '', task.owner ?? '', task.status ?? '', task.priority ?? '',
-            task.dueDate ?? '', taskBool(task.done), now, now,
+            task.dueDate ?? '', task.startDate ?? '', task.endDate ?? '', taskBool(task.done), now, now,
         ],
     );
     return getTask(id);
@@ -425,12 +464,13 @@ async function updateTask(id, task) {
     const now = new Date().toISOString();
     await run(
         `UPDATE tasks SET
-            initiativeDbId = ?, title = ?, description = ?, owner = ?, status = ?, priority = ?, dueDate = ?, done = ?, updatedAt = ?
+            initiativeDbId = ?, title = ?, description = ?, owner = ?, status = ?, priority = ?, dueDate = ?,
+            startDate = ?, endDate = ?, done = ?, updatedAt = ?
          WHERE id = ?`,
         [
             task.initiativeDbId != null ? Number(task.initiativeDbId) : null,
             task.title ?? '', task.description ?? '', task.owner ?? '', task.status ?? '', task.priority ?? '',
-            task.dueDate ?? '', taskBool(task.done), now, String(id),
+            task.dueDate ?? '', task.startDate ?? '', task.endDate ?? '', taskBool(task.done), now, String(id),
         ],
     );
     return getTask(id);

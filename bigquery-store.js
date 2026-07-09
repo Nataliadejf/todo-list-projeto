@@ -24,7 +24,7 @@ const textFields = [
 const boolFields = [...monthKeys, 'completed', 'approved', 'deprioritized'];
 const todoColumns = ['dbId', ...textFields, ...boolFields];
 
-const taskColumns = ['id', 'initiativeDbId', 'title', 'description', 'owner', 'status', 'priority', 'dueDate', 'done', 'createdAt', 'updatedAt'];
+const taskColumns = ['id', 'initiativeDbId', 'title', 'description', 'owner', 'status', 'priority', 'dueDate', 'startDate', 'endDate', 'done', 'createdAt', 'updatedAt'];
 
 const DATASET = process.env.BQ_DATASET || 'todolist';
 const LOCATION = process.env.BQ_LOCATION || 'US';
@@ -112,6 +112,8 @@ function formatTask(row) {
         status: row.status ?? '',
         priority: row.priority ?? '',
         dueDate: row.dueDate ?? '',
+        startDate: row.startDate ?? '',
+        endDate: row.endDate ?? '',
         done: Boolean(row.done),
         createdAt: toIso(row.createdAt),
         updatedAt: toIso(row.updatedAt),
@@ -145,6 +147,8 @@ async function ensureSchema() {
         { name: 'status', type: 'STRING' },
         { name: 'priority', type: 'STRING' },
         { name: 'dueDate', type: 'STRING' },
+        { name: 'startDate', type: 'STRING' },
+        { name: 'endDate', type: 'STRING' },
         { name: 'done', type: 'BOOL' },
         { name: 'createdAt', type: 'TIMESTAMP' },
         { name: 'updatedAt', type: 'TIMESTAMP' },
@@ -152,6 +156,9 @@ async function ensureSchema() {
 
     await ensureTable(dataset, 'todos', todosSchema);
     await ensureTable(dataset, 'tasks', tasksSchema);
+    // adiciona colunas novas em tabelas tasks já existentes
+    await query(`ALTER TABLE ${tableRef('tasks')} ADD COLUMN IF NOT EXISTS startDate STRING`).catch(() => {});
+    await query(`ALTER TABLE ${tableRef('tasks')} ADD COLUMN IF NOT EXISTS endDate STRING`).catch(() => {});
 }
 
 async function ensureTable(dataset, name, schema) {
@@ -319,13 +326,16 @@ async function insertTask(task) {
         status: task.status ?? '',
         priority: task.priority ?? '',
         dueDate: task.dueDate ?? '',
+        startDate: task.startDate ?? '',
+        endDate: task.endDate ?? '',
         done: Boolean(task.done),
         createdAt: now,
         updatedAt: now,
     };
     const types = {
         id: 'STRING', initiativeDbId: 'INT64', title: 'STRING', description: 'STRING', owner: 'STRING',
-        status: 'STRING', priority: 'STRING', dueDate: 'STRING', done: 'BOOL', createdAt: 'TIMESTAMP', updatedAt: 'TIMESTAMP',
+        status: 'STRING', priority: 'STRING', dueDate: 'STRING', startDate: 'STRING', endDate: 'STRING',
+        done: 'BOOL', createdAt: 'TIMESTAMP', updatedAt: 'TIMESTAMP',
     };
     const columnsSql = taskColumns.map(col).join(', ');
     const valuesSql = taskColumns.map((name) => `@${name}`).join(', ');
@@ -347,17 +357,21 @@ async function updateTask(id, task) {
         status: task.status ?? '',
         priority: task.priority ?? '',
         dueDate: task.dueDate ?? '',
+        startDate: task.startDate ?? '',
+        endDate: task.endDate ?? '',
         done: Boolean(task.done),
         updatedAt: new Date().toISOString(),
     };
     const types = {
         id: 'STRING', initiativeDbId: 'INT64', title: 'STRING', description: 'STRING', owner: 'STRING',
-        status: 'STRING', priority: 'STRING', dueDate: 'STRING', done: 'BOOL', updatedAt: 'TIMESTAMP',
+        status: 'STRING', priority: 'STRING', dueDate: 'STRING', startDate: 'STRING', endDate: 'STRING',
+        done: 'BOOL', updatedAt: 'TIMESTAMP',
     };
     await query(
         `UPDATE ${tableRef('tasks')} SET
             initiativeDbId = @initiativeDbId, title = @title, description = @description, owner = @owner,
-            status = @status, priority = @priority, dueDate = @dueDate, done = @done, updatedAt = @updatedAt
+            status = @status, priority = @priority, dueDate = @dueDate, startDate = @startDate, endDate = @endDate,
+            done = @done, updatedAt = @updatedAt
          WHERE id = @id`,
         params,
         types,

@@ -82,6 +82,8 @@ export interface Task {
   status: string;
   priority: string;
   dueDate: string;
+  startDate: string;
+  endDate: string;
   done: boolean;
   createdAt: string | null;
   updatedAt: string | null;
@@ -97,6 +99,8 @@ export const EMPTY_TASK: TaskInput = {
   status: "A fazer",
   priority: "",
   dueDate: "",
+  startDate: "",
+  endDate: "",
   done: false,
 };
 
