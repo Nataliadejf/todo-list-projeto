@@ -118,22 +118,22 @@ export function KanbanBoard({ todos }: KanbanBoardProps) {
   }));
 
   return (
-    <div className="overflow-x-auto pb-2">
-      <StaggerList className="grid min-w-[1080px] grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
+    <div className="kanban-scroll overflow-x-auto pb-3">
+      <StaggerList className="grid min-w-[820px] grid-cols-2 gap-3 lg:grid-cols-3 xl:min-w-0 xl:grid-cols-6">
         {grouped.map((column, index) => (
           <StaggerItem key={column.id}>
             <FadeIn delay={index * 0.04}>
-              <Card className="h-full">
-                <CardHeader className="flex-row items-center justify-between space-y-0 px-4 py-3">
-                  <CardTitle className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide">
+              <Card className="flex h-full max-h-[72vh] flex-col">
+                <CardHeader className="flex-row items-center justify-between space-y-0 gap-2 px-4 py-3">
+                  <CardTitle className="flex min-w-0 flex-1 items-center gap-2 pr-1 text-xs font-bold uppercase tracking-wide">
                     <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${column.dotClass}`} />
-                    <span className="leading-tight">{column.title}</span>
+                    <span className="truncate leading-tight">{column.title}</span>
                   </CardTitle>
-                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-600">
+                  <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-600">
                     {column.items.length}
                   </span>
                 </CardHeader>
-                <CardContent className="space-y-2 px-3 pb-3">
+                <CardContent className="column-scroll flex-1 space-y-2 overflow-y-auto px-3 pb-3">
                   {column.items.length === 0 ? (
                     <p className="rounded-xl border border-dashed border-slate-200 px-3 py-6 text-center text-xs text-slate-400">
                       Nenhuma iniciativa

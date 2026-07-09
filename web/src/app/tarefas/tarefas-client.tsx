@@ -60,23 +60,39 @@ export function TarefasClient() {
     return map;
   }, [todos]);
 
-  const initiativeOptions: AutocompleteOption[] = useMemo(
-    () =>
-      todos.map((todo) => ({
-        value: String(todo.dbId),
-        label: todo.initiative || todo.id || `Iniciativa ${todo.dbId}`,
-        hint: todo.owner ? `Responsável: ${todo.owner}` : todo.area || undefined,
-      })),
-    [todos],
-  );
+  const toOption = (todo: (typeof todos)[number]): AutocompleteOption => ({
+    value: String(todo.dbId),
+    label: todo.initiative || todo.id || `Iniciativa ${todo.dbId}`,
+    hint: todo.owner ? `Responsável: ${todo.owner}` : todo.area || undefined,
+  });
 
-  const ownerOptions = useMemo(() => {
+  // Responsáveis conhecidos (donos das iniciativas) — usados como validação de dados.
+  const ownerNames = useMemo(() => {
     const set = new Set<string>();
-    tasks.forEach((task) => {
-      if (task.owner?.trim()) set.add(task.owner.trim());
+    todos.forEach((todo) => {
+      if (todo.owner?.trim()) set.add(todo.owner.trim());
     });
     return [...set].sort((a, b) => a.localeCompare(b, "pt-BR"));
-  }, [tasks]);
+  }, [todos]);
+
+  const ownerOptions: AutocompleteOption[] = useMemo(
+    () => ownerNames.map((o) => ({ value: o, label: o })),
+    [ownerNames],
+  );
+
+  // No formulário, as iniciativas são filtradas pelo responsável selecionado.
+  const formInitiativeOptions = useMemo(
+    () => (form.owner ? todos.filter((t) => t.owner?.trim() === form.owner) : todos).map(toOption),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [todos, form.owner],
+  );
+
+  // No filtro, idem: escolher o responsável restringe as iniciativas.
+  const filterInitiativeOptions = useMemo(
+    () => (filterOwner ? todos.filter((t) => t.owner?.trim() === filterOwner) : todos).map(toOption),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [todos, filterOwner],
+  );
 
   const filtered = useMemo(() => {
     const q = normalize(search.trim());
@@ -122,9 +138,20 @@ export function TarefasClient() {
     setForm((prev) => ({
       ...prev,
       initiativeDbId: dbId,
-      // vincula o responsável da iniciativa (mantém o que o usuário digitou se já houver)
+      // vincula o responsável da iniciativa (validação de dados)
       owner: todo?.owner?.trim() ? todo.owner : prev.owner,
     }));
+  };
+
+  const onSelectOwner = (value: string | null) => {
+    const owner = value ?? "";
+    setForm((prev) => {
+      // se a iniciativa atual não pertence a esse responsável, limpa o vínculo
+      const stillValid =
+        prev.initiativeDbId != null &&
+        todos.some((t) => t.dbId === prev.initiativeDbId && t.owner?.trim() === owner);
+      return { ...prev, owner, initiativeDbId: owner && !stillValid ? null : prev.initiativeDbId };
+    });
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -200,23 +227,22 @@ export function TarefasClient() {
               </div>
 
               <Autocomplete
-                label="Iniciativa vinculada"
-                placeholder="Digite para buscar a iniciativa..."
-                options={initiativeOptions}
-                value={form.initiativeDbId != null ? String(form.initiativeDbId) : null}
-                onChange={onSelectInitiative}
-                emptyLabel="Nenhuma iniciativa encontrada"
+                label="Responsável"
+                placeholder="Selecione o responsável"
+                options={ownerOptions}
+                value={form.owner || null}
+                onChange={onSelectOwner}
+                emptyLabel="Nenhum responsável"
               />
 
-              <div className="space-y-1.5">
-                <Label htmlFor="task-owner">Responsável</Label>
-                <Input
-                  id="task-owner"
-                  value={form.owner}
-                  onChange={(e) => setForm((prev) => ({ ...prev, owner: e.target.value }))}
-                  placeholder="Preenchido pela iniciativa"
-                />
-              </div>
+              <Autocomplete
+                label="Iniciativa vinculada"
+                placeholder="Digite para buscar a iniciativa..."
+                options={formInitiativeOptions}
+                value={form.initiativeDbId != null ? String(form.initiativeDbId) : null}
+                onChange={onSelectInitiative}
+                emptyLabel={form.owner ? "Sem iniciativas deste responsável" : "Nenhuma iniciativa encontrada"}
+              />
 
               <div className="grid grid-cols-2 gap-3">
                 <SelectField
@@ -305,26 +331,29 @@ export function TarefasClient() {
                   />
                 </div>
               </div>
-              <Autocomplete
-                label="Filtrar por iniciativa"
-                placeholder="Todas as iniciativas"
-                options={initiativeOptions}
-                value={filterInitiative}
-                onChange={(value) => setFilterInitiative(value)}
-                emptyLabel="Nenhuma iniciativa"
-              />
               <SelectField
                 label="Filtrar por responsável"
                 value={filterOwner}
-                onChange={(e) => setFilterOwner(e.target.value)}
+                onChange={(e) => {
+                  setFilterOwner(e.target.value);
+                  setFilterInitiative(null);
+                }}
               >
                 <option value="">Todos os responsáveis</option>
-                {ownerOptions.map((owner) => (
+                {ownerNames.map((owner) => (
                   <option key={owner} value={owner}>
                     {owner}
                   </option>
                 ))}
               </SelectField>
+              <Autocomplete
+                label="Filtrar por iniciativa"
+                placeholder="Todas as iniciativas"
+                options={filterInitiativeOptions}
+                value={filterInitiative}
+                onChange={(value) => setFilterInitiative(value)}
+                emptyLabel="Nenhuma iniciativa"
+              />
             </CardContent>
           </Card>
 
