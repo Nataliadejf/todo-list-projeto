@@ -316,7 +316,7 @@ async function getTask(id) {
 
 async function insertTask(task) {
     const id = task.id || crypto.randomUUID();
-    const now = new Date().toISOString();
+    const now = new Date();
     const params = {
         id,
         initiativeDbId: task.initiativeDbId != null ? Number(task.initiativeDbId) : null,
@@ -360,7 +360,7 @@ async function updateTask(id, task) {
         startDate: task.startDate ?? '',
         endDate: task.endDate ?? '',
         done: Boolean(task.done),
-        updatedAt: new Date().toISOString(),
+        updatedAt: new Date(),
     };
     const types = {
         id: 'STRING', initiativeDbId: 'INT64', title: 'STRING', description: 'STRING', owner: 'STRING',
