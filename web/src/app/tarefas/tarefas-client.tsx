@@ -37,6 +37,10 @@ function normalize(text: string) {
     .toLowerCase();
 }
 
+function sameOwner(a?: string, b?: string) {
+  return normalize((a ?? "").trim()) === normalize((b ?? "").trim());
+}
+
 export function TarefasClient() {
   const { todos } = useTodos();
   const { tasks, loading, error, create, update, remove } = useTasks();
@@ -60,19 +64,26 @@ export function TarefasClient() {
     return map;
   }, [todos]);
 
-  const toOption = (todo: (typeof todos)[number]): AutocompleteOption => ({
-    value: String(todo.dbId),
-    label: todo.initiative || todo.id || `Iniciativa ${todo.dbId}`,
-    hint: todo.owner ? `Responsável: ${todo.owner}` : todo.area || undefined,
-  });
+  const toOption = (todo: (typeof todos)[number]): AutocompleteOption => {
+    const name = todo.initiative || todo.id || `Iniciativa ${todo.dbId}`;
+    const parts = [todo.id ? `#${todo.id}` : null, todo.owner?.trim() || null].filter(Boolean);
+    return {
+      value: String(todo.dbId),
+      // id incluído no texto para permitir buscar a iniciativa pelo id (ex.: 234)
+      label: name,
+      hint: parts.join(" · ") || undefined,
+    };
+  };
 
-  // Responsáveis conhecidos (donos das iniciativas) — usados como validação de dados.
+  // Responsáveis conhecidos (donos das iniciativas) — validação de dados,
+  // deduplicados por acento/maiúsculas (ex.: "Natália" e "Natalia" viram um só).
   const ownerNames = useMemo(() => {
-    const set = new Set<string>();
+    const map = new Map<string, string>();
     todos.forEach((todo) => {
-      if (todo.owner?.trim()) set.add(todo.owner.trim());
+      const name = todo.owner?.trim();
+      if (name && !map.has(normalize(name))) map.set(normalize(name), name);
     });
-    return [...set].sort((a, b) => a.localeCompare(b, "pt-BR"));
+    return [...map.values()].sort((a, b) => a.localeCompare(b, "pt-BR"));
   }, [todos]);
 
   const ownerOptions: AutocompleteOption[] = useMemo(
@@ -82,14 +93,14 @@ export function TarefasClient() {
 
   // No formulário, as iniciativas são filtradas pelo responsável selecionado.
   const formInitiativeOptions = useMemo(
-    () => (form.owner ? todos.filter((t) => t.owner?.trim() === form.owner) : todos).map(toOption),
+    () => (form.owner ? todos.filter((t) => sameOwner(t.owner, form.owner)) : todos).map(toOption),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [todos, form.owner],
   );
 
   // No filtro, idem: escolher o responsável restringe as iniciativas.
   const filterInitiativeOptions = useMemo(
-    () => (filterOwner ? todos.filter((t) => t.owner?.trim() === filterOwner) : todos).map(toOption),
+    () => (filterOwner ? todos.filter((t) => sameOwner(t.owner, filterOwner)) : todos).map(toOption),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [todos, filterOwner],
   );
@@ -98,7 +109,7 @@ export function TarefasClient() {
     const q = normalize(search.trim());
     return tasks.filter((task) => {
       if (filterInitiative && String(task.initiativeDbId) !== filterInitiative) return false;
-      if (filterOwner && task.owner !== filterOwner) return false;
+      if (filterOwner && !sameOwner(task.owner, filterOwner)) return false;
       if (q) {
         const iniName = task.initiativeDbId != null ? initiativeName.get(task.initiativeDbId) ?? "" : "";
         const haystack = normalize(`${task.title} ${task.description} ${task.owner} ${iniName}`);
@@ -149,7 +160,7 @@ export function TarefasClient() {
       // se a iniciativa atual não pertence a esse responsável, limpa o vínculo
       const stillValid =
         prev.initiativeDbId != null &&
-        todos.some((t) => t.dbId === prev.initiativeDbId && t.owner?.trim() === owner);
+        todos.some((t) => t.dbId === prev.initiativeDbId && sameOwner(t.owner, owner));
       return { ...prev, owner, initiativeDbId: owner && !stillValid ? null : prev.initiativeDbId };
     });
   };
