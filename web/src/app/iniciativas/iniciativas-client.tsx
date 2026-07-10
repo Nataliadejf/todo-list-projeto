@@ -38,7 +38,7 @@ export function IniciativasClient() {
               window.history.replaceState({}, "", "/iniciativas");
             }}
           />
-          <InitiativesTable todos={filtered} title="Iniciativas cadastradas" />
+          <InitiativesTable todos={filtered} title="Iniciativas cadastradas" tall />
         </div>
       </div>
     </div>
