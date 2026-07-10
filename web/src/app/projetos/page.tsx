@@ -15,13 +15,11 @@ export default function ProjetosPage() {
     <div className="space-y-6">
       <PageHeader title="Projetos" subtitle="Kanban com persistência real no banco" />
 
-      <div className="grid gap-6 xl:grid-cols-[300px_minmax(0,1fr)]">
-        <FiltersPanel compact showStatus={false} showDeadline={false} />
-        <div className="space-y-6">
-          {loading ? <p className="text-sm text-slate-500">Carregando...</p> : null}
-          <KanbanBoard todos={filtered} />
-          <ActivityTable todos={filtered} />
-        </div>
+      <div className="space-y-6">
+        <FiltersPanel layout="horizontal" showStatus={false} showDeadline={false} />
+        {loading ? <p className="text-sm text-slate-500">Carregando...</p> : null}
+        <KanbanBoard todos={filtered} />
+        <ActivityTable todos={filtered} />
       </div>
     </div>
   );
