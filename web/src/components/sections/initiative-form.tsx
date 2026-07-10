@@ -5,7 +5,7 @@ import { Download, Save, Trash2 } from "lucide-react";
 import { EDITABLE_KEYS, LABEL_MAP, MONTH_LABELS } from "@/lib/constants";
 import { downloadInitiativesCsv } from "@/lib/csv-export";
 import { MONTH_KEYS, type Initiative, type InitiativeInput } from "@/lib/types";
-import { normalizeInitiative } from "@/lib/todo-utils";
+import { getUniqueValues, normalizeInitiative } from "@/lib/todo-utils";
 import { useTodos } from "@/components/providers/todos-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -98,6 +98,10 @@ export function InitiativeForm({ editing, onSaved, onCancelEdit }: InitiativeFor
     [form],
   );
 
+  // Valores já cadastrados para validação de dados (padroniza a grafia).
+  const owners = useMemo(() => getUniqueValues(todos, "owner"), [todos]);
+  const areas = useMemo(() => getUniqueValues(todos, "area"), [todos]);
+
   function updateField<K extends keyof InitiativeInput>(key: K, value: InitiativeInput[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
@@ -146,13 +150,13 @@ export function InitiativeForm({ editing, onSaved, onCancelEdit }: InitiativeFor
             <section className="space-y-3 rounded-2xl border border-slate-200 p-4">
               <h3 className="text-sm font-bold text-slate-800">Identificação</h3>
               <div className="grid gap-3 md:grid-cols-3">
-                {(["id", "area", "front"] as const).map((key) => (
-                  <Field key={key} fieldKey={key} value={form[key]} onChange={updateField} required />
-                ))}
+                <Field fieldKey="id" value={form.id} onChange={updateField} required />
+                <Field fieldKey="area" value={form.area} onChange={updateField} required suggestions={areas} />
+                <Field fieldKey="front" value={form.front} onChange={updateField} required />
               </div>
               <div className="grid gap-3 md:grid-cols-2">
                 <Field fieldKey="initiative" value={form.initiative} onChange={updateField} required />
-                <Field fieldKey="owner" value={form.owner} onChange={updateField} required />
+                <Field fieldKey="owner" value={form.owner} onChange={updateField} required suggestions={owners} />
               </div>
               <Field fieldKey="description" value={form.description} onChange={updateField} />
             </section>
@@ -274,13 +278,15 @@ function Field<K extends keyof InitiativeInput>({
   value,
   onChange,
   required,
+  suggestions,
 }: {
   fieldKey: K;
   value: InitiativeInput[K];
   onChange: <T extends keyof InitiativeInput>(key: T, value: InitiativeInput[T]) => void;
   required?: boolean;
+  suggestions?: string[];
 }) {
-  const id = fieldKey;
+  const id = String(fieldKey);
   const label = LABEL_MAP[fieldKey] || fieldKey;
 
   if (textareaKeys.has(fieldKey)) {
@@ -298,6 +304,8 @@ function Field<K extends keyof InitiativeInput>({
     );
   }
 
+  const listId = suggestions && suggestions.length > 0 ? `${id}-list` : undefined;
+
   return (
     <div className="space-y-1.5">
       <Label htmlFor={id}>{label}</Label>
@@ -307,7 +315,16 @@ function Field<K extends keyof InitiativeInput>({
         value={String(value ?? "")}
         onChange={(e) => onChange(fieldKey, e.target.value as InitiativeInput[K])}
         required={required}
+        list={listId}
+        autoComplete={listId ? "off" : undefined}
       />
+      {listId ? (
+        <datalist id={listId}>
+          {suggestions!.map((option) => (
+            <option key={option} value={option} />
+          ))}
+        </datalist>
+      ) : null}
     </div>
   );
 }
