@@ -48,7 +48,7 @@ export function InitiativesTable({ todos, title = "Todas as Iniciativas", tall =
         </CardHeader>
         <CardContent
           className={`overflow-auto p-0 ${tall ? "kanban-scroll min-h-0 flex-1" : "pb-2"}`}
-          style={tall ? { maxHeight: "min(60vh, 640px)" } : undefined}
+          style={tall ? { maxHeight: "min(72vh, 800px)" } : undefined}
         >
           <table className="min-w-full text-left text-sm">
             <thead className="sticky top-0 z-10 border-y border-slate-100 bg-slate-50 text-[11px] font-bold uppercase tracking-wide text-slate-500">
