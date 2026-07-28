@@ -15,15 +15,20 @@ export const MONTH_KEYS = [
 
 export type MonthKey = (typeof MONTH_KEYS)[number];
 
-export type InitiativeStatus = "A fazer" | "Em andamento" | "Concluído";
+export type InitiativeStatus =
+  | "Não Iniciado"
+  | "Em Andamento"
+  | "Concluído"
+  | "Atrasado"
+  | "Despriorizado";
 
 export type KanbanStage =
   | "aprovacao"
-  | "despriorizados"
-  | "planejamento"
+  | "nao_iniciado"
   | "andamento"
-  | "revisao"
-  | "concluido";
+  | "atrasado"
+  | "concluido"
+  | "despriorizados";
 
 export interface Initiative {
   dbId: number;

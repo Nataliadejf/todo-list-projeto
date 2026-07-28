@@ -3,9 +3,11 @@ import { MONTH_KEYS, type FilterState, type Initiative, type KanbanStage } from 
 export function normalizeStatus(status: string): string {
   const raw = String(status || "").trim().toLowerCase();
   if (raw === "concluido" || raw === "concluído") return "Concluído";
-  if (raw === "em andamento") return "Em andamento";
-  if (raw === "a fazer" || raw === "não iniciado" || raw === "nao iniciado") return "A fazer";
-  return status || "A fazer";
+  if (raw === "em andamento") return "Em Andamento";
+  if (raw === "atrasado") return "Atrasado";
+  if (raw === "despriorizado" || raw === "despriorizada") return "Despriorizado";
+  if (raw === "a fazer" || raw === "não iniciado" || raw === "nao iniciado") return "Não Iniciado";
+  return status || "Não Iniciado";
 }
 
 export function normalizeInitiative(
@@ -111,8 +113,8 @@ export function getMetrics(todos: Initiative[]) {
   todos.forEach((todo) => {
     const status = normalizeStatus(todo.status);
     if (status === "Concluído" || todo.completed) done += 1;
-    else if (status === "Em andamento") inProgress += 1;
-    else notStarted += 1;
+    else if (status === "Em Andamento") inProgress += 1;
+    else if (status === "Não Iniciado") notStarted += 1;
     if (!todo.approved && !todo.deprioritized && status !== "Concluído") inApproval += 1;
   });
 
@@ -131,14 +133,13 @@ export function toInitiativeInput(todo: Initiative): Omit<Initiative, "dbId"> {
 }
 
 export function getKanbanStage(todo: Initiative): KanbanStage {
-  if (todo.deprioritized) return "despriorizados";
-  if (!todo.approved) return "aprovacao";
   const status = normalizeStatus(todo.status);
+  if (todo.deprioritized || status === "Despriorizado") return "despriorizados";
+  if (!todo.approved) return "aprovacao";
   if (status === "Concluído" || todo.completed) return "concluido";
-  if (status === "A fazer") return "planejamento";
-  const progress = Number.parseFloat(todo.progressPercent || "0");
-  if (progress >= 85) return "revisao";
-  return "andamento";
+  if (status === "Atrasado") return "atrasado";
+  if (status === "Em Andamento") return "andamento";
+  return "nao_iniciado";
 }
 
 export type WeightBand = "alta" | "media" | "baixa";

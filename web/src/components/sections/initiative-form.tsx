@@ -2,7 +2,17 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Download, Save, Trash2 } from "lucide-react";
-import { EDITABLE_KEYS, LABEL_MAP, MONTH_LABELS } from "@/lib/constants";
+import {
+  AREA_OPTIONS,
+  CATEGORIA_GANHO_OPTIONS,
+  GUT_OPTIONS,
+  INITIATIVE_STATUS_OPTIONS,
+  LABEL_MAP,
+  MONTH_LABELS,
+  RESPONSAVEL_OPTIONS,
+  SIM_NAO_OPTIONS,
+  TAMANHO_OPTIONS,
+} from "@/lib/constants";
 import { downloadInitiativesCsv } from "@/lib/csv-export";
 import { MONTH_KEYS, type Initiative, type InitiativeInput } from "@/lib/types";
 import { getUniqueValues, normalizeInitiative } from "@/lib/todo-utils";
@@ -23,14 +33,9 @@ const textareaKeys = new Set([
 ]);
 const dateKeys = new Set(["startDate", "plannedEndDate", "realEndDate"]);
 const numberKeys = new Set([
-  "weight",
-  "deadlineDays",
   "deadlinePercent",
   "progressPercent",
-  "severity",
-  "urgency",
   "priority",
-  "weightedDelivery",
 ]);
 
 function emptyInitiative(): InitiativeInput {
@@ -94,13 +99,27 @@ export function InitiativeForm({ editing, onSaved, onCancelEdit }: InitiativeFor
   }, [editing]);
 
   const requiredValid = useMemo(
-    () => Boolean(form.id && form.area && form.front && form.initiative && form.owner),
+    () =>
+      Boolean(
+        form.id && form.area && form.front && form.initiative && form.owner &&
+        form.gainCategory && form.size && form.status,
+      ),
     [form],
   );
 
-  // Valores já cadastrados para validação de dados (padroniza a grafia).
-  const owners = useMemo(() => getUniqueValues(todos, "owner"), [todos]);
-  const areas = useMemo(() => getUniqueValues(todos, "area"), [todos]);
+  // Frentes já cadastradas (lista com sugestões — a V4 tem valores variados).
+  const frentes = useMemo(() => getUniqueValues(todos, "front"), [todos]);
+
+  // Prazo (dias) calculado automaticamente a partir das datas.
+  useEffect(() => {
+    const start = form.startDate ? new Date(form.startDate) : null;
+    const end = form.plannedEndDate ? new Date(form.plannedEndDate) : null;
+    if (start && end && !Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime())) {
+      const days = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+      const value = String(days);
+      setForm((prev) => (prev.deadlineDays === value ? prev : { ...prev, deadlineDays: value }));
+    }
+  }, [form.startDate, form.plannedEndDate]);
 
   function updateField<K extends keyof InitiativeInput>(key: K, value: InitiativeInput[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -109,7 +128,7 @@ export function InitiativeForm({ editing, onSaved, onCancelEdit }: InitiativeFor
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (!requiredValid) {
-      setMessage("Preencha ID, Área, Frente, Iniciativa e Responsável.");
+      setMessage("Preencha os campos obrigatórios (*): ID, Área, Frente, Iniciativa, Responsável, Categoria Ganho, Tam e Status.");
       return;
     }
     setSaving(true);
@@ -151,12 +170,12 @@ export function InitiativeForm({ editing, onSaved, onCancelEdit }: InitiativeFor
               <h3 className="text-sm font-bold text-slate-800">Identificação</h3>
               <div className="grid gap-3 md:grid-cols-3">
                 <Field fieldKey="id" value={form.id} onChange={updateField} required />
-                <Field fieldKey="area" value={form.area} onChange={updateField} required suggestions={areas} />
-                <Field fieldKey="front" value={form.front} onChange={updateField} required />
+                <Field fieldKey="area" value={form.area} onChange={updateField} required options={AREA_OPTIONS} />
+                <Field fieldKey="front" value={form.front} onChange={updateField} required suggestions={frentes} />
               </div>
               <div className="grid gap-3 md:grid-cols-2">
                 <Field fieldKey="initiative" value={form.initiative} onChange={updateField} required />
-                <Field fieldKey="owner" value={form.owner} onChange={updateField} required suggestions={owners} />
+                <Field fieldKey="owner" value={form.owner} onChange={updateField} required options={RESPONSAVEL_OPTIONS} />
               </div>
               <Field fieldKey="description" value={form.description} onChange={updateField} />
             </section>
@@ -164,59 +183,32 @@ export function InitiativeForm({ editing, onSaved, onCancelEdit }: InitiativeFor
             <section className="space-y-3 rounded-2xl border border-slate-200 p-4">
               <h3 className="text-sm font-bold text-slate-800">Entregas e Ganhos</h3>
               <Field fieldKey="deliveries" value={form.deliveries} onChange={updateField} />
-              <div className="grid gap-3 md:grid-cols-3">
-                <Field fieldKey="gainCategory" value={form.gainCategory} onChange={updateField} />
-                <div className="space-y-1.5">
-                  <Label htmlFor="size">{LABEL_MAP.size}</Label>
-                  <select
-                    id="size"
-                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm"
-                    value={form.size}
-                    onChange={(e) => updateField("size", e.target.value)}
-                  >
-                    <option value="">—</option>
-                    <option value="P">P</option>
-                    <option value="M">M</option>
-                    <option value="G">G</option>
-                  </select>
-                </div>
-                <Field fieldKey="weight" value={form.weight} onChange={updateField} />
+              <div className="grid gap-3 md:grid-cols-2">
+                <Field fieldKey="gainCategory" value={form.gainCategory} onChange={updateField} required options={CATEGORIA_GANHO_OPTIONS} />
+                <Field fieldKey="size" value={form.size} onChange={updateField} required options={TAMANHO_OPTIONS} />
               </div>
               <Field fieldKey="gainDescription" value={form.gainDescription} onChange={updateField} />
-              <Field fieldKey="weightedDelivery" value={form.weightedDelivery} onChange={updateField} />
             </section>
 
             <section className="space-y-3 rounded-2xl border border-slate-200 p-4">
               <h3 className="text-sm font-bold text-slate-800">Status e Prazos</h3>
               <div className="grid gap-3 md:grid-cols-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="status">{LABEL_MAP.status}</Label>
-                  <select
-                    id="status"
-                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm"
-                    value={form.status}
-                    onChange={(e) => updateField("status", e.target.value)}
-                  >
-                    <option value="A fazer">A fazer</option>
-                    <option value="Em andamento">Em andamento</option>
-                    <option value="Concluído">Concluído</option>
-                  </select>
-                </div>
-                <Field fieldKey="deadlineDays" value={form.deadlineDays} onChange={updateField} />
-                <Field fieldKey="deadlinePercent" value={form.deadlinePercent} onChange={updateField} />
-              </div>
-              <div className="grid gap-3 md:grid-cols-3">
+                <Field fieldKey="status" value={form.status} onChange={updateField} required options={INITIATIVE_STATUS_OPTIONS} />
                 <Field fieldKey="startDate" value={form.startDate} onChange={updateField} />
                 <Field fieldKey="plannedEndDate" value={form.plannedEndDate} onChange={updateField} />
+              </div>
+              <div className="grid gap-3 md:grid-cols-3">
+                <Field fieldKey="deadlineDays" value={form.deadlineDays} onChange={updateField} readOnly hint="Calculado: Data Fim − Data Início" />
+                <Field fieldKey="deadlinePercent" value={form.deadlinePercent} onChange={updateField} />
                 <Field fieldKey="realEndDate" value={form.realEndDate} onChange={updateField} />
               </div>
               <div className="grid gap-3 md:grid-cols-3">
                 <Field fieldKey="progressPercent" value={form.progressPercent} onChange={updateField} />
-                <Field fieldKey="severity" value={form.severity} onChange={updateField} />
-                <Field fieldKey="urgency" value={form.urgency} onChange={updateField} />
+                <Field fieldKey="severity" value={form.severity} onChange={updateField} options={GUT_OPTIONS} />
+                <Field fieldKey="urgency" value={form.urgency} onChange={updateField} options={GUT_OPTIONS} />
               </div>
               <div className="grid gap-3 md:grid-cols-2">
-                <Field fieldKey="strategy" value={form.strategy} onChange={updateField} />
+                <Field fieldKey="strategy" value={form.strategy} onChange={updateField} options={SIM_NAO_OPTIONS} />
                 <Field fieldKey="priority" value={form.priority} onChange={updateField} />
               </div>
             </section>
@@ -239,7 +231,7 @@ export function InitiativeForm({ editing, onSaved, onCancelEdit }: InitiativeFor
 
             <section className="space-y-3 rounded-2xl border border-slate-200 p-4">
               <h3 className="text-sm font-bold text-slate-800">Riscos e observações</h3>
-              <Field fieldKey="impediment" value={form.impediment} onChange={updateField} />
+              <Field fieldKey="impediment" value={form.impediment} onChange={updateField} options={SIM_NAO_OPTIONS} />
               <Field fieldKey="notes" value={form.notes} onChange={updateField} />
             </section>
 
@@ -279,15 +271,22 @@ function Field<K extends keyof InitiativeInput>({
   onChange,
   required,
   suggestions,
+  options,
+  readOnly,
+  hint,
 }: {
   fieldKey: K;
   value: InitiativeInput[K];
   onChange: <T extends keyof InitiativeInput>(key: T, value: InitiativeInput[T]) => void;
   required?: boolean;
-  suggestions?: string[];
+  suggestions?: readonly string[];
+  options?: readonly string[];
+  readOnly?: boolean;
+  hint?: string;
 }) {
   const id = String(fieldKey);
-  const label = LABEL_MAP[fieldKey] || fieldKey;
+  const label = (LABEL_MAP[fieldKey] || fieldKey) + (required ? " *" : "");
+  const current = String(value ?? "");
 
   if (textareaKeys.has(fieldKey)) {
     return (
@@ -296,10 +295,35 @@ function Field<K extends keyof InitiativeInput>({
         <Textarea
           id={id}
           rows={2}
-          value={String(value ?? "")}
+          value={current}
           onChange={(e) => onChange(fieldKey, e.target.value as InitiativeInput[K])}
           required={required}
         />
+      </div>
+    );
+  }
+
+  if (options) {
+    // mantém o valor atual como opção mesmo se não estiver na lista (evita perder dado)
+    const list = current && !options.includes(current) ? [current, ...options] : options;
+    return (
+      <div className="space-y-1.5">
+        <Label htmlFor={id}>{label}</Label>
+        <select
+          id={id}
+          className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30"
+          value={current}
+          onChange={(e) => onChange(fieldKey, e.target.value as InitiativeInput[K])}
+          required={required}
+        >
+          <option value="">—</option>
+          {list.map((opt) => (
+            <option key={opt} value={opt}>
+              {opt}
+            </option>
+          ))}
+        </select>
+        {hint ? <p className="text-[11px] text-slate-400">{hint}</p> : null}
       </div>
     );
   }
@@ -312,12 +336,15 @@ function Field<K extends keyof InitiativeInput>({
       <Input
         id={id}
         type={dateKeys.has(fieldKey) ? "date" : numberKeys.has(fieldKey) ? "number" : "text"}
-        value={String(value ?? "")}
+        value={current}
         onChange={(e) => onChange(fieldKey, e.target.value as InitiativeInput[K])}
         required={required}
+        readOnly={readOnly}
         list={listId}
         autoComplete={listId ? "off" : undefined}
+        className={readOnly ? "bg-slate-50 text-slate-500" : undefined}
       />
+      {hint ? <p className="text-[11px] text-slate-400">{hint}</p> : null}
       {listId ? (
         <datalist id={listId}>
           {suggestions!.map((option) => (

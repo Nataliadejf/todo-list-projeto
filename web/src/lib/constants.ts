@@ -101,9 +101,11 @@ export const MONTH_LABELS: Record<MonthKey, string> = {
 
 export const STATUS_OPTIONS = [
   { value: "", label: "Todos" },
-  { value: "A fazer", label: "Não Iniciado" },
-  { value: "Em andamento", label: "Em Andamento" },
+  { value: "Não Iniciado", label: "Não Iniciado" },
+  { value: "Em Andamento", label: "Em Andamento" },
   { value: "Concluído", label: "Concluído" },
+  { value: "Atrasado", label: "Atrasado" },
+  { value: "Despriorizado", label: "Despriorizado" },
 ] as const;
 
 export const WEIGHT_OPTIONS = [
@@ -111,6 +113,32 @@ export const WEIGHT_OPTIONS = [
   { value: "5", label: "Alta (5)" },
   { value: "3", label: "Média (3)" },
   { value: "1", label: "Baixa (1)" },
+] as const;
+
+// ---- Listas oficiais (Planilha de Acompanhamento V4 — aba Apoio) ----
+export const AREA_OPTIONS = ["Processos", "Projetos", "Adm Vendas", "Planej Estrat"] as const;
+
+export const RESPONSAVEL_OPTIONS = [
+  "Beatriz Cavalcante", "Bruno Fernandes", "Georgia Leite", "Larissa Lande", "Marcelo Araújo",
+  "Thainá Morais", "Thais Paixão", "Vitor Moraes", "Vitoria Ferreira", "Carlos Merigo",
+  "André Pascoal", "Natalia de Jesus Franca", "Gabriel Gopfert", "Aline Saito", "Carlos Freires", "Backlog",
+] as const;
+
+export const CATEGORIA_GANHO_OPTIONS = [
+  "Governança (informações / indicadores/ padronização/ rastreabilidade)",
+  "Produtividade / Eficiência Operacional",
+  "Financeiro (aumento receita / redução de despesas / custo evitado)",
+  "Governança (Adequação norma ISO)",
+  "ESG / Compliance",
+  "Experiência do Cliente",
+  "Atividade de Impacto",
+] as const;
+
+export const TAMANHO_OPTIONS = ["PP", "P", "M", "G", "GG"] as const;
+export const GUT_OPTIONS = ["1", "3", "5"] as const;
+export const SIM_NAO_OPTIONS = ["Sim", "Não"] as const;
+export const INITIATIVE_STATUS_OPTIONS = [
+  "Não Iniciado", "Em Andamento", "Concluído", "Atrasado", "Despriorizado",
 ] as const;
 
 export const DEADLINE_OPTIONS = [
@@ -123,9 +151,9 @@ export const DEADLINE_OPTIONS = [
 
 export const KANBAN_COLUMNS = [
   { id: "aprovacao", title: "Em Aprovação", dotClass: "bg-violet-500" },
-  { id: "despriorizados", title: "Despriorizados", dotClass: "bg-slate-400" },
-  { id: "planejamento", title: "Planejamento", dotClass: "bg-blue-500" },
+  { id: "nao_iniciado", title: "Não Iniciado", dotClass: "bg-blue-500" },
   { id: "andamento", title: "Em Andamento", dotClass: "bg-amber-400" },
-  { id: "revisao", title: "Em Revisão", dotClass: "bg-orange-500" },
+  { id: "atrasado", title: "Atrasado", dotClass: "bg-rose-500" },
   { id: "concluido", title: "Concluído", dotClass: "bg-emerald-500" },
+  { id: "despriorizados", title: "Despriorizado", dotClass: "bg-slate-400" },
 ] as const;
