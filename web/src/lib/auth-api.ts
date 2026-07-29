@@ -71,3 +71,17 @@ export function apiApproveUser(id: string) {
 export function apiRevokeUser(id: string) {
   return request<AuthUser>(`/api/admin/users/${id}/revoke`, { method: "POST" });
 }
+
+export function apiChangePassword(currentPassword: string, newPassword: string) {
+  return request<{ ok: boolean }>("/api/auth/change-password", {
+    method: "POST",
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+}
+
+export function apiResetUserPassword(id: string, password: string) {
+  return request<{ ok: boolean }>(`/api/admin/users/${id}/reset-password`, {
+    method: "POST",
+    body: JSON.stringify({ password }),
+  });
+}

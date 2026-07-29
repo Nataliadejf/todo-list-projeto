@@ -140,6 +140,24 @@ function mountRoutes(app) {
         res.json({ ok: true });
     });
 
+    app.post('/api/auth/change-password', requireAuth, async (req, res) => {
+        try {
+            const current = String(req.body?.currentPassword || '');
+            const next = String(req.body?.newPassword || '');
+            if (next.length < 6) return res.status(400).json({ error: 'A nova senha deve ter ao menos 6 caracteres.' });
+            const user = await store.getUserById(req.auth.sub);
+            if (!user) return res.status(401).json({ error: 'Sessão inválida' });
+            if (!(await bcrypt.compare(current, user.passwordHash || ''))) {
+                return res.status(400).json({ error: 'Senha atual incorreta.' });
+            }
+            await store.updateUserPasswordHash(user.id, await bcrypt.hash(next, 10));
+            res.json({ ok: true });
+        } catch (err) {
+            console.error('change-password:', err);
+            res.status(500).json({ error: 'Erro ao alterar senha.' });
+        }
+    });
+
     // ---- Admin ----
     app.get('/api/admin/users', requireAdmin, async (req, res) => {
         try {
@@ -169,6 +187,19 @@ function mountRoutes(app) {
     app.post('/api/admin/users/:id/revoke', requireAdmin, async (req, res) => {
         try { res.json(safeUser(await store.setUserStatus(req.params.id, 'revoked', req.auth.email))); }
         catch (err) { res.status(500).json({ error: err.message }); }
+    });
+
+    app.post('/api/admin/users/:id/reset-password', requireAdmin, async (req, res) => {
+        try {
+            const next = String(req.body?.password || '');
+            if (next.length < 6) return res.status(400).json({ error: 'A senha deve ter ao menos 6 caracteres.' });
+            const user = await store.getUserById(req.params.id);
+            if (!user) return res.status(404).json({ error: 'Usuário não encontrado.' });
+            await store.updateUserPasswordHash(user.id, await bcrypt.hash(next, 10));
+            res.json({ ok: true });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
     });
 }
 

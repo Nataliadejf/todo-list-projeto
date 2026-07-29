@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CheckCircle2, FolderKanban, ListChecks, ListTodo, LogOut, Rocket, ShieldCheck } from "lucide-react";
+import { useState } from "react";
+import { CheckCircle2, FolderKanban, KeyRound, ListChecks, ListTodo, LogOut, Rocket, ShieldCheck } from "lucide-react";
 import { BRAND, NAV_ITEMS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { useTodos } from "@/components/providers/todos-provider";
 import { useAuth } from "@/components/providers/auth-provider";
+import { ChangePasswordDialog } from "@/components/auth/change-password-dialog";
 
 const iconMap = {
   folder: FolderKanban,
@@ -19,6 +21,7 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { connected, error, databaseType, databasePersistent } = useTodos();
   const { user, isAdmin, logout } = useAuth();
+  const [showChangePwd, setShowChangePwd] = useState(false);
 
   return (
     <aside className="flex w-full shrink-0 flex-col bg-[#0b1120] text-slate-200 lg:fixed lg:inset-y-0 lg:left-0 lg:z-40 lg:w-64">
@@ -91,16 +94,28 @@ export function AppSidebar() {
         <div className="border-t border-white/10 px-4 py-3">
           <p className="truncate text-sm font-medium text-white">{user.name || user.email}</p>
           <p className="truncate text-xs text-slate-400">{user.email}</p>
-          <button
-            type="button"
-            onClick={() => void logout()}
-            className="mt-2 inline-flex items-center gap-2 rounded-lg px-2 py-1 text-xs font-medium text-slate-300 hover:bg-white/5 hover:text-white"
-          >
-            <LogOut className="h-3.5 w-3.5" />
-            Sair
-          </button>
+          <div className="mt-2 flex flex-wrap gap-1">
+            <button
+              type="button"
+              onClick={() => setShowChangePwd(true)}
+              className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium text-slate-300 hover:bg-white/5 hover:text-white"
+            >
+              <KeyRound className="h-3.5 w-3.5" />
+              Alterar senha
+            </button>
+            <button
+              type="button"
+              onClick={() => void logout()}
+              className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium text-slate-300 hover:bg-white/5 hover:text-white"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              Sair
+            </button>
+          </div>
         </div>
       ) : null}
+
+      {showChangePwd ? <ChangePasswordDialog onClose={() => setShowChangePwd(false)} /> : null}
 
       <div className="border-t border-white/10 px-5 py-4">
         <p className="text-xs text-slate-500">{BRAND.version}</p>

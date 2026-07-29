@@ -1,13 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Check, RefreshCw, ShieldOff } from "lucide-react";
+import { Check, KeyRound, RefreshCw, ShieldOff } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/components/providers/auth-provider";
-import { apiApproveUser, apiListUsers, apiRevokeUser, type AdminUserRow } from "@/lib/auth-api";
+import { apiApproveUser, apiListUsers, apiResetUserPassword, apiRevokeUser, type AdminUserRow } from "@/lib/auth-api";
 
 function fmtDuration(seconds: number) {
   if (!seconds) return "—";
@@ -69,6 +69,25 @@ export function AdminClient() {
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro na ação.");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const resetPassword = async (u: AdminUserRow) => {
+    const pwd = typeof window !== "undefined" ? window.prompt(`Nova senha para ${u.email} (mín. 6 caracteres):`) : null;
+    if (pwd == null) return;
+    if (pwd.length < 6) {
+      setError("A senha deve ter ao menos 6 caracteres.");
+      return;
+    }
+    setBusyId(u.id);
+    try {
+      await apiResetUserPassword(u.id, pwd);
+      setError(null);
+      if (typeof window !== "undefined") window.alert(`Senha de ${u.email} redefinida com sucesso.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao redefinir a senha.");
     } finally {
       setBusyId(null);
     }
@@ -152,6 +171,10 @@ export function AdminClient() {
                               Revogar
                             </Button>
                           ) : null}
+                          <Button size="sm" variant="secondary" className="h-8 text-xs" disabled={busyId === u.id} onClick={() => void resetPassword(u)}>
+                            <KeyRound className="h-3.5 w-3.5" />
+                            Redefinir senha
+                          </Button>
                         </div>
                       )}
                     </td>

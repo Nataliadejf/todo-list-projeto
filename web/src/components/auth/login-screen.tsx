@@ -88,6 +88,21 @@ export function LoginScreen() {
             />
           </div>
 
+          {mode === "login" ? (
+            <div className="text-right">
+              <button
+                type="button"
+                className="text-xs font-medium text-slate-500 hover:text-blue-600 hover:underline"
+                onClick={() => {
+                  setError(null);
+                  setInfo("Para redefinir sua senha, contate o administrador (administradorportfolio@gmail.com).");
+                }}
+              >
+                Esqueci minha senha
+              </button>
+            </div>
+          ) : null}
+
           {error ? <p className="text-sm text-rose-600">{error}</p> : null}
           {info ? <p className="text-sm text-emerald-600">{info}</p> : null}
 
