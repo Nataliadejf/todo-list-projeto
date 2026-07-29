@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Flag, Trash2 } from "lucide-react";
+import { Flag, GripVertical, Trash2 } from "lucide-react";
 import { KANBAN_COLUMNS } from "@/lib/constants";
 import { getKanbanStage, normalizeStatus, toInitiativeInput } from "@/lib/todo-utils";
-import type { Initiative } from "@/lib/types";
+import type { Initiative, InitiativeInput, KanbanStage } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FadeIn, StaggerItem, StaggerList } from "@/components/ui/fade-in";
@@ -16,7 +16,37 @@ interface KanbanBoardProps {
   todos: Initiative[];
 }
 
-function KanbanCard({ todo }: { todo: Initiative }) {
+// Ao soltar um card numa coluna, define os campos que refletem aquela etapa.
+function stagePatch(stage: KanbanStage): Partial<InitiativeInput> {
+  switch (stage) {
+    case "aprovacao":
+      return { approved: false, deprioritized: false };
+    case "nao_iniciado":
+      return { status: "Não Iniciado", approved: true, deprioritized: false, completed: false };
+    case "andamento":
+      return { status: "Em Andamento", approved: true, deprioritized: false, completed: false };
+    case "atrasado":
+      return { status: "Atrasado", approved: true, deprioritized: false, completed: false };
+    case "concluido":
+      return { status: "Concluído", approved: true, deprioritized: false, completed: true };
+    case "despriorizados":
+      return { status: "Despriorizado", approved: false, deprioritized: true, completed: false };
+    default:
+      return {};
+  }
+}
+
+function KanbanCard({
+  todo,
+  onDragStart,
+  onDragEnd,
+  dragging,
+}: {
+  todo: Initiative;
+  onDragStart: () => void;
+  onDragEnd: () => void;
+  dragging: boolean;
+}) {
   const { update, remove } = useTodos();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const stage = getKanbanStage(todo);
@@ -31,11 +61,7 @@ function KanbanCard({ todo }: { todo: Initiative }) {
   }
 
   async function deprioritize() {
-    await update(todo.dbId, {
-      ...toInitiativeInput(todo),
-      approved: false,
-      deprioritized: true,
-    });
+    await update(todo.dbId, { ...toInitiativeInput(todo), approved: false, deprioritized: true });
   }
 
   async function handleDelete() {
@@ -49,20 +75,33 @@ function KanbanCard({ todo }: { todo: Initiative }) {
 
   return (
     <article
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.setData("text/plain", String(todo.dbId));
+        e.dataTransfer.effectAllowed = "move";
+        onDragStart();
+      }}
+      onDragEnd={onDragEnd}
       className={cn(
-        "rounded-xl border bg-slate-50/80 p-3 transition",
-        confirmDelete ? "border-rose-300 bg-rose-50/50" : "border-slate-200 hover:border-blue-200 hover:bg-white hover:shadow-sm",
+        "group rounded-xl border bg-slate-50/80 p-3 transition",
+        dragging ? "opacity-40" : "",
+        confirmDelete
+          ? "border-rose-300 bg-rose-50/50"
+          : "border-slate-200 hover:border-blue-200 hover:bg-white hover:shadow-sm",
         todo.deprioritized && "opacity-80",
       )}
     >
-      <Link href={`/iniciativas?edit=${todo.dbId}`} className="block">
-        <p className="pl-0.5 text-sm font-semibold leading-snug text-slate-900">{todo.initiative}</p>
-        {todo.front ? (
-          <p className="mt-1.5 pl-0.5 text-xs leading-relaxed text-slate-500">{todo.front}</p>
-        ) : null}
-        <p className="mt-2 pl-0.5 text-xs text-slate-500">{todo.owner || "Sem responsável"}</p>
-        <p className="mt-1 pl-0.5 text-xs font-medium text-slate-600">{normalizeStatus(todo.status)}</p>
-      </Link>
+      <div className="flex items-start gap-1.5">
+        <GripVertical className="mt-0.5 h-4 w-4 shrink-0 cursor-grab text-slate-300 group-hover:text-slate-400 active:cursor-grabbing" />
+        <Link href={`/iniciativas?edit=${todo.dbId}`} className="block min-w-0 flex-1">
+          <p className="text-sm font-semibold leading-snug text-slate-900">{todo.initiative}</p>
+          {todo.front ? (
+            <p className="mt-1.5 text-xs leading-relaxed text-slate-500">{todo.front}</p>
+          ) : null}
+          <p className="mt-2 text-xs text-slate-500">{todo.owner || "Sem responsável"}</p>
+          <p className="mt-1 text-xs font-medium text-slate-600">{normalizeStatus(todo.status)}</p>
+        </Link>
+      </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-1 border-t border-slate-100 pt-2">
         <Button
@@ -74,14 +113,12 @@ function KanbanCard({ todo }: { todo: Initiative }) {
           aria-label={todo.approved ? "Remover aprovação" : "Aprovar"}
           onClick={() => void toggleApproval()}
         >
-          <Flag
-            className={cn("h-3.5 w-3.5", todo.approved ? "fill-emerald-500 text-emerald-600" : "text-slate-300")}
-          />
+          <Flag className={cn("h-3.5 w-3.5", todo.approved ? "fill-emerald-500 text-emerald-600" : "text-slate-300")} />
         </Button>
 
         {stage === "aprovacao" ? (
           <Button type="button" variant="ghost" size="sm" className="h-8 text-xs" onClick={() => void deprioritize()}>
-            Desprioritizar
+            Despriorizar
           </Button>
         ) : null}
 
@@ -95,14 +132,7 @@ function KanbanCard({ todo }: { todo: Initiative }) {
             </Button>
           </>
         ) : (
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            aria-label={`Excluir ${todo.initiative}`}
-            onClick={() => void handleDelete()}
-          >
+          <Button type="button" variant="ghost" size="icon" className="h-8 w-8" aria-label={`Excluir ${todo.initiative}`} onClick={() => void handleDelete()}>
             <Trash2 className="h-3.5 w-3.5 text-rose-600" />
           </Button>
         )}
@@ -112,10 +142,20 @@ function KanbanCard({ todo }: { todo: Initiative }) {
 }
 
 export function KanbanBoard({ todos }: KanbanBoardProps) {
+  const { update } = useTodos();
+  const [draggingId, setDraggingId] = useState<number | null>(null);
+  const [overStage, setOverStage] = useState<KanbanStage | null>(null);
+
   const grouped = KANBAN_COLUMNS.map((column) => ({
     ...column,
     items: todos.filter((todo) => getKanbanStage(todo) === column.id),
   }));
+
+  async function moveTo(stage: KanbanStage, dbId: number) {
+    const todo = todos.find((t) => t.dbId === dbId);
+    if (!todo || getKanbanStage(todo) === stage) return;
+    await update(dbId, { ...toInitiativeInput(todo), ...stagePatch(stage) });
+  }
 
   return (
     <div className="kanban-scroll overflow-x-auto pb-3">
@@ -123,7 +163,27 @@ export function KanbanBoard({ todos }: KanbanBoardProps) {
         {grouped.map((column, index) => (
           <StaggerItem key={column.id}>
             <FadeIn delay={index * 0.04}>
-              <Card className="flex h-full max-h-[72vh] flex-col">
+              <Card
+                className={cn(
+                  "flex h-full max-h-[72vh] flex-col transition",
+                  overStage === column.id ? "ring-2 ring-blue-400" : "",
+                )}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = "move";
+                  if (overStage !== column.id) setOverStage(column.id as KanbanStage);
+                }}
+                onDragLeave={(e) => {
+                  if (!e.currentTarget.contains(e.relatedTarget as Node)) setOverStage(null);
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const dbId = Number(e.dataTransfer.getData("text/plain"));
+                  setOverStage(null);
+                  setDraggingId(null);
+                  if (dbId) void moveTo(column.id as KanbanStage, dbId);
+                }}
+              >
                 <CardHeader className="flex-row items-center justify-between space-y-0 gap-2 px-4 py-3">
                   <CardTitle className="flex min-w-0 flex-1 items-center gap-2 pr-1 text-xs font-bold uppercase tracking-wide">
                     <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${column.dotClass}`} />
@@ -136,10 +196,18 @@ export function KanbanBoard({ todos }: KanbanBoardProps) {
                 <CardContent className="column-scroll flex-1 space-y-2 overflow-y-auto px-3 pb-3">
                   {column.items.length === 0 ? (
                     <p className="rounded-xl border border-dashed border-slate-200 px-3 py-6 text-center text-xs text-slate-400">
-                      Nenhuma iniciativa
+                      {overStage === column.id ? "Solte aqui" : "Nenhuma iniciativa"}
                     </p>
                   ) : (
-                    column.items.map((todo) => <KanbanCard key={todo.dbId} todo={todo} />)
+                    column.items.map((todo) => (
+                      <KanbanCard
+                        key={todo.dbId}
+                        todo={todo}
+                        dragging={draggingId === todo.dbId}
+                        onDragStart={() => setDraggingId(todo.dbId)}
+                        onDragEnd={() => setDraggingId(null)}
+                      />
+                    ))
                   )}
                 </CardContent>
               </Card>
