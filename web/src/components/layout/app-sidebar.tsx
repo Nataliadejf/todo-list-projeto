@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CheckCircle2, FolderKanban, ListChecks, ListTodo, Rocket } from "lucide-react";
+import { CheckCircle2, FolderKanban, ListChecks, ListTodo, LogOut, Rocket, ShieldCheck } from "lucide-react";
 import { BRAND, NAV_ITEMS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { useTodos } from "@/components/providers/todos-provider";
+import { useAuth } from "@/components/providers/auth-provider";
 
 const iconMap = {
   folder: FolderKanban,
@@ -17,6 +18,7 @@ const iconMap = {
 export function AppSidebar() {
   const pathname = usePathname();
   const { connected, error, databaseType, databasePersistent } = useTodos();
+  const { user, isAdmin, logout } = useAuth();
 
   return (
     <aside className="flex w-full shrink-0 flex-col bg-[#0b1120] text-slate-200 lg:fixed lg:inset-y-0 lg:left-0 lg:z-40 lg:w-64">
@@ -66,8 +68,39 @@ export function AppSidebar() {
               </li>
             );
           })}
+          {isAdmin ? (
+            <li>
+              <Link
+                href="/admin"
+                className={cn(
+                  "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
+                  pathname === "/admin" || pathname.startsWith("/admin/")
+                    ? "bg-blue-500/20 text-white"
+                    : "text-slate-300 hover:bg-white/5 hover:text-white",
+                )}
+              >
+                <ShieldCheck className="h-4 w-4 text-sky-300" />
+                Administração
+              </Link>
+            </li>
+          ) : null}
         </ul>
       </nav>
+
+      {user ? (
+        <div className="border-t border-white/10 px-4 py-3">
+          <p className="truncate text-sm font-medium text-white">{user.name || user.email}</p>
+          <p className="truncate text-xs text-slate-400">{user.email}</p>
+          <button
+            type="button"
+            onClick={() => void logout()}
+            className="mt-2 inline-flex items-center gap-2 rounded-lg px-2 py-1 text-xs font-medium text-slate-300 hover:bg-white/5 hover:text-white"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+            Sair
+          </button>
+        </div>
+      ) : null}
 
       <div className="border-t border-white/10 px-5 py-4">
         <p className="text-xs text-slate-500">{BRAND.version}</p>

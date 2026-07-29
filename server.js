@@ -1,7 +1,9 @@
 const express = require('express');
+const cookieParser = require('cookie-parser');
 const fs = require('fs');
 const path = require('path');
 const store = require('./repository');
+const auth = require('./auth');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -9,7 +11,17 @@ const seedPath = path.join(__dirname, 'seed-data.json');
 const webOut = path.join(__dirname, 'web', 'out');
 const hasNextBuild = fs.existsSync(path.join(webOut, 'index.html'));
 
+// Exige login nas rotas de dados quando REQUIRE_AUTH=1 (padrão: aberto).
+const requireData = process.env.REQUIRE_AUTH === '1'
+    ? auth.requireAuth
+    : (req, res, next) => next();
+
 app.use(express.json({ limit: '1mb' }));
+app.use(cookieParser());
+app.use(auth.middleware);
+auth.mountRoutes(app);
+app.use('/api/todos', requireData);
+app.use('/api/tasks', requireData);
 
 const baseFields = [
     'id', 'area', 'front', 'initiative', 'owner', 'description', 'deliveries', 'gainCategory', 'gainDescription', 'size',
@@ -212,7 +224,7 @@ function mountNextFrontend() {
     app.use(express.static(webOut, { index: false }));
     app.get('/', (req, res) => res.redirect(302, '/portfolio'));
 
-    ['/portfolio', '/projetos', '/iniciativas', '/tarefas'].forEach((routePath) => {
+    ['/portfolio', '/projetos', '/iniciativas', '/tarefas', '/admin'].forEach((routePath) => {
         app.get(routePath, (req, res) => sendExportedPage(routePath, res));
         app.get(`${routePath}/`, (req, res) => sendExportedPage(routePath, res));
     });
@@ -228,6 +240,7 @@ function mountNextFrontend() {
 
 async function start() {
     await store.initStore();
+    await auth.seedAdmin();
     await seedIfEmpty();
     mountNextFrontend();
 

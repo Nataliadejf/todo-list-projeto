@@ -75,6 +75,29 @@ const createTasksSqlite = createTasksSql
     .replace('BIGINT', 'INTEGER')
     .replace('BOOLEAN DEFAULT false', 'INTEGER DEFAULT 0');
 
+const createUsersSql = `
+    CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        email TEXT,
+        name TEXT,
+        passwordHash TEXT,
+        role TEXT,
+        status TEXT,
+        createdAt TEXT,
+        approvedAt TEXT,
+        approvedBy TEXT
+    )
+`;
+
+const createSessionsSql = `
+    CREATE TABLE IF NOT EXISTS sessions (
+        id TEXT PRIMARY KEY,
+        email TEXT,
+        loginAt TEXT,
+        lastSeenAt TEXT
+    )
+`;
+
 let adapter = null;
 
 function toPgParams(sql) {
@@ -238,6 +261,8 @@ async function initDatabase() {
         });
         await pool.query(createTableSql);
         await pool.query(createTasksSql);
+        await pool.query(createUsersSql);
+        await pool.query(createSessionsSql);
         adapter = { type: 'postgres', pool, persistent: true };
         await ensureApprovalColumns();
         await ensureTaskColumns();
@@ -257,6 +282,12 @@ async function initDatabase() {
     });
     await new Promise((resolve, reject) => {
         db.run(createTasksSqlite, (err) => (err ? reject(err) : resolve()));
+    });
+    await new Promise((resolve, reject) => {
+        db.run(createUsersSql, (err) => (err ? reject(err) : resolve()));
+    });
+    await new Promise((resolve, reject) => {
+        db.run(createSessionsSql, (err) => (err ? reject(err) : resolve()));
     });
     await ensureSqliteSchema(db);
 
@@ -480,6 +511,83 @@ async function deleteTask(id) {
     await run('DELETE FROM tasks WHERE id = ?', [String(id)]);
 }
 
+// ---- Usuários e sessões ----
+function formatUser(row) {
+    if (!row) return null;
+    return {
+        id: row.id, email: row.email, name: row.name ?? '',
+        passwordHash: row.passwordHash ?? row.passwordhash ?? '',
+        role: row.role ?? 'user', status: row.status ?? 'pending',
+        createdAt: row.createdAt ?? row.createdat ?? null,
+        approvedAt: row.approvedAt ?? row.approvedat ?? null,
+        approvedBy: row.approvedBy ?? row.approvedby ?? '',
+    };
+}
+
+async function getUserByEmail(email) {
+    const rows = await all('SELECT * FROM users WHERE LOWER(email) = LOWER(?)', [String(email)]);
+    return rows[0] ? formatUser(rows[0]) : null;
+}
+
+async function getUserById(id) {
+    const rows = await all('SELECT * FROM users WHERE id = ?', [String(id)]);
+    return rows[0] ? formatUser(rows[0]) : null;
+}
+
+async function createUser(u) {
+    const now = new Date().toISOString();
+    await run(
+        `INSERT INTO users (id,email,name,passwordHash,role,status,createdAt,approvedAt,approvedBy)
+         VALUES (?,?,?,?,?,?,?,?,?)`,
+        [u.id, u.email, u.name ?? '', u.passwordHash, u.role ?? 'user', u.status ?? 'pending',
+         now, u.approvedAt ?? null, u.approvedBy ?? ''],
+    );
+    return getUserById(u.id);
+}
+
+async function setUserStatus(id, status, approvedBy) {
+    const approvedAt = status === 'approved' ? new Date().toISOString() : null;
+    await run('UPDATE users SET status = ?, approvedAt = ?, approvedBy = ? WHERE id = ?',
+        [status, approvedAt, approvedBy || '', String(id)]);
+    return getUserById(id);
+}
+
+async function updateUserPasswordHash(id, passwordHash) {
+    await run('UPDATE users SET passwordHash = ? WHERE id = ?', [passwordHash, String(id)]);
+}
+
+async function listUsers() {
+    const rows = await all('SELECT * FROM users ORDER BY createdAt DESC');
+    return rows.map(formatUser);
+}
+
+async function startSession(id, email) {
+    const now = new Date().toISOString();
+    await run('INSERT INTO sessions (id,email,loginAt,lastSeenAt) VALUES (?,?,?,?)',
+        [String(id), String(email), now, now]);
+}
+
+async function touchSession(id) {
+    await run('UPDATE sessions SET lastSeenAt = ? WHERE id = ?', [new Date().toISOString(), String(id)]);
+}
+
+async function getAccessStats() {
+    const rows = await all('SELECT * FROM sessions');
+    const map = new Map();
+    rows.forEach((r) => {
+        const email = r.email;
+        const login = new Date(r.loginAt ?? r.loginat);
+        const seen = new Date(r.lastSeenAt ?? r.lastseenat);
+        const secs = Math.max(0, Math.round((seen.getTime() - login.getTime()) / 1000));
+        if (!map.has(email)) map.set(email, { email, sessions: 0, totalSeconds: 0, lastLogin: null });
+        const e = map.get(email);
+        e.sessions += 1;
+        e.totalSeconds += secs;
+        if (!e.lastLogin || login > new Date(e.lastLogin)) e.lastLogin = login.toISOString();
+    });
+    return [...map.values()];
+}
+
 module.exports = {
     monthKeys,
     initDatabase,
@@ -500,4 +608,13 @@ module.exports = {
     insertTask,
     updateTask,
     deleteTask,
+    getUserByEmail,
+    getUserById,
+    createUser,
+    setUserStatus,
+    updateUserPasswordHash,
+    listUsers,
+    startSession,
+    touchSession,
+    getAccessStats,
 };

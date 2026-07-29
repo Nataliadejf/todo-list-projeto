@@ -154,8 +154,28 @@ async function ensureSchema() {
         { name: 'updatedAt', type: 'TIMESTAMP' },
     ];
 
+    const usersSchema = [
+        { name: 'id', type: 'STRING' },
+        { name: 'email', type: 'STRING' },
+        { name: 'name', type: 'STRING' },
+        { name: 'passwordHash', type: 'STRING' },
+        { name: 'role', type: 'STRING' },
+        { name: 'status', type: 'STRING' },
+        { name: 'createdAt', type: 'TIMESTAMP' },
+        { name: 'approvedAt', type: 'TIMESTAMP' },
+        { name: 'approvedBy', type: 'STRING' },
+    ];
+    const sessionsSchema = [
+        { name: 'id', type: 'STRING' },
+        { name: 'email', type: 'STRING' },
+        { name: 'loginAt', type: 'TIMESTAMP' },
+        { name: 'lastSeenAt', type: 'TIMESTAMP' },
+    ];
+
     await ensureTable(dataset, 'todos', todosSchema);
     await ensureTable(dataset, 'tasks', tasksSchema);
+    await ensureTable(dataset, 'users', usersSchema);
+    await ensureTable(dataset, 'sessions', sessionsSchema);
     // adiciona colunas novas em tabelas tasks já existentes
     await query(`ALTER TABLE ${tableRef('tasks')} ADD COLUMN IF NOT EXISTS startDate STRING`).catch(() => {});
     await query(`ALTER TABLE ${tableRef('tasks')} ADD COLUMN IF NOT EXISTS endDate STRING`).catch(() => {});
@@ -387,10 +407,110 @@ async function deleteTask(id) {
     );
 }
 
+// ---------------------------------------------------------------------------
+// Usuários e sessões (autenticação)
+// ---------------------------------------------------------------------------
+
+function formatUser(row) {
+    if (!row) return null;
+    return {
+        id: row.id, email: row.email, name: row.name ?? '', passwordHash: row.passwordHash ?? '',
+        role: row.role ?? 'user', status: row.status ?? 'pending',
+        createdAt: toIso(row.createdAt), approvedAt: toIso(row.approvedAt), approvedBy: row.approvedBy ?? '',
+    };
+}
+
+async function getUserByEmail(email) {
+    const rows = await query(
+        `SELECT * FROM ${tableRef('users')} WHERE LOWER(email) = LOWER(@email) LIMIT 1`,
+        { email: String(email) }, { email: 'STRING' },
+    );
+    return formatUser(rows[0]);
+}
+
+async function getUserById(id) {
+    const rows = await query(`SELECT * FROM ${tableRef('users')} WHERE id = @id LIMIT 1`,
+        { id: String(id) }, { id: 'STRING' });
+    return formatUser(rows[0]);
+}
+
+async function createUser(u) {
+    const params = {
+        id: u.id, email: u.email, name: u.name ?? '', passwordHash: u.passwordHash,
+        role: u.role ?? 'user', status: u.status ?? 'pending',
+        createdAt: new Date(), approvedAt: u.approvedAt ?? null, approvedBy: u.approvedBy ?? '',
+    };
+    const types = {
+        id: 'STRING', email: 'STRING', name: 'STRING', passwordHash: 'STRING', role: 'STRING',
+        status: 'STRING', createdAt: 'TIMESTAMP', approvedAt: 'TIMESTAMP', approvedBy: 'STRING',
+    };
+    await query(
+        `INSERT INTO ${tableRef('users')} (id,email,name,passwordHash,role,status,createdAt,approvedAt,approvedBy)
+         VALUES (@id,@email,@name,@passwordHash,@role,@status,@createdAt,@approvedAt,@approvedBy)`,
+        params, types,
+    );
+    return getUserById(u.id);
+}
+
+async function setUserStatus(id, status, approvedBy) {
+    await query(
+        `UPDATE ${tableRef('users')} SET status=@status, approvedAt=@approvedAt, approvedBy=@approvedBy WHERE id=@id`,
+        { id: String(id), status, approvedAt: status === 'approved' ? new Date() : null, approvedBy: approvedBy || '' },
+        { id: 'STRING', status: 'STRING', approvedAt: 'TIMESTAMP', approvedBy: 'STRING' },
+    );
+    return getUserById(id);
+}
+
+async function updateUserPasswordHash(id, passwordHash) {
+    await query(`UPDATE ${tableRef('users')} SET passwordHash=@h WHERE id=@id`,
+        { id: String(id), h: passwordHash }, { id: 'STRING', h: 'STRING' });
+}
+
+async function listUsers() {
+    const rows = await query(`SELECT * FROM ${tableRef('users')} ORDER BY createdAt DESC`);
+    return rows.map(formatUser);
+}
+
+async function startSession(id, email) {
+    await query(
+        `INSERT INTO ${tableRef('sessions')} (id,email,loginAt,lastSeenAt) VALUES (@id,@email,@t,@t)`,
+        { id: String(id), email: String(email), t: new Date() },
+        { id: 'STRING', email: 'STRING', t: 'TIMESTAMP' },
+    );
+}
+
+async function touchSession(id) {
+    await query(`UPDATE ${tableRef('sessions')} SET lastSeenAt=@t WHERE id=@id`,
+        { id: String(id), t: new Date() }, { id: 'STRING', t: 'TIMESTAMP' });
+}
+
+async function getAccessStats() {
+    const rows = await query(
+        `SELECT email,
+                COUNT(*) AS sessions,
+                SUM(TIMESTAMP_DIFF(lastSeenAt, loginAt, SECOND)) AS totalSeconds,
+                MAX(loginAt) AS lastLogin
+         FROM ${tableRef('sessions')} GROUP BY email`,
+    );
+    return rows.map((r) => ({
+        email: r.email, sessions: toNumber(r.sessions) || 0,
+        totalSeconds: toNumber(r.totalSeconds) || 0, lastLogin: toIso(r.lastLogin),
+    }));
+}
+
 module.exports = {
     isEnabled,
     monthKeys,
     ensureSchema,
+    getUserByEmail,
+    getUserById,
+    createUser,
+    setUserStatus,
+    updateUserPasswordHash,
+    listUsers,
+    startSession,
+    touchSession,
+    getAccessStats,
     getMeta,
     listTodos,
     getTodo,

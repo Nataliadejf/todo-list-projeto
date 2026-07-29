@@ -55,4 +55,13 @@ module.exports = {
     insertTask: (...args) => backend.insertTask(...args),
     updateTask: (...args) => backend.updateTask(...args),
     deleteTask: (...args) => backend.deleteTask(...args),
+    getUserByEmail: (...args) => backend.getUserByEmail(...args),
+    getUserById: (...args) => backend.getUserById(...args),
+    createUser: (...args) => backend.createUser(...args),
+    setUserStatus: (...args) => backend.setUserStatus(...args),
+    updateUserPasswordHash: (...args) => backend.updateUserPasswordHash(...args),
+    listUsers: (...args) => backend.listUsers(...args),
+    startSession: (...args) => backend.startSession(...args),
+    touchSession: (...args) => backend.touchSession(...args),
+    getAccessStats: (...args) => backend.getAccessStats(...args),
 };
