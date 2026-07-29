@@ -33,7 +33,6 @@ const textareaKeys = new Set([
 ]);
 const dateKeys = new Set(["startDate", "plannedEndDate", "realEndDate"]);
 const numberKeys = new Set([
-  "deadlinePercent",
   "progressPercent",
   "priority",
 ]);
@@ -199,9 +198,8 @@ export function InitiativeForm({ editing, onSaved, onCancelEdit }: InitiativeFor
                 <Field fieldKey="startDate" value={form.startDate} onChange={updateField} />
                 <Field fieldKey="plannedEndDate" value={form.plannedEndDate} onChange={updateField} />
               </div>
-              <div className="grid gap-3 md:grid-cols-3">
+              <div className="grid gap-3 md:grid-cols-2">
                 <Field fieldKey="deadlineDays" value={form.deadlineDays} onChange={updateField} readOnly hint="Calculado: Data Fim − Data Início" />
-                <Field fieldKey="deadlinePercent" value={form.deadlinePercent} onChange={updateField} />
                 <Field fieldKey="realEndDate" value={form.realEndDate} onChange={updateField} />
               </div>
               <div className="grid gap-3 md:grid-cols-3">

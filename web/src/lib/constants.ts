@@ -75,7 +75,6 @@ export const EDITABLE_KEYS = [
   "plannedEndDate",
   "realEndDate",
   "deadlineDays",
-  "deadlinePercent",
   "progressPercent",
   "severity",
   "urgency",
