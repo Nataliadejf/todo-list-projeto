@@ -142,6 +142,23 @@ export function getKanbanStage(todo: Initiative): KanbanStage {
   return "nao_iniciado";
 }
 
+export function getPriorityScore(todo: Initiative): number {
+  const g = Number.parseInt(todo.severity || "0", 10) || 0;
+  const u = Number.parseInt(todo.urgency || "0", 10) || 0;
+  return g * u;
+}
+
+export type PriorityBand = "alta" | "media" | "baixa" | "none";
+
+// Prioridade = Gravidade × Urgência (GUT). Faixas: >=15 Alta, >=5 Média, senão Baixa.
+export function getPriorityBand(todo: Initiative): PriorityBand {
+  const score = getPriorityScore(todo);
+  if (score <= 0) return "none";
+  if (score >= 15) return "alta";
+  if (score >= 5) return "media";
+  return "baixa";
+}
+
 export type WeightBand = "alta" | "media" | "baixa";
 
 export function getWeightBand(weight: string): WeightBand {

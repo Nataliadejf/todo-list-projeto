@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Eye, Flag, Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { getDeadlineAlert, normalizeStatus, toInitiativeInput } from "@/lib/todo-utils";
+import { getDeadlineAlert, getPriorityBand, getPriorityScore, normalizeStatus, toInitiativeInput } from "@/lib/todo-utils";
 import type { Initiative } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -61,7 +61,7 @@ export function InitiativesTable({ todos, title = "Todas as Iniciativas", tall =
                 <th className="px-4 py-3">Prev. Fim</th>
                 <th className="px-4 py-3">Alerta</th>
                 <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Peso</th>
+                <th className="px-4 py-3">Prioridade</th>
                 <th className="px-4 py-3">% Conc.</th>
                 <th className="px-4 py-3">Ações</th>
               </tr>
@@ -127,7 +127,23 @@ export function InitiativesTable({ todos, title = "Todas as Iniciativas", tall =
                         </Badge>
                       </td>
                       <td className="px-4 py-3.5">{normalizeStatus(todo.status)}</td>
-                      <td className="px-4 py-3.5">{todo.weight || "—"}</td>
+                      <td className="px-4 py-3.5">
+                        {(() => {
+                          const band = getPriorityBand(todo);
+                          if (band === "none") return <span className="text-slate-400">—</span>;
+                          const map = {
+                            alta: { label: "Alta", variant: "danger" as const },
+                            media: { label: "Média", variant: "warning" as const },
+                            baixa: { label: "Baixa", variant: "info" as const },
+                          };
+                          const it = map[band];
+                          return (
+                            <Badge variant={it.variant} title={`Gravidade × Urgência = ${getPriorityScore(todo)}`}>
+                              {it.label}
+                            </Badge>
+                          );
+                        })()}
+                      </td>
                       <td className="px-4 py-3.5">{todo.progressPercent || "0"}</td>
                       <td className="px-4 py-3.5">
                         <div className="flex flex-wrap items-center gap-1">
