@@ -114,6 +114,7 @@ export interface FilterState {
   search: string;
   status: string;
   weight: string;
+  size: string;
   owner: string;
   area: string;
   deadline: string;
@@ -125,6 +126,7 @@ export const EMPTY_FILTERS: FilterState = {
   search: "",
   status: "",
   weight: "",
+  size: "",
   owner: "",
   area: "",
   deadline: "",

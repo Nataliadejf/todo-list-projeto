@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Bar,
   BarChart,
@@ -11,34 +12,67 @@ import {
   YAxis,
 } from "recharts";
 import { BarChart3 } from "lucide-react";
-import { getOwnerWeightChartData } from "@/lib/todo-utils";
+import {
+  CHART_MODE_LABELS,
+  CHART_SERIES,
+  getOwnerChartData,
+  type ChartMode,
+} from "@/lib/todo-utils";
 import type { Initiative } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FadeIn } from "@/components/ui/fade-in";
+import { cn } from "@/lib/utils";
 
 interface InitiativesChartProps {
   todos: Initiative[];
   compact?: boolean;
 }
 
+const MODES: ChartMode[] = ["size", "priority"];
+
 export function InitiativesChart({ todos, compact = false }: InitiativesChartProps) {
-  const data = getOwnerWeightChartData(todos);
+  const [mode, setMode] = useState<ChartMode>("size");
+  const data = getOwnerChartData(todos, mode);
+  const series = CHART_SERIES[mode];
 
   return (
     <FadeIn delay={0.08}>
       <Card>
         <CardHeader className={compact ? "space-y-1 pb-2" : undefined}>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <BarChart3 className="h-4 w-4 text-blue-600" />
-            Iniciativas por Responsável × Peso
-          </CardTitle>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <BarChart3 className="h-4 w-4 text-blue-600" />
+              Iniciativas por Responsável × {CHART_MODE_LABELS[mode]}
+            </CardTitle>
+            {/* Alternador de métrica do gráfico */}
+            <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+              {MODES.map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setMode(m)}
+                  className={cn(
+                    "rounded-md px-3 py-1 text-xs font-semibold transition",
+                    mode === m
+                      ? "bg-white text-blue-600 shadow-sm"
+                      : "text-slate-500 hover:text-slate-700",
+                  )}
+                >
+                  {CHART_MODE_LABELS[m]}
+                </button>
+              ))}
+            </div>
+          </div>
           {!compact ? (
-            <CardDescription>Distribuição de carga e prioridade por pessoa</CardDescription>
+            <CardDescription>Distribuição de carga por pessoa, agrupada por {CHART_MODE_LABELS[mode].toLowerCase()}</CardDescription>
           ) : null}
           <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold">
-            <span className="inline-flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-sm bg-rose-500" /> Alta</span>
-            <span className="inline-flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-sm bg-orange-500" /> Média</span>
-            <span className="inline-flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-sm bg-blue-500" /> Baixa</span>
+            {series.map((s) => (
+              <span key={s.key} className="inline-flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: s.color }} />
+                {s.label}
+              </span>
+            ))}
           </div>
         </CardHeader>
         <CardContent className={compact ? "h-[200px] pb-2" : "h-[240px] pb-4"}>
@@ -52,9 +86,16 @@ export function InitiativesChart({ todos, compact = false }: InitiativesChartPro
                 <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="alta" name="Alta" stackId="a" fill="#ef4444" radius={[0, 0, 0, 0]} />
-                <Bar dataKey="media" name="Média" stackId="a" fill="#f97316" />
-                <Bar dataKey="baixa" name="Baixa" stackId="a" fill="#3b82f6" radius={[6, 6, 0, 0]} />
+                {series.map((s, i) => (
+                  <Bar
+                    key={s.key}
+                    dataKey={s.key}
+                    name={s.label}
+                    stackId="a"
+                    fill={s.color}
+                    radius={i === series.length - 1 ? [6, 6, 0, 0] : [0, 0, 0, 0]}
+                  />
+                ))}
               </BarChart>
             </ResponsiveContainer>
           )}

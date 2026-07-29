@@ -88,6 +88,7 @@ export function filterInitiatives(todos: Initiative[], filters: FilterState) {
     if (filters.status && normalizeText(todo.status) !== normalizeText(filters.status)) return false;
     if (filters.owner && normalizeText(todo.owner) !== normalizeText(filters.owner)) return false;
     if (filters.area && normalizeText(todo.area) !== normalizeText(filters.area)) return false;
+    if (filters.size && normalizeText(todo.size) !== normalizeText(filters.size)) return false;
     if (!matchesWeight(todo, filters.weight)) return false;
     if (!matchesDeadline(todo, filters.deadline)) return false;
 
@@ -168,20 +169,64 @@ export function getWeightBand(weight: string): WeightBand {
   return "baixa";
 }
 
-export function getOwnerWeightChartData(todos: Initiative[]) {
-  const map = new Map<string, { alta: number; media: number; baixa: number }>();
+// ---- Gráfico "Iniciativas por Responsável", agrupável por métrica ----
+export type ChartMode = "size" | "priority";
+
+export interface ChartSeries {
+  key: string;
+  label: string;
+  color: string;
+}
+
+export const CHART_MODE_LABELS: Record<ChartMode, string> = {
+  size: "Tamanho",
+  priority: "Prioridade",
+};
+
+export const CHART_SERIES: Record<ChartMode, ChartSeries[]> = {
+  size: [
+    { key: "GG", label: "GG", color: "#7c3aed" },
+    { key: "G", label: "G", color: "#2563eb" },
+    { key: "M", label: "M", color: "#0891b2" },
+    { key: "P", label: "P", color: "#16a34a" },
+    { key: "PP", label: "PP", color: "#94a3b8" },
+  ],
+  priority: [
+    { key: "alta", label: "Alta", color: "#ef4444" },
+    { key: "media", label: "Média", color: "#f97316" },
+    { key: "baixa", label: "Baixa", color: "#3b82f6" },
+  ],
+};
+
+const SIZE_KEYS = ["PP", "P", "M", "G", "GG"];
+
+// Classifica uma iniciativa na série correspondente ao modo escolhido.
+function classifyByMode(todo: Initiative, mode: ChartMode): string | null {
+  if (mode === "priority") {
+    const band = getPriorityBand(todo);
+    return band === "none" ? null : band;
+  }
+  const size = normalizeText(todo.size).toUpperCase();
+  return SIZE_KEYS.includes(size) ? size : null;
+}
+
+export function getOwnerChartData(todos: Initiative[], mode: ChartMode) {
+  const keys = CHART_SERIES[mode].map((s) => s.key);
+  const map = new Map<string, Record<string, number>>();
 
   todos.forEach((todo) => {
     const owner = todo.owner?.trim() || "Sem responsável";
-    if (!map.has(owner)) map.set(owner, { alta: 0, media: 0, baixa: 0 });
-    const bucket = map.get(owner)!;
-    const band = getWeightBand(todo.weight);
-    bucket[band] += 1;
+    if (!map.has(owner)) map.set(owner, Object.fromEntries(keys.map((k) => [k, 0])));
+    const key = classifyByMode(todo, mode);
+    if (key) map.get(owner)![key] += 1;
   });
 
+  const total = (values: Record<string, number>) => keys.reduce((sum, k) => sum + values[k], 0);
+
   return [...map.entries()]
-    .map(([owner, values]) => ({ owner, ...values }))
-    .sort((a, b) => b.alta + b.media + b.baixa - (a.alta + a.media + a.baixa))
+    .map(([owner, values]) => ({ owner, __total: total(values), ...values }))
+    .filter((row) => row.__total > 0)
+    .sort((a, b) => b.__total - a.__total)
     .slice(0, 12);
 }
 

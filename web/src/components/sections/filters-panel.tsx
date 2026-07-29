@@ -4,11 +4,11 @@ import {
   BarChart3,
   Calendar,
   RefreshCw,
-  Scale,
+  Ruler,
   Search,
   User,
 } from "lucide-react";
-import { DEADLINE_OPTIONS, STATUS_OPTIONS, WEIGHT_OPTIONS } from "@/lib/constants";
+import { DEADLINE_OPTIONS, STATUS_OPTIONS, TAMANHO_OPTIONS } from "@/lib/constants";
 import { getUniqueValues } from "@/lib/todo-utils";
 import { useTodos } from "@/components/providers/todos-provider";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ interface FiltersPanelProps {
   showStatus?: boolean;
   showDeadline?: boolean;
   showArea?: boolean;
+  showSize?: boolean;
   showPeriod?: boolean;
   compact?: boolean;
   layout?: "sidebar" | "horizontal";
@@ -31,6 +32,7 @@ export function FiltersPanel({
   showStatus = true,
   showDeadline = true,
   showArea = false,
+  showSize = true,
   showPeriod = false,
   compact = false,
   layout = "sidebar",
@@ -77,18 +79,21 @@ export function FiltersPanel({
           </SelectField>
         ) : null}
 
-        <SelectField
-          label={isHorizontal ? undefined : "Peso"}
-          icon={<Scale className="h-4 w-4" />}
-          value={filters.weight}
-          onChange={(e) => setFilters((prev) => ({ ...prev, weight: e.target.value }))}
-        >
-          {WEIGHT_OPTIONS.map((option) => (
-            <option key={option.value || "all"} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </SelectField>
+        {showSize ? (
+          <SelectField
+            label={isHorizontal ? undefined : "Tamanho"}
+            icon={<Ruler className="h-4 w-4" />}
+            value={filters.size}
+            onChange={(e) => setFilters((prev) => ({ ...prev, size: e.target.value }))}
+          >
+            <option value="">Todos os tamanhos</option>
+            {TAMANHO_OPTIONS.map((size) => (
+              <option key={size} value={size}>
+                {size}
+              </option>
+            ))}
+          </SelectField>
+        ) : null}
 
         <SelectField
           label={isHorizontal ? undefined : "Responsável"}
