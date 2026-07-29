@@ -11,6 +11,7 @@ const createTableSql = `
         front TEXT,
         initiative TEXT,
         owner TEXT,
+        backup TEXT,
         description TEXT,
         deliveries TEXT,
         gainCategory TEXT,
@@ -141,6 +142,12 @@ async function ensureApprovalColumns() {
             adapter.db.all('PRAGMA table_info(todos)', (err, data) => (err ? reject(err) : resolve(data || [])));
         });
         columnNames = rows.map((row) => row.name);
+    }
+
+    if (!columnNames.includes('backup')) {
+        if (isPg) await adapter.pool.query('ALTER TABLE todos ADD COLUMN IF NOT EXISTS backup TEXT');
+        else await run('ALTER TABLE todos ADD COLUMN backup TEXT');
+        console.log('Coluna backup adicionada ao banco.');
     }
 
     if (columnNames.includes('approved')) return;
@@ -352,19 +359,19 @@ function getAdapter() {
 }
 
 const INSERT_COLUMNS = `
-    id, area, front, initiative, owner, description, deliveries, gainCategory, gainDescription, size,
+    id, area, front, initiative, owner, backup, description, deliveries, gainCategory, gainDescription, size,
     weight, status, startDate, plannedEndDate, realEndDate, deadlineDays, deadlinePercent, progressPercent,
     severity, urgency, strategy, priority, impediment, notes, weightedDelivery,
     jan, fev, mar, abr, mai, jun, jul, ago, "set", "out", nov, dez, completed, approved, deprioritized
 `;
 
-const INSERT_PLACEHOLDERS = Array(40).fill('?').join(', ');
+const INSERT_PLACEHOLDERS = Array(41).fill('?').join(', ');
 
 const INSERT_SQL = `INSERT INTO todos (${INSERT_COLUMNS}) VALUES (${INSERT_PLACEHOLDERS})`;
 
 function buildInsertParams(item) {
     return [
-        item.id, item.area, item.front, item.initiative, item.owner, item.description, item.deliveries,
+        item.id, item.area, item.front, item.initiative, item.owner, item.backup, item.description, item.deliveries,
         item.gainCategory, item.gainDescription, item.size, item.weight, item.status, item.startDate,
         item.plannedEndDate, item.realEndDate, item.deadlineDays, item.deadlinePercent, item.progressPercent,
         item.severity, item.urgency, item.strategy, item.priority, item.impediment, item.notes, item.weightedDelivery,
@@ -375,8 +382,8 @@ function buildInsertParams(item) {
 
 async function insertTodo(item) {
     const params = buildInsertParams(item);
-    if (params.length !== 40) {
-        throw new Error(`Parâmetros inválidos no insert (${params.length}/40).`);
+    if (params.length !== 41) {
+        throw new Error(`Parâmetros inválidos no insert (${params.length}/41).`);
     }
 
     const result = await run(INSERT_SQL, params);
@@ -409,7 +416,7 @@ async function getTodo(dbId) {
 
 const UPDATE_SQL = `
     UPDATE todos SET
-        id = ?, area = ?, front = ?, initiative = ?, owner = ?, description = ?, deliveries = ?, gainCategory = ?, gainDescription = ?, size = ?,
+        id = ?, area = ?, front = ?, initiative = ?, owner = ?, backup = ?, description = ?, deliveries = ?, gainCategory = ?, gainDescription = ?, size = ?,
         weight = ?, status = ?, startDate = ?, plannedEndDate = ?, realEndDate = ?, deadlineDays = ?, deadlinePercent = ?, progressPercent = ?,
         severity = ?, urgency = ?, strategy = ?, priority = ?, impediment = ?, notes = ?, weightedDelivery = ?,
         jan = ?, fev = ?, mar = ?, abr = ?, mai = ?, jun = ?, jul = ?, ago = ?, "set" = ?, "out" = ?, nov = ?, dez = ?, completed = ?,

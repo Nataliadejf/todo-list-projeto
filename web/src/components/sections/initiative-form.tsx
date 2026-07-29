@@ -45,6 +45,7 @@ function emptyInitiative(): InitiativeInput {
     front: "",
     initiative: "",
     owner: "",
+    backup: "",
     description: "",
     deliveries: "",
     gainCategory: "",
@@ -173,9 +174,10 @@ export function InitiativeForm({ editing, onSaved, onCancelEdit }: InitiativeFor
                 <Field fieldKey="area" value={form.area} onChange={updateField} required options={AREA_OPTIONS} />
                 <Field fieldKey="front" value={form.front} onChange={updateField} required suggestions={frentes} />
               </div>
-              <div className="grid gap-3 md:grid-cols-2">
+              <div className="grid gap-3 md:grid-cols-3">
                 <Field fieldKey="initiative" value={form.initiative} onChange={updateField} required />
                 <Field fieldKey="owner" value={form.owner} onChange={updateField} required options={RESPONSAVEL_OPTIONS} />
+                <Field fieldKey="backup" value={form.backup} onChange={updateField} options={RESPONSAVEL_OPTIONS} />
               </div>
               <Field fieldKey="description" value={form.description} onChange={updateField} />
             </section>

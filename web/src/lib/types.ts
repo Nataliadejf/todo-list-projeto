@@ -37,6 +37,7 @@ export interface Initiative {
   front: string;
   initiative: string;
   owner: string;
+  backup: string;
   description: string;
   deliveries: string;
   gainCategory: string;
