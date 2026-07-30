@@ -1,26 +1,26 @@
 #!/usr/bin/env bash
-# Removido o -e para conseguir tratar falha de build (ex.: OOM no free tier)
-# e cair no web/out commitado como fallback.
+# O frontend é buildado LOCALMENTE e commitado em web/out. No Render (free tier),
+# reconstruir o Next.js estoura memória (OOM) e o build falha, deixando o site
+# preso num deploy antigo. Por isso servimos o web/out commitado e só tentamos
+# reconstruir se ele não existir.
 set -uo pipefail
 
-echo "==> Render build: API"
+echo "==> Render: instalando dependências da API"
 npm install
 
-echo "==> Render build: frontend Next.js"
-export STATIC_EXPORT=1
-export NPM_CONFIG_PRODUCTION=false
-export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=512}"
-
-if node scripts/build-frontend.js; then
-  echo "==> Build do frontend OK (gerado agora)"
+if [ -f web/out/index.html ]; then
+  echo "==> Usando web/out commitado (build local). Sem rebuild no Render."
 else
-  echo "⚠️  Build do frontend falhou — usando o web/out commitado (fallback)."
+  echo "==> web/out ausente — tentando build no Render (pode falhar por OOM)..."
+  export STATIC_EXPORT=1
+  export NPM_CONFIG_PRODUCTION=false
+  export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=512}"
+  node scripts/build-frontend.js || echo "⚠️  Build no Render falhou e não há web/out commitado."
 fi
 
-# Se nem o build nem o fallback existirem, aí sim é erro fatal.
 if [ ! -f web/out/index.html ]; then
-  echo "ERRO: web/out/index.html não existe (build falhou e não há fallback commitado)."
+  echo "ERRO: web/out/index.html não existe (sem build e sem fallback commitado)."
   exit 1
 fi
 
-echo "==> Build OK ($(du -sh web/out | cut -f1))"
+echo "==> Frontend pronto ($(du -sh web/out | cut -f1))."
