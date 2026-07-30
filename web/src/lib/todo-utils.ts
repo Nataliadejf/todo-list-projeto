@@ -60,15 +60,6 @@ function matchesDeadline(todo: Initiative, deadline: string) {
   return true;
 }
 
-function matchesWeight(todo: Initiative, weight: string) {
-  if (!weight) return true;
-  const w = normalizeText(todo.weight);
-  if (weight === "5") return w === "5" || w.includes("alta");
-  if (weight === "3") return w === "3" || w.includes("média") || w.includes("media");
-  if (weight === "1") return w === "1" || w.includes("baixa");
-  return w.includes(normalizeText(weight));
-}
-
 export function filterInitiatives(todos: Initiative[], filters: FilterState) {
   return todos.filter((todo) => {
     const search = normalizeText(filters.search);
@@ -89,7 +80,6 @@ export function filterInitiatives(todos: Initiative[], filters: FilterState) {
     if (filters.owner && normalizeText(todo.owner) !== normalizeText(filters.owner)) return false;
     if (filters.area && normalizeText(todo.area) !== normalizeText(filters.area)) return false;
     if (filters.size && normalizeText(todo.size) !== normalizeText(filters.size)) return false;
-    if (!matchesWeight(todo, filters.weight)) return false;
     if (!matchesDeadline(todo, filters.deadline)) return false;
 
     const rangeStart = parseDate(filters.periodStart);

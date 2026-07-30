@@ -69,7 +69,6 @@ export const EDITABLE_KEYS = [
   "gainCategory",
   "gainDescription",
   "size",
-  "weight",
   "status",
   "startDate",
   "plannedEndDate",
