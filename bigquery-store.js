@@ -161,6 +161,7 @@ async function ensureSchema() {
         { name: 'passwordHash', type: 'STRING' },
         { name: 'role', type: 'STRING' },
         { name: 'status', type: 'STRING' },
+        { name: 'responsavel', type: 'STRING' },
         { name: 'createdAt', type: 'TIMESTAMP' },
         { name: 'approvedAt', type: 'TIMESTAMP' },
         { name: 'approvedBy', type: 'STRING' },
@@ -188,6 +189,7 @@ async function ensureSchema() {
     await query(`ALTER TABLE ${tableRef('tasks')} ADD COLUMN IF NOT EXISTS endDate STRING`).catch(() => {});
     await query(`ALTER TABLE ${tableRef('todos')} ADD COLUMN IF NOT EXISTS backup STRING`).catch(() => {});
     await query(`ALTER TABLE ${tableRef('todos')} ADD COLUMN IF NOT EXISTS efficacyIndicator STRING`).catch(() => {});
+    await query(`ALTER TABLE ${tableRef('users')} ADD COLUMN IF NOT EXISTS responsavel STRING`).catch(() => {});
 }
 
 async function ensureTable(dataset, name, schema) {
@@ -424,7 +426,7 @@ function formatUser(row) {
     if (!row) return null;
     return {
         id: row.id, email: row.email, name: row.name ?? '', passwordHash: row.passwordHash ?? '',
-        role: row.role ?? 'user', status: row.status ?? 'pending',
+        role: row.role ?? 'user', status: row.status ?? 'pending', responsavel: row.responsavel ?? '',
         createdAt: toIso(row.createdAt), approvedAt: toIso(row.approvedAt), approvedBy: row.approvedBy ?? '',
     };
 }
@@ -446,19 +448,28 @@ async function getUserById(id) {
 async function createUser(u) {
     const params = {
         id: u.id, email: u.email, name: u.name ?? '', passwordHash: u.passwordHash,
-        role: u.role ?? 'user', status: u.status ?? 'pending',
+        role: u.role ?? 'user', status: u.status ?? 'pending', responsavel: u.responsavel ?? '',
         createdAt: new Date(), approvedAt: u.approvedAt ?? null, approvedBy: u.approvedBy ?? '',
     };
     const types = {
         id: 'STRING', email: 'STRING', name: 'STRING', passwordHash: 'STRING', role: 'STRING',
-        status: 'STRING', createdAt: 'TIMESTAMP', approvedAt: 'TIMESTAMP', approvedBy: 'STRING',
+        status: 'STRING', responsavel: 'STRING', createdAt: 'TIMESTAMP', approvedAt: 'TIMESTAMP', approvedBy: 'STRING',
     };
     await query(
-        `INSERT INTO ${tableRef('users')} (id,email,name,passwordHash,role,status,createdAt,approvedAt,approvedBy)
-         VALUES (@id,@email,@name,@passwordHash,@role,@status,@createdAt,@approvedAt,@approvedBy)`,
+        `INSERT INTO ${tableRef('users')} (id,email,name,passwordHash,role,status,responsavel,createdAt,approvedAt,approvedBy)
+         VALUES (@id,@email,@name,@passwordHash,@role,@status,@responsavel,@createdAt,@approvedAt,@approvedBy)`,
         params, types,
     );
     return getUserById(u.id);
+}
+
+async function setUserResponsavel(id, responsavel) {
+    await query(
+        `UPDATE ${tableRef('users')} SET responsavel = @responsavel WHERE id = @id`,
+        { id: String(id), responsavel: String(responsavel || '') },
+        { id: 'STRING', responsavel: 'STRING' },
+    );
+    return getUserById(id);
 }
 
 async function setUserStatus(id, status, approvedBy) {
@@ -564,6 +575,7 @@ module.exports = {
     getUserById,
     createUser,
     setUserStatus,
+    setUserResponsavel,
     updateUserPasswordHash,
     listUsers,
     startSession,

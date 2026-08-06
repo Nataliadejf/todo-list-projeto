@@ -4,6 +4,7 @@ export interface AuthUser {
   name: string;
   role: string;
   status: string;
+  responsavel: string;
 }
 
 export interface AdminUserRow extends AuthUser {
@@ -83,5 +84,12 @@ export function apiResetUserPassword(id: string, password: string) {
   return request<{ ok: boolean }>(`/api/admin/users/${id}/reset-password`, {
     method: "POST",
     body: JSON.stringify({ password }),
+  });
+}
+
+export function apiSetUserResponsavel(id: string, responsavel: string) {
+  return request<AuthUser>(`/api/admin/users/${id}/responsavel`, {
+    method: "POST",
+    body: JSON.stringify({ responsavel }),
   });
 }

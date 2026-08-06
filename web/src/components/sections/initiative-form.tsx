@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Download, Save, Trash2 } from "lucide-react";
 import {
   AREA_OPTIONS,
@@ -13,6 +13,7 @@ import {
   TAMANHO_OPTIONS,
 } from "@/lib/constants";
 import { useResponsaveis } from "@/components/providers/responsaveis-provider";
+import { useAuth } from "@/components/providers/auth-provider";
 import { downloadInitiativesCsv } from "@/lib/csv-export";
 import { MONTH_KEYS, type Initiative, type InitiativeInput } from "@/lib/types";
 import { getUniqueValues, normalizeInitiative } from "@/lib/todo-utils";
@@ -85,9 +86,16 @@ interface InitiativeFormProps {
 export function InitiativeForm({ editing, onSaved, onCancelEdit }: InitiativeFormProps) {
   const { todos, create, update, remove } = useTodos();
   const { responsaveis } = useResponsaveis();
+  const { user } = useAuth();
   const [form, setForm] = useState<InitiativeInput>(emptyInitiative);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  // Nova iniciativa já vem com o Responsável do usuário logado (editável).
+  const newInitiative = useCallback(
+    (): InitiativeInput => ({ ...emptyInitiative(), owner: user?.responsavel || "" }),
+    [user?.responsavel],
+  );
 
   useEffect(() => {
     if (editing) {
@@ -96,9 +104,9 @@ export function InitiativeForm({ editing, onSaved, onCancelEdit }: InitiativeFor
         completed: editing.completed,
       });
     } else {
-      setForm(emptyInitiative());
+      setForm(newInitiative());
     }
-  }, [editing]);
+  }, [editing, newInitiative]);
 
   const requiredValid = useMemo(
     () =>
@@ -142,7 +150,7 @@ export function InitiativeForm({ editing, onSaved, onCancelEdit }: InitiativeFor
         setMessage("Iniciativa atualizada com sucesso.");
       } else {
         await create(payload);
-        setForm(emptyInitiative());
+        setForm(newInitiative());
         setMessage("Iniciativa adicionada com sucesso.");
       }
       onSaved?.();

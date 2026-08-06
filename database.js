@@ -85,6 +85,7 @@ const createUsersSql = `
         passwordHash TEXT,
         role TEXT,
         status TEXT,
+        responsavel TEXT,
         createdAt TEXT,
         approvedAt TEXT,
         approvedBy TEXT
@@ -274,6 +275,27 @@ async function ensureSqliteSchema(db) {
     console.log('Migração SQLite concluída.');
 }
 
+async function ensureUserColumns() {
+    const isPg = adapter.type === 'postgres';
+    let cols = [];
+    if (isPg) {
+        const r = await adapter.pool.query(
+            "SELECT column_name FROM information_schema.columns WHERE table_schema='public' AND table_name='users'",
+        );
+        cols = r.rows.map((row) => row.column_name.toLowerCase());
+    } else {
+        const rows = await new Promise((resolve, reject) => {
+            adapter.db.all('PRAGMA table_info(users)', (err, data) => (err ? reject(err) : resolve(data || [])));
+        });
+        cols = rows.map((row) => String(row.name).toLowerCase());
+    }
+    if (!cols.includes('responsavel')) {
+        if (isPg) await adapter.pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS responsavel TEXT');
+        else await run('ALTER TABLE users ADD COLUMN responsavel TEXT');
+        console.log('Coluna responsavel adicionada em users.');
+    }
+}
+
 async function initDatabase() {
     if (process.env.DATABASE_URL) {
         const { Pool } = require('pg');
@@ -289,6 +311,7 @@ async function initDatabase() {
         adapter = { type: 'postgres', pool, persistent: true };
         await ensureApprovalColumns();
         await ensureTaskColumns();
+        await ensureUserColumns();
         console.log('Banco PostgreSQL conectado (persistente).');
         return adapter;
     }
@@ -320,6 +343,7 @@ async function initDatabase() {
     adapter = { type: 'sqlite', db, dbPath, persistent };
     await ensureApprovalColumns();
     await ensureTaskColumns();
+    await ensureUserColumns();
     console.log(`Banco SQLite em ${dbPath}${persistent ? ' (disco persistente)' : ''}.`);
     if (!persistent && process.env.NODE_ENV === 'production') {
         console.warn('AVISO: SQLite sem DATA_DIR/DATABASE_URL — dados podem sumir ao reiniciar no Render.');
@@ -544,6 +568,7 @@ function formatUser(row) {
         id: row.id, email: row.email, name: row.name ?? '',
         passwordHash: row.passwordHash ?? row.passwordhash ?? '',
         role: row.role ?? 'user', status: row.status ?? 'pending',
+        responsavel: row.responsavel ?? '',
         createdAt: row.createdAt ?? row.createdat ?? null,
         approvedAt: row.approvedAt ?? row.approvedat ?? null,
         approvedBy: row.approvedBy ?? row.approvedby ?? '',
@@ -563,10 +588,10 @@ async function getUserById(id) {
 async function createUser(u) {
     const now = new Date().toISOString();
     await run(
-        `INSERT INTO users (id,email,name,passwordHash,role,status,createdAt,approvedAt,approvedBy)
-         VALUES (?,?,?,?,?,?,?,?,?)`,
+        `INSERT INTO users (id,email,name,passwordHash,role,status,responsavel,createdAt,approvedAt,approvedBy)
+         VALUES (?,?,?,?,?,?,?,?,?,?)`,
         [u.id, u.email, u.name ?? '', u.passwordHash, u.role ?? 'user', u.status ?? 'pending',
-         now, u.approvedAt ?? null, u.approvedBy ?? ''],
+         u.responsavel ?? '', now, u.approvedAt ?? null, u.approvedBy ?? ''],
     );
     return getUserById(u.id);
 }
@@ -575,6 +600,11 @@ async function setUserStatus(id, status, approvedBy) {
     const approvedAt = status === 'approved' ? new Date().toISOString() : null;
     await run('UPDATE users SET status = ?, approvedAt = ?, approvedBy = ? WHERE id = ?',
         [status, approvedAt, approvedBy || '', String(id)]);
+    return getUserById(id);
+}
+
+async function setUserResponsavel(id, responsavel) {
+    await run('UPDATE users SET responsavel = ? WHERE id = ?', [String(responsavel || ''), String(id)]);
     return getUserById(id);
 }
 
@@ -667,6 +697,7 @@ module.exports = {
     getUserById,
     createUser,
     setUserStatus,
+    setUserResponsavel,
     updateUserPasswordHash,
     listUsers,
     startSession,

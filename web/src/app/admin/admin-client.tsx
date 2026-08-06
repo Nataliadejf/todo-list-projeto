@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/components/providers/auth-provider";
-import { apiApproveUser, apiListUsers, apiResetUserPassword, apiRevokeUser, type AdminUserRow } from "@/lib/auth-api";
+import { apiApproveUser, apiListUsers, apiResetUserPassword, apiRevokeUser, apiSetUserResponsavel, type AdminUserRow } from "@/lib/auth-api";
 import { apiAddResponsavel, apiListResponsaveis, apiToggleResponsavel, type Responsavel } from "@/lib/responsaveis-api";
 
 function fmtDuration(seconds: number) {
@@ -137,6 +137,22 @@ export function AdminClient() {
     }
   };
 
+  const activeRespNames = useMemo(() => resps.filter((r) => r.active).map((r) => r.name), [resps]);
+  const respOptions = (current: string) =>
+    current && !activeRespNames.includes(current) ? [current, ...activeRespNames] : activeRespNames;
+
+  const setUserResp = async (u: AdminUserRow, value: string) => {
+    setBusyId(u.id);
+    try {
+      await apiSetUserResponsavel(u.id, value);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao vincular responsável.");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const pending = useMemo(() => rows.filter((r) => r.status === "pending").length, [rows]);
 
   if (!isAdmin) {
@@ -175,6 +191,7 @@ export function AdminClient() {
                 <th className="px-4 py-3">E-mail</th>
                 <th className="px-4 py-3">Papel</th>
                 <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Responsável (iniciativas)</th>
                 <th className="px-4 py-3">Acessos</th>
                 <th className="px-4 py-3">Tempo total</th>
                 <th className="px-4 py-3">Último acesso</th>
@@ -183,9 +200,9 @@ export function AdminClient() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={8} className="px-4 py-10 text-center text-slate-500">Carregando...</td></tr>
+                <tr><td colSpan={9} className="px-4 py-10 text-center text-slate-500">Carregando...</td></tr>
               ) : rows.length === 0 ? (
-                <tr><td colSpan={8} className="px-4 py-10 text-center text-slate-500">Nenhum usuário.</td></tr>
+                <tr><td colSpan={9} className="px-4 py-10 text-center text-slate-500">Nenhum usuário.</td></tr>
               ) : (
                 rows.map((u) => (
                   <tr key={u.id} className="border-b border-slate-100 hover:bg-slate-50/60">
@@ -194,6 +211,20 @@ export function AdminClient() {
                     <td className="px-4 py-3">{u.role === "admin" ? "Admin" : "Usuário"}</td>
                     <td className="px-4 py-3">
                       <Badge variant={statusBadge(u.status)}>{statusLabel[u.status] || u.status}</Badge>
+                    </td>
+                    <td className="px-4 py-3">
+                      <select
+                        className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-xs text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30"
+                        value={u.responsavel || ""}
+                        disabled={busyId === u.id}
+                        onChange={(e) => void setUserResp(u, e.target.value)}
+                        title="Responsável usado nas iniciativas deste usuário"
+                      >
+                        <option value="">— (nenhum)</option>
+                        {respOptions(u.responsavel).map((name) => (
+                          <option key={name} value={name}>{name}</option>
+                        ))}
+                      </select>
                     </td>
                     <td className="px-4 py-3">{u.sessions}</td>
                     <td className="px-4 py-3">{fmtDuration(u.totalSeconds)}</td>

@@ -21,7 +21,11 @@ if (!JWT_SECRET) {
 const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function safeUser(u) {
-    return { id: u.id, email: u.email, name: u.name, role: u.role, status: u.status };
+    return { id: u.id, email: u.email, name: u.name, role: u.role, status: u.status, responsavel: u.responsavel ?? '' };
+}
+
+function normalizeName(s) {
+    return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 }
 function isAdminUser(u) {
     return Boolean(u) && (u.role === 'admin' || String(u.email || '').toLowerCase() === ADMIN_EMAIL);
@@ -87,9 +91,16 @@ function mountRoutes(app) {
             if (email === ADMIN_EMAIL) return res.status(400).json({ error: 'Este e-mail é reservado.' });
             if (await store.getUserByEmail(email)) return res.status(409).json({ error: 'E-mail já cadastrado.' });
             const hash = await bcrypt.hash(password, 10);
+            // tenta vincular automaticamente ao responsável de mesmo nome
+            let responsavel = '';
+            try {
+                const nomes = (await store.listResponsaveis(true)).map((r) => (typeof r === 'string' ? r : r.name));
+                const match = nomes.find((n) => normalizeName(n) === normalizeName(name));
+                if (match) responsavel = match;
+            } catch { /* ignora */ }
             await store.createUser({
                 id: crypto.randomUUID(), email, name, passwordHash: hash,
-                role: 'user', status: 'pending',
+                role: 'user', status: 'pending', responsavel,
             });
             return res.status(201).json({ ok: true, pending: true });
         } catch (err) {
@@ -187,6 +198,15 @@ function mountRoutes(app) {
     app.post('/api/admin/users/:id/revoke', requireAdmin, async (req, res) => {
         try { res.json(safeUser(await store.setUserStatus(req.params.id, 'revoked', req.auth.email))); }
         catch (err) { res.status(500).json({ error: err.message }); }
+    });
+
+    app.post('/api/admin/users/:id/responsavel', requireAdmin, async (req, res) => {
+        try {
+            const responsavel = String(req.body?.responsavel || '');
+            res.json(safeUser(await store.setUserResponsavel(req.params.id, responsavel)));
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
     });
 
     app.post('/api/admin/users/:id/reset-password', requireAdmin, async (req, res) => {
