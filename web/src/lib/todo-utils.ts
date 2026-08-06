@@ -71,6 +71,12 @@ function matchesDeadline(todo: Initiative, deadline: string) {
   return true;
 }
 
+// Oculta iniciativas cujo responsável está inativo (dados preservados no banco).
+export function hideInactiveOwners(todos: Initiative[], inactive: Set<string>): Initiative[] {
+  if (!inactive || inactive.size === 0) return todos;
+  return todos.filter((t) => !inactive.has((t.owner || "").trim()));
+}
+
 export function filterInitiatives(todos: Initiative[], filters: FilterState) {
   return todos.filter((todo) => {
     const search = normalizeText(filters.search);

@@ -5,11 +5,13 @@ import { ActivityTable } from "@/components/sections/activity-table";
 import { FiltersPanel } from "@/components/sections/filters-panel";
 import { KanbanBoard } from "@/components/sections/kanban-board";
 import { useTodos } from "@/components/providers/todos-provider";
-import { filterInitiatives } from "@/lib/todo-utils";
+import { useResponsaveis } from "@/components/providers/responsaveis-provider";
+import { filterInitiatives, hideInactiveOwners } from "@/lib/todo-utils";
 
 export default function ProjetosPage() {
   const { todos, filters, loading } = useTodos();
-  const filtered = filterInitiatives(todos, filters);
+  const { inactiveNames } = useResponsaveis();
+  const filtered = filterInitiatives(hideInactiveOwners(todos, inactiveNames), filters);
 
   return (
     <div className="space-y-6">

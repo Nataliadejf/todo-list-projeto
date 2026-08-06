@@ -207,7 +207,8 @@ const RESPONSAVEIS_SEED = [
 
 app.get('/api/responsaveis', async (req, res) => {
     try {
-        res.json((await store.listResponsaveis(true)).map((r) => r.name));
+        // devolve todos com o flag active (o front usa ativos p/ seleção e inativos p/ ocultar)
+        res.json((await store.listResponsaveis(false)).map((r) => ({ name: r.name, active: Boolean(r.active) })));
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

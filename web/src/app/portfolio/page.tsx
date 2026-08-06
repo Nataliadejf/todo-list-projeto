@@ -6,11 +6,13 @@ import { InitiativesTable } from "@/components/sections/initiatives-table";
 import { MetricsRow } from "@/components/sections/metrics-row";
 import { PageHeader } from "@/components/layout/page-header";
 import { useTodos } from "@/components/providers/todos-provider";
-import { filterInitiatives } from "@/lib/todo-utils";
+import { useResponsaveis } from "@/components/providers/responsaveis-provider";
+import { filterInitiatives, hideInactiveOwners } from "@/lib/todo-utils";
 
 export default function PortfolioPage() {
   const { todos, filters, loading, error } = useTodos();
-  const filtered = filterInitiatives(todos, filters);
+  const { inactiveNames } = useResponsaveis();
+  const filtered = filterInitiatives(hideInactiveOwners(todos, inactiveNames), filters);
 
   return (
     <div className="flex flex-col gap-4">

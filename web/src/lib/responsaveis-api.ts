@@ -25,8 +25,13 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
   return (text ? JSON.parse(text) : null) as T;
 }
 
+export interface ResponsavelFlag {
+  name: string;
+  active: boolean;
+}
+
 export function fetchResponsaveis() {
-  return request<string[]>("/api/responsaveis");
+  return request<ResponsavelFlag[]>("/api/responsaveis");
 }
 
 export function apiListResponsaveis() {
