@@ -153,7 +153,7 @@ export function FiltersPanel({
 
   return (
     <FadeIn>
-      <Card className="overflow-hidden">
+      <Card className="overflow-visible">
         <CardContent className={cn(compact ? "p-3" : "p-4", isHorizontal ? "space-y-2" : "space-y-3")}>
           {content}
         </CardContent>

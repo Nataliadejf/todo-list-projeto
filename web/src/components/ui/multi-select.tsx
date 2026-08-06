@@ -49,7 +49,7 @@ export function MultiSelect({ label, icon, options, value, onChange, placeholder
         <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">▾</span>
 
         {open ? (
-          <div className="absolute z-50 mt-1 max-h-64 w-full overflow-auto rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+          <div className="column-scroll absolute z-[70] mt-1 max-h-72 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white py-1 shadow-xl">
             {value.length > 0 ? (
               <button
                 type="button"
