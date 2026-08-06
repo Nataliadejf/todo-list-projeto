@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Check, Clock, KeyRound, LogIn, Plus, Power, RefreshCw, ShieldOff, Users } from "lucide-react";
+import { Check, Clock, Crown, KeyRound, LogIn, Plus, Power, RefreshCw, ShieldOff, Users } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,6 +30,20 @@ function fmtDuration(seconds: number) {
   if (h > 0) return `${h}h ${m}min`;
   if (m > 0) return `${m}min`;
   return `${seconds}s`;
+}
+
+// Tempo em dias/horas de trabalho (1 dia = 8h). Ex.: 29h -> "3 dias e 5 horas".
+function fmtWorkTime(seconds: number) {
+  if (!seconds) return "—";
+  const totalMin = Math.round(seconds / 60);
+  if (totalMin < 60) return `${totalMin} min`;
+  const totalHours = Math.floor(totalMin / 60);
+  const days = Math.floor(totalHours / 8);
+  const hours = totalHours - days * 8;
+  const parts: string[] = [];
+  if (days > 0) parts.push(`${days} ${days === 1 ? "dia" : "dias"}`);
+  if (hours > 0 || days === 0) parts.push(`${hours} ${hours === 1 ? "hora" : "horas"}`);
+  return parts.join(" e ");
 }
 
 function fmtDate(value: string | null) {
@@ -206,6 +220,25 @@ export function AdminClient() {
     });
   }, [byMonth]);
 
+  const topUser = useMemo(() => {
+    const withUse = rows.filter((r) => r.sessions > 0);
+    if (withUse.length === 0) return null;
+    return withUse.reduce((a, b) => (b.totalSeconds > a.totalSeconds ? b : a));
+  }, [rows]);
+
+  const userChart = useMemo(
+    () =>
+      rows
+        .filter((r) => r.sessions > 0)
+        .sort((a, b) => b.totalSeconds - a.totalSeconds)
+        .slice(0, 12)
+        .map((u) => ({
+          name: (u.name || u.email || "—").split(" ")[0],
+          horas: Math.round((u.totalSeconds / 3600) * 10) / 10,
+        })),
+    [rows],
+  );
+
   if (!isAdmin) {
     return (
       <Card>
@@ -239,7 +272,7 @@ export function AdminClient() {
           <p className="text-sm text-slate-500">Acessos e tempo de uso a partir das sessões de login.</p>
         </CardHeader>
         <CardContent className="space-y-5">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <div className="rounded-xl bg-gradient-to-br from-violet-500 to-indigo-500 p-4 text-white">
               <p className="flex items-center gap-2 text-xs font-semibold opacity-90"><Users className="h-4 w-4" />Usuários ativos</p>
               <p className="mt-1 text-3xl font-bold">{totals.activeUsers}</p>
@@ -250,21 +283,50 @@ export function AdminClient() {
             </div>
             <div className="rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 p-4 text-white">
               <p className="flex items-center gap-2 text-xs font-semibold opacity-90"><Clock className="h-4 w-4" />Tempo total</p>
-              <p className="mt-1 text-3xl font-bold">{fmtDuration(totals.totalSeconds)}</p>
+              <p className="mt-1 text-2xl font-bold">{fmtWorkTime(totals.totalSeconds)}</p>
+              <p className="text-[11px] opacity-80">1 dia = 8h de trabalho</p>
+            </div>
+            <div className="rounded-xl bg-gradient-to-br from-rose-500 to-pink-500 p-4 text-white">
+              <p className="flex items-center gap-2 text-xs font-semibold opacity-90"><Crown className="h-4 w-4" />Quem mais usa</p>
+              <p className="mt-1 truncate text-lg font-bold" title={topUser ? topUser.email : ""}>
+                {topUser ? topUser.email.split("@")[0] : "—"}
+              </p>
+              <p className="text-[11px] opacity-90">{topUser ? fmtWorkTime(topUser.totalSeconds) : ""}</p>
             </div>
           </div>
-          <div>
-            <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">Acessos por mês (12 meses)</p>
-            <div className="h-56">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                  <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                  <Tooltip />
-                  <Bar dataKey="acessos" name="Acessos" fill="#2563eb" radius={[6, 6, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div>
+              <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">Acessos por mês (12 meses)</p>
+              <div className="h-56">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                    <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                    <Tooltip />
+                    <Bar dataKey="acessos" name="Acessos" fill="#2563eb" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+            <div>
+              <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">Uso por usuário (horas)</p>
+              <div className="h-56">
+                {userChart.length === 0 ? (
+                  <p className="py-16 text-center text-sm text-slate-400">Sem dados de uso ainda.</p>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={userChart} margin={{ top: 8, right: 8, left: 0, bottom: 30 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                      <XAxis dataKey="name" tick={{ fontSize: 11 }} angle={-25} textAnchor="end" height={50} />
+                      <YAxis tick={{ fontSize: 11 }} unit=" h" />
+                      <Tooltip />
+                      <Bar dataKey="horas" name="Horas de uso" fill="#10b981" radius={[6, 6, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
             </div>
           </div>
         </CardContent>
@@ -327,7 +389,7 @@ export function AdminClient() {
                       </select>
                     </td>
                     <td className="px-4 py-3">{u.sessions}</td>
-                    <td className="px-4 py-3">{fmtDuration(u.totalSeconds)}</td>
+                    <td className="px-4 py-3">{fmtWorkTime(u.totalSeconds)}</td>
                     <td className="px-4 py-3">{u.sessions > 0 ? fmtDuration(Math.round(u.totalSeconds / u.sessions)) : "—"}</td>
                     <td className="px-4 py-3 text-slate-600">{fmtDate(u.lastLogin)}</td>
                     <td className="px-4 py-3">
