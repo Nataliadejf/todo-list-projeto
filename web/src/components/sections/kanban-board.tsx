@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Flag, GripVertical, Trash2 } from "lucide-react";
+import { GripVertical, Trash2 } from "lucide-react";
 import { KANBAN_COLUMNS } from "@/lib/constants";
 import { getKanbanStage, normalizeStatus, toInitiativeInput } from "@/lib/todo-utils";
 import type { Initiative, InitiativeInput, KanbanStage } from "@/lib/types";
@@ -19,18 +19,14 @@ interface KanbanBoardProps {
 // Ao soltar um card numa coluna, define os campos que refletem aquela etapa.
 function stagePatch(stage: KanbanStage): Partial<InitiativeInput> {
   switch (stage) {
-    case "aprovacao":
-      return { approved: false, deprioritized: false };
     case "nao_iniciado":
-      return { status: "Não Iniciado", approved: true, deprioritized: false, completed: false };
+      return { status: "Não Iniciado", deprioritized: false, completed: false };
     case "andamento":
-      return { status: "Em Andamento", approved: true, deprioritized: false, completed: false };
-    case "atrasado":
-      return { status: "Atrasado", approved: true, deprioritized: false, completed: false };
+      return { status: "Em Andamento", deprioritized: false, completed: false };
     case "concluido":
-      return { status: "Concluído", approved: true, deprioritized: false, completed: true };
+      return { status: "Concluído", deprioritized: false, completed: true };
     case "despriorizados":
-      return { status: "Despriorizado", approved: false, deprioritized: true, completed: false };
+      return { status: "Despriorizado", deprioritized: true, completed: false };
     default:
       return {};
   }
@@ -47,22 +43,8 @@ function KanbanCard({
   onDragEnd: () => void;
   dragging: boolean;
 }) {
-  const { update, remove } = useTodos();
+  const { remove } = useTodos();
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const stage = getKanbanStage(todo);
-
-  async function toggleApproval() {
-    const nextApproved = !todo.approved;
-    await update(todo.dbId, {
-      ...toInitiativeInput(todo),
-      approved: nextApproved,
-      deprioritized: nextApproved ? false : todo.deprioritized,
-    });
-  }
-
-  async function deprioritize() {
-    await update(todo.dbId, { ...toInitiativeInput(todo), approved: false, deprioritized: true });
-  }
 
   async function handleDelete() {
     if (!confirmDelete) {
@@ -104,24 +86,6 @@ function KanbanCard({
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-1 border-t border-slate-100 pt-2">
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
-          title={todo.approved ? "Aprovada" : "Aprovar"}
-          aria-label={todo.approved ? "Remover aprovação" : "Aprovar"}
-          onClick={() => void toggleApproval()}
-        >
-          <Flag className={cn("h-3.5 w-3.5", todo.approved ? "fill-emerald-500 text-emerald-600" : "text-slate-300")} />
-        </Button>
-
-        {stage === "aprovacao" ? (
-          <Button type="button" variant="ghost" size="sm" className="h-8 text-xs" onClick={() => void deprioritize()}>
-            Despriorizar
-          </Button>
-        ) : null}
-
         {confirmDelete ? (
           <>
             <Button type="button" variant="destructive" size="sm" className="h-8 text-xs" onClick={() => void handleDelete()}>

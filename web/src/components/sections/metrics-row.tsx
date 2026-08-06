@@ -15,7 +15,7 @@ const items = [
   { key: "inProgress", label: "Em Andamento", color: "text-blue-600" },
   { key: "done", label: "Concluídos", color: "text-emerald-600" },
   { key: "notStarted", label: "Não Iniciados", color: "text-slate-600" },
-  { key: "inApproval", label: "Em Aprovação", color: "text-orange-500" },
+  { key: "overdue", label: "Atrasadas", color: "text-rose-600" },
 ] as const;
 
 export function MetricsRow({ todos, compact = false }: MetricsRowProps) {

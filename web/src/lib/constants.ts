@@ -35,6 +35,7 @@ export const LABEL_MAP: Record<string, string> = {
   initiative: "Iniciativa",
   owner: "Responsável",
   backup: "Backup (Responsável)",
+  efficacyIndicator: "Indicador de Eficácia (acompanhamento)",
   description: "Descrição (Breve Descritivo)",
   deliveries: "Entregas",
   gainCategory: "Categoria Ganho",
@@ -64,6 +65,7 @@ export const EDITABLE_KEYS = [
   "initiative",
   "owner",
   "backup",
+  "efficacyIndicator",
   "description",
   "deliveries",
   "gainCategory",
@@ -104,7 +106,6 @@ export const STATUS_OPTIONS = [
   { value: "Não Iniciado", label: "Não Iniciado" },
   { value: "Em Andamento", label: "Em Andamento" },
   { value: "Concluído", label: "Concluído" },
-  { value: "Atrasado", label: "Atrasado" },
   { value: "Despriorizado", label: "Despriorizado" },
 ] as const;
 
@@ -138,7 +139,7 @@ export const TAMANHO_OPTIONS = ["PP", "P", "M", "G", "GG"] as const;
 export const GUT_OPTIONS = ["1", "3", "5"] as const;
 export const SIM_NAO_OPTIONS = ["Sim", "Não"] as const;
 export const INITIATIVE_STATUS_OPTIONS = [
-  "Não Iniciado", "Em Andamento", "Concluído", "Atrasado", "Despriorizado",
+  "Não Iniciado", "Em Andamento", "Concluído", "Despriorizado",
 ] as const;
 
 export const DEADLINE_OPTIONS = [
@@ -150,10 +151,8 @@ export const DEADLINE_OPTIONS = [
 ] as const;
 
 export const KANBAN_COLUMNS = [
-  { id: "aprovacao", title: "Em Aprovação", dotClass: "bg-violet-500" },
   { id: "nao_iniciado", title: "Não Iniciado", dotClass: "bg-blue-500" },
   { id: "andamento", title: "Em Andamento", dotClass: "bg-amber-400" },
-  { id: "atrasado", title: "Atrasado", dotClass: "bg-rose-500" },
   { id: "concluido", title: "Concluído", dotClass: "bg-emerald-500" },
   { id: "despriorizados", title: "Despriorizado", dotClass: "bg-slate-400" },
 ] as const;

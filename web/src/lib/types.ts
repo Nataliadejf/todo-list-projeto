@@ -19,14 +19,11 @@ export type InitiativeStatus =
   | "Não Iniciado"
   | "Em Andamento"
   | "Concluído"
-  | "Atrasado"
   | "Despriorizado";
 
 export type KanbanStage =
-  | "aprovacao"
   | "nao_iniciado"
   | "andamento"
-  | "atrasado"
   | "concluido"
   | "despriorizados";
 
@@ -38,6 +35,7 @@ export interface Initiative {
   initiative: string;
   owner: string;
   backup: string;
+  efficacyIndicator: string;
   description: string;
   deliveries: string;
   gainCategory: string;

@@ -17,7 +17,7 @@ const crypto = require('crypto');
 const monthKeys = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 
 const textFields = [
-    'id', 'area', 'front', 'initiative', 'owner', 'backup', 'description', 'deliveries', 'gainCategory', 'gainDescription', 'size',
+    'id', 'area', 'front', 'initiative', 'owner', 'backup', 'efficacyIndicator', 'description', 'deliveries', 'gainCategory', 'gainDescription', 'size',
     'weight', 'status', 'startDate', 'plannedEndDate', 'realEndDate', 'deadlineDays', 'deadlinePercent', 'progressPercent',
     'severity', 'urgency', 'strategy', 'priority', 'impediment', 'notes', 'weightedDelivery',
 ];
@@ -180,6 +180,7 @@ async function ensureSchema() {
     await query(`ALTER TABLE ${tableRef('tasks')} ADD COLUMN IF NOT EXISTS startDate STRING`).catch(() => {});
     await query(`ALTER TABLE ${tableRef('tasks')} ADD COLUMN IF NOT EXISTS endDate STRING`).catch(() => {});
     await query(`ALTER TABLE ${tableRef('todos')} ADD COLUMN IF NOT EXISTS backup STRING`).catch(() => {});
+    await query(`ALTER TABLE ${tableRef('todos')} ADD COLUMN IF NOT EXISTS efficacyIndicator STRING`).catch(() => {});
 }
 
 async function ensureTable(dataset, name, schema) {

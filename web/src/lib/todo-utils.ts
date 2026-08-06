@@ -3,11 +3,22 @@ import { MONTH_KEYS, type FilterState, type Initiative, type KanbanStage } from 
 export function normalizeStatus(status: string): string {
   const raw = String(status || "").trim().toLowerCase();
   if (raw === "concluido" || raw === "concluído") return "Concluído";
-  if (raw === "em andamento") return "Em Andamento";
-  if (raw === "atrasado") return "Atrasado";
+  // "Atrasado" foi descontinuado como status — vira "Em Andamento" (o atraso é visual).
+  if (raw === "em andamento" || raw === "atrasado") return "Em Andamento";
   if (raw === "despriorizado" || raw === "despriorizada") return "Despriorizado";
   if (raw === "a fazer" || raw === "não iniciado" || raw === "nao iniciado") return "Não Iniciado";
   return status || "Não Iniciado";
+}
+
+// Iniciativa atrasada: data prevista de fim já passou e não está concluída/despriorizada.
+export function isOverdue(todo: Initiative): boolean {
+  const end = parseDate(todo.plannedEndDate);
+  if (!end) return false;
+  const status = normalizeStatus(todo.status);
+  if (status === "Concluído" || status === "Despriorizado" || todo.completed || todo.deprioritized) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return end < today;
 }
 
 export function normalizeInitiative(
@@ -99,14 +110,14 @@ export function getMetrics(todos: Initiative[]) {
   let notStarted = 0;
   let inProgress = 0;
   let done = 0;
-  let inApproval = 0;
+  let overdue = 0;
 
   todos.forEach((todo) => {
     const status = normalizeStatus(todo.status);
     if (status === "Concluído" || todo.completed) done += 1;
     else if (status === "Em Andamento") inProgress += 1;
     else if (status === "Não Iniciado") notStarted += 1;
-    if (!todo.approved && !todo.deprioritized && status !== "Concluído") inApproval += 1;
+    if (isOverdue(todo)) overdue += 1;
   });
 
   return {
@@ -114,7 +125,7 @@ export function getMetrics(todos: Initiative[]) {
     notStarted,
     inProgress,
     done,
-    inApproval,
+    overdue,
   };
 }
 
@@ -126,11 +137,9 @@ export function toInitiativeInput(todo: Initiative): Omit<Initiative, "dbId"> {
 export function getKanbanStage(todo: Initiative): KanbanStage {
   const status = normalizeStatus(todo.status);
   if (todo.deprioritized || status === "Despriorizado") return "despriorizados";
-  if (!todo.approved) return "aprovacao";
   if (status === "Concluído" || todo.completed) return "concluido";
-  if (status === "Atrasado") return "atrasado";
   if (status === "Em Andamento") return "andamento";
-  return "nao_iniciado";
+  return "nao_iniciado"; // Não Iniciado (aprovação foi descontinuada)
 }
 
 export function getPriorityScore(todo: Initiative): number {

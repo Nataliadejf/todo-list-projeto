@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Eye, Flag, Pencil, Trash2 } from "lucide-react";
+import { Eye, Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { getDeadlineAlert, getPriorityBand, getPriorityScore, normalizeStatus, toInitiativeInput } from "@/lib/todo-utils";
+import { getDeadlineAlert, getPriorityBand, getPriorityScore, isOverdue, normalizeStatus } from "@/lib/todo-utils";
 import type { Initiative } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,17 +19,8 @@ interface InitiativesTableProps {
 }
 
 export function InitiativesTable({ todos, title = "Todas as Iniciativas", tall = false }: InitiativesTableProps) {
-  const { remove, update } = useTodos();
+  const { remove } = useTodos();
   const [deletingId, setDeletingId] = useState<number | null>(null);
-
-  async function toggleApproval(todo: Initiative) {
-    const nextApproved = !todo.approved;
-    await update(todo.dbId, {
-      ...toInitiativeInput(todo),
-      approved: nextApproved,
-      deprioritized: nextApproved ? false : todo.deprioritized,
-    });
-  }
 
   async function confirmRemove(todo: Initiative) {
     if (deletingId !== todo.dbId) {
@@ -55,8 +46,8 @@ export function InitiativesTable({ todos, title = "Todas as Iniciativas", tall =
               <tr>
                 <th className="px-5 py-3">#</th>
                 <th className="px-5 py-3">Iniciativa</th>
-                <th className="px-4 py-3">Aprovação</th>
                 <th className="px-4 py-3">Área</th>
+                <th className="px-4 py-3">Tamanho</th>
                 <th className="px-4 py-3">Responsável</th>
                 <th className="px-4 py-3">Prev. Fim</th>
                 <th className="px-4 py-3">Alerta</th>
@@ -78,7 +69,13 @@ export function InitiativesTable({ todos, title = "Todas as Iniciativas", tall =
                   const alert = getDeadlineAlert(todo);
                   const isConfirmingDelete = deletingId === todo.dbId;
                   return (
-                    <tr key={todo.dbId} className="border-b border-slate-100 hover:bg-slate-50/60">
+                    <tr
+                      key={todo.dbId}
+                      className={cn(
+                        "border-b border-slate-100 hover:bg-slate-50/60",
+                        isOverdue(todo) ? "bg-rose-50/40" : "",
+                      )}
+                    >
                       <td className="px-5 py-3.5 font-medium text-slate-700">{todo.id}</td>
                       <td className="max-w-[260px] px-5 py-3.5">
                         <p className="pl-0.5 font-medium leading-snug text-slate-900">{todo.initiative}</p>
@@ -91,26 +88,18 @@ export function InitiativesTable({ todos, title = "Todas as Iniciativas", tall =
                           </p>
                         ) : null}
                       </td>
-                      <td className="px-4 py-3.5">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          aria-label={todo.approved ? "Remover aprovação" : "Aprovar iniciativa"}
-                          title={todo.approved ? "Aprovada" : "Aguardando aprovação"}
-                          onClick={() => void toggleApproval(todo)}
-                        >
-                          <Flag
-                            className={cn(
-                              "h-4 w-4",
-                              todo.approved ? "fill-emerald-500 text-emerald-600" : "text-slate-300",
-                            )}
-                          />
-                        </Button>
-                      </td>
                       <td className="px-4 py-3.5 text-slate-600">{todo.area || "—"}</td>
+                      <td className="px-4 py-3.5 text-slate-600">{todo.size || "—"}</td>
                       <td className="px-4 py-3.5 text-slate-600">{todo.owner || "—"}</td>
-                      <td className="px-4 py-3.5 text-slate-600">{todo.plannedEndDate || "—"}</td>
+                      <td
+                        className={cn(
+                          "px-4 py-3.5",
+                          isOverdue(todo) ? "font-semibold text-rose-600" : "text-slate-600",
+                        )}
+                        title={isOverdue(todo) ? "Prazo vencido" : undefined}
+                      >
+                        {todo.plannedEndDate || "—"}
+                      </td>
                       <td className="px-4 py-3.5">
                         <Badge
                           variant={
