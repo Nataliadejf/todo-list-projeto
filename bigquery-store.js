@@ -472,6 +472,15 @@ async function setUserResponsavel(id, responsavel) {
     return getUserById(id);
 }
 
+async function setUserRole(id, role) {
+    await query(
+        `UPDATE ${tableRef('users')} SET role = @role WHERE id = @id`,
+        { id: String(id), role: String(role) },
+        { id: 'STRING', role: 'STRING' },
+    );
+    return getUserById(id);
+}
+
 async function setUserStatus(id, status, approvedBy) {
     await query(
         `UPDATE ${tableRef('users')} SET status=@status, approvedAt=@approvedAt, approvedBy=@approvedBy WHERE id=@id`,
@@ -576,6 +585,7 @@ module.exports = {
     createUser,
     setUserStatus,
     setUserResponsavel,
+    setUserRole,
     updateUserPasswordHash,
     listUsers,
     startSession,

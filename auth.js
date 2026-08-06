@@ -209,6 +209,15 @@ function mountRoutes(app) {
         }
     });
 
+    app.post('/api/admin/users/:id/role', requireAdmin, async (req, res) => {
+        try {
+            const role = req.body?.role === 'admin' ? 'admin' : 'user';
+            res.json(safeUser(await store.setUserRole(req.params.id, role)));
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
     app.post('/api/admin/users/:id/reset-password', requireAdmin, async (req, res) => {
         try {
             const next = String(req.body?.password || '');

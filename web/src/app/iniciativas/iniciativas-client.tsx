@@ -8,6 +8,7 @@ import { InitiativesTable } from "@/components/sections/initiatives-table";
 import { FiltersPanel } from "@/components/sections/filters-panel";
 import { useTodos } from "@/components/providers/todos-provider";
 import { useResponsaveis } from "@/components/providers/responsaveis-provider";
+import { useAuth } from "@/components/providers/auth-provider";
 import { filterInitiatives, hideInactiveOwners } from "@/lib/todo-utils";
 
 export function IniciativasClient() {
@@ -15,13 +16,15 @@ export function IniciativasClient() {
   const editId = Number(searchParams.get("edit"));
   const { todos, filters } = useTodos();
   const { inactiveNames } = useResponsaveis();
+  const { isAdmin } = useAuth();
 
   const editing = useMemo(
     () => (editId ? todos.find((item) => item.dbId === editId) ?? null : null),
     [editId, todos],
   );
 
-  const filtered = filterInitiatives(hideInactiveOwners(todos, inactiveNames), filters);
+  const base = isAdmin ? todos : hideInactiveOwners(todos, inactiveNames);
+  const filtered = filterInitiatives(base, filters);
 
   return (
     <div className="space-y-6">

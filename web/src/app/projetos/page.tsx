@@ -6,12 +6,15 @@ import { FiltersPanel } from "@/components/sections/filters-panel";
 import { KanbanBoard } from "@/components/sections/kanban-board";
 import { useTodos } from "@/components/providers/todos-provider";
 import { useResponsaveis } from "@/components/providers/responsaveis-provider";
+import { useAuth } from "@/components/providers/auth-provider";
 import { filterInitiatives, hideInactiveOwners } from "@/lib/todo-utils";
 
 export default function ProjetosPage() {
   const { todos, filters, loading } = useTodos();
   const { inactiveNames } = useResponsaveis();
-  const filtered = filterInitiatives(hideInactiveOwners(todos, inactiveNames), filters);
+  const { isAdmin } = useAuth();
+  const base = isAdmin ? todos : hideInactiveOwners(todos, inactiveNames);
+  const filtered = filterInitiatives(base, filters);
 
   return (
     <div className="space-y-6">

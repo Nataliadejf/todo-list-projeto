@@ -608,6 +608,11 @@ async function setUserResponsavel(id, responsavel) {
     return getUserById(id);
 }
 
+async function setUserRole(id, role) {
+    await run('UPDATE users SET role = ? WHERE id = ?', [String(role), String(id)]);
+    return getUserById(id);
+}
+
 async function updateUserPasswordHash(id, passwordHash) {
     await run('UPDATE users SET passwordHash = ? WHERE id = ?', [passwordHash, String(id)]);
 }
@@ -698,6 +703,7 @@ module.exports = {
     createUser,
     setUserStatus,
     setUserResponsavel,
+    setUserRole,
     updateUserPasswordHash,
     listUsers,
     startSession,

@@ -7,12 +7,15 @@ import { MetricsRow } from "@/components/sections/metrics-row";
 import { PageHeader } from "@/components/layout/page-header";
 import { useTodos } from "@/components/providers/todos-provider";
 import { useResponsaveis } from "@/components/providers/responsaveis-provider";
+import { useAuth } from "@/components/providers/auth-provider";
 import { filterInitiatives, hideInactiveOwners } from "@/lib/todo-utils";
 
 export default function PortfolioPage() {
   const { todos, filters, loading, error } = useTodos();
   const { inactiveNames } = useResponsaveis();
-  const filtered = filterInitiatives(hideInactiveOwners(todos, inactiveNames), filters);
+  const { isAdmin } = useAuth();
+  const base = isAdmin ? todos : hideInactiveOwners(todos, inactiveNames);
+  const filtered = filterInitiatives(base, filters);
 
   return (
     <div className="flex flex-col gap-4">

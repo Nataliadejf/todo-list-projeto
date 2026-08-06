@@ -93,3 +93,10 @@ export function apiSetUserResponsavel(id: string, responsavel: string) {
     body: JSON.stringify({ responsavel }),
   });
 }
+
+export function apiSetUserRole(id: string, role: "admin" | "user") {
+  return request<AuthUser>(`/api/admin/users/${id}/role`, {
+    method: "POST",
+    body: JSON.stringify({ role }),
+  });
+}

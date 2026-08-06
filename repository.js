@@ -60,6 +60,7 @@ module.exports = {
     createUser: (...args) => backend.createUser(...args),
     setUserStatus: (...args) => backend.setUserStatus(...args),
     setUserResponsavel: (...args) => backend.setUserResponsavel(...args),
+    setUserRole: (...args) => backend.setUserRole(...args),
     updateUserPasswordHash: (...args) => backend.updateUserPasswordHash(...args),
     listUsers: (...args) => backend.listUsers(...args),
     startSession: (...args) => backend.startSession(...args),

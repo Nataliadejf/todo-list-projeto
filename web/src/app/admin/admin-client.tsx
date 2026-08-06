@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/components/providers/auth-provider";
-import { apiApproveUser, apiListUsers, apiResetUserPassword, apiRevokeUser, apiSetUserResponsavel, type AdminUserRow } from "@/lib/auth-api";
+import { apiApproveUser, apiListUsers, apiResetUserPassword, apiRevokeUser, apiSetUserResponsavel, apiSetUserRole, type AdminUserRow } from "@/lib/auth-api";
 import { apiAddResponsavel, apiListResponsaveis, apiToggleResponsavel, type Responsavel } from "@/lib/responsaveis-api";
 
 function fmtDuration(seconds: number) {
@@ -153,6 +153,18 @@ export function AdminClient() {
     }
   };
 
+  const setRole = async (u: AdminUserRow, role: "admin" | "user") => {
+    setBusyId(u.id);
+    try {
+      await apiSetUserRole(u.id, role);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao alterar o papel.");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const pending = useMemo(() => rows.filter((r) => r.status === "pending").length, [rows]);
 
   if (!isAdmin) {
@@ -208,7 +220,18 @@ export function AdminClient() {
                   <tr key={u.id} className="border-b border-slate-100 hover:bg-slate-50/60">
                     <td className="px-4 py-3 font-medium text-slate-800">{u.name || "—"}</td>
                     <td className="px-4 py-3 text-slate-600">{u.email}</td>
-                    <td className="px-4 py-3">{u.role === "admin" ? "Admin" : "Usuário"}</td>
+                    <td className="px-4 py-3">
+                      <select
+                        className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-xs text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30"
+                        value={u.role === "admin" ? "admin" : "user"}
+                        disabled={busyId === u.id}
+                        onChange={(e) => void setRole(u, e.target.value as "admin" | "user")}
+                        title="Papel do usuário"
+                      >
+                        <option value="user">Usuário</option>
+                        <option value="admin">Admin</option>
+                      </select>
+                    </td>
                     <td className="px-4 py-3">
                       <Badge variant={statusBadge(u.status)}>{statusLabel[u.status] || u.status}</Badge>
                     </td>
