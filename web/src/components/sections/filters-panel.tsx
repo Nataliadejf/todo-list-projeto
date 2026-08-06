@@ -8,13 +8,14 @@ import {
   Search,
   User,
 } from "lucide-react";
-import { DEADLINE_OPTIONS, STATUS_OPTIONS, TAMANHO_OPTIONS } from "@/lib/constants";
+import { DEADLINE_OPTIONS, INITIATIVE_STATUS_OPTIONS, TAMANHO_OPTIONS } from "@/lib/constants";
 import { getUniqueValues } from "@/lib/todo-utils";
 import { useTodos } from "@/components/providers/todos-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { SelectField } from "@/components/ui/select-field";
+import { MultiSelect } from "@/components/ui/multi-select";
 import { FadeIn } from "@/components/ui/fade-in";
 import { cn } from "@/lib/utils";
 
@@ -65,63 +66,44 @@ export function FiltersPanel({
         </div>
 
         {showStatus ? (
-          <SelectField
+          <MultiSelect
             label={isHorizontal ? undefined : "Status"}
             icon={<BarChart3 className="h-4 w-4" />}
+            options={INITIATIVE_STATUS_OPTIONS}
             value={filters.status}
-            onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))}
-          >
-            {STATUS_OPTIONS.map((option) => (
-              <option key={option.value || "all"} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </SelectField>
+            onChange={(v) => setFilters((prev) => ({ ...prev, status: v }))}
+            placeholder="Todos"
+          />
         ) : null}
 
         {showSize ? (
-          <SelectField
+          <MultiSelect
             label={isHorizontal ? undefined : "Tamanho"}
             icon={<Ruler className="h-4 w-4" />}
+            options={TAMANHO_OPTIONS}
             value={filters.size}
-            onChange={(e) => setFilters((prev) => ({ ...prev, size: e.target.value }))}
-          >
-            <option value="">Todos os tamanhos</option>
-            {TAMANHO_OPTIONS.map((size) => (
-              <option key={size} value={size}>
-                {size}
-              </option>
-            ))}
-          </SelectField>
+            onChange={(v) => setFilters((prev) => ({ ...prev, size: v }))}
+            placeholder="Todos os tamanhos"
+          />
         ) : null}
 
-        <SelectField
+        <MultiSelect
           label={isHorizontal ? undefined : "Responsável"}
           icon={<User className="h-4 w-4" />}
+          options={owners}
           value={filters.owner}
-          onChange={(e) => setFilters((prev) => ({ ...prev, owner: e.target.value }))}
-        >
-          <option value="">Todos</option>
-          {owners.map((owner) => (
-            <option key={owner} value={owner}>
-              {owner}
-            </option>
-          ))}
-        </SelectField>
+          onChange={(v) => setFilters((prev) => ({ ...prev, owner: v }))}
+          placeholder="Todos"
+        />
 
         {showArea ? (
-          <SelectField
+          <MultiSelect
             label={isHorizontal ? undefined : "Área"}
+            options={areas}
             value={filters.area}
-            onChange={(e) => setFilters((prev) => ({ ...prev, area: e.target.value }))}
-          >
-            <option value="">Todas</option>
-            {areas.map((area) => (
-              <option key={area} value={area}>
-                {area}
-              </option>
-            ))}
-          </SelectField>
+            onChange={(v) => setFilters((prev) => ({ ...prev, area: v }))}
+            placeholder="Todas"
+          />
         ) : null}
 
         {showDeadline ? (

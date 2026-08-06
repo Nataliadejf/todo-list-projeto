@@ -110,11 +110,11 @@ export const EMPTY_TASK: TaskInput = {
 
 export interface FilterState {
   search: string;
-  status: string;
+  status: string[];
   weight: string;
-  size: string;
-  owner: string;
-  area: string;
+  size: string[];
+  owner: string[];
+  area: string[];
   deadline: string;
   periodStart: string;
   periodEnd: string;
@@ -122,11 +122,11 @@ export interface FilterState {
 
 export const EMPTY_FILTERS: FilterState = {
   search: "",
-  status: "",
+  status: [],
   weight: "",
-  size: "",
-  owner: "",
-  area: "",
+  size: [],
+  owner: [],
+  area: [],
   deadline: "",
   periodStart: "",
   periodEnd: "",

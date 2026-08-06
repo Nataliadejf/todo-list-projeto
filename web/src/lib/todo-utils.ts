@@ -87,10 +87,10 @@ export function filterInitiatives(todos: Initiative[], filters: FilterState) {
         .toLowerCase();
       if (!haystack.includes(search)) return false;
     }
-    if (filters.status && normalizeText(todo.status) !== normalizeText(filters.status)) return false;
-    if (filters.owner && normalizeText(todo.owner) !== normalizeText(filters.owner)) return false;
-    if (filters.area && normalizeText(todo.area) !== normalizeText(filters.area)) return false;
-    if (filters.size && normalizeText(todo.size) !== normalizeText(filters.size)) return false;
+    if (filters.status.length && !filters.status.some((v) => normalizeText(v) === normalizeText(todo.status))) return false;
+    if (filters.owner.length && !filters.owner.some((v) => normalizeText(v) === normalizeText(todo.owner))) return false;
+    if (filters.area.length && !filters.area.some((v) => normalizeText(v) === normalizeText(todo.area))) return false;
+    if (filters.size.length && !filters.size.some((v) => normalizeText(v) === normalizeText(todo.size))) return false;
     if (!matchesDeadline(todo, filters.deadline)) return false;
 
     const rangeStart = parseDate(filters.periodStart);
