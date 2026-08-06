@@ -11,6 +11,8 @@ import {
 import { DEADLINE_OPTIONS, INITIATIVE_STATUS_OPTIONS, TAMANHO_OPTIONS } from "@/lib/constants";
 import { getUniqueValues } from "@/lib/todo-utils";
 import { useTodos } from "@/components/providers/todos-provider";
+import { useResponsaveis } from "@/components/providers/responsaveis-provider";
+import { useAuth } from "@/components/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -39,7 +41,9 @@ export function FiltersPanel({
   layout = "sidebar",
 }: FiltersPanelProps) {
   const { todos, filters, setFilters, clearFilters, refresh, loading } = useTodos();
-  const owners = getUniqueValues(todos, "owner");
+  const { inactiveNames } = useResponsaveis();
+  const { isAdmin } = useAuth();
+  const owners = getUniqueValues(todos, "owner").filter((o) => !inactiveNames.has(o.trim()));
   const areas = getUniqueValues(todos, "area");
   const isHorizontal = layout === "horizontal";
 
@@ -147,6 +151,16 @@ export function FiltersPanel({
         <Button type="button" variant="ghost" size="sm" onClick={clearFilters}>
           Limpar filtros
         </Button>
+        {isAdmin ? (
+          <label className="ml-auto inline-flex items-center gap-2 text-xs font-medium text-slate-600">
+            <input
+              type="checkbox"
+              checked={filters.showInactive}
+              onChange={(e) => setFilters((prev) => ({ ...prev, showInactive: e.target.checked }))}
+            />
+            Mostrar responsáveis inativos
+          </label>
+        ) : null}
       </div>
   </>
   );

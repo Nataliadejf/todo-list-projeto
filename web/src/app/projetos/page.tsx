@@ -13,7 +13,7 @@ export default function ProjetosPage() {
   const { todos, filters, loading } = useTodos();
   const { inactiveNames } = useResponsaveis();
   const { isAdmin } = useAuth();
-  const base = isAdmin ? todos : hideInactiveOwners(todos, inactiveNames);
+  const base = isAdmin && filters.showInactive ? todos : hideInactiveOwners(todos, inactiveNames);
   const filtered = filterInitiatives(base, filters);
 
   return (

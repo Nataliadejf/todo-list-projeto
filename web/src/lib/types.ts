@@ -118,6 +118,7 @@ export interface FilterState {
   deadline: string;
   periodStart: string;
   periodEnd: string;
+  showInactive: boolean;
 }
 
 export const EMPTY_FILTERS: FilterState = {
@@ -130,4 +131,5 @@ export const EMPTY_FILTERS: FilterState = {
   deadline: "",
   periodStart: "",
   periodEnd: "",
+  showInactive: false,
 };

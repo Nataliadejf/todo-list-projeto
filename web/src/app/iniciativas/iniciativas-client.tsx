@@ -23,7 +23,7 @@ export function IniciativasClient() {
     [editId, todos],
   );
 
-  const base = isAdmin ? todos : hideInactiveOwners(todos, inactiveNames);
+  const base = isAdmin && filters.showInactive ? todos : hideInactiveOwners(todos, inactiveNames);
   const filtered = filterInitiatives(base, filters);
 
   return (

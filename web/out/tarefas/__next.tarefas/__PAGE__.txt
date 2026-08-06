@@ -1,6 +1,6 @@
 1:"$Sreact.fragment"
 2:"$Sreact.suspense"
-3:I[29415,["615","static/chunks/615-421284c7527de0df.js","145","static/chunks/app/tarefas/page-9dad3fbdd1f75b39.js"],"TarefasClient"]
+3:I[29415,["615","static/chunks/615-421284c7527de0df.js","145","static/chunks/app/tarefas/page-58d98f60a8497a37.js"],"TarefasClient"]
 4:I[90484,[],"OutletBoundary"]
-0:{"rsc":["$","$1","c",{"children":[["$","$2",null,{"fallback":["$","p",null,{"className":"text-sm text-slate-500","children":"Carregando tarefas..."}],"children":["$","$L3",null,{}]}],null,["$","$L4",null,{"children":["$","$2",null,{"name":"Next.MetadataOutlet","children":"$@5"}]}]]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"yz9kcetLTvDd1dA2zJoHt"}
+0:{"rsc":["$","$1","c",{"children":[["$","$2",null,{"fallback":["$","p",null,{"className":"text-sm text-slate-500","children":"Carregando tarefas..."}],"children":["$","$L3",null,{}]}],null,["$","$L4",null,{"children":["$","$2",null,{"name":"Next.MetadataOutlet","children":"$@5"}]}]]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"DJAmVOpNYM7aEYCv8fxpI"}
 5:null
