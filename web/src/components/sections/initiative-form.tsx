@@ -9,10 +9,10 @@ import {
   INITIATIVE_STATUS_OPTIONS,
   LABEL_MAP,
   MONTH_LABELS,
-  RESPONSAVEL_OPTIONS,
   SIM_NAO_OPTIONS,
   TAMANHO_OPTIONS,
 } from "@/lib/constants";
+import { useResponsaveis } from "@/components/providers/responsaveis-provider";
 import { downloadInitiativesCsv } from "@/lib/csv-export";
 import { MONTH_KEYS, type Initiative, type InitiativeInput } from "@/lib/types";
 import { getUniqueValues, normalizeInitiative } from "@/lib/todo-utils";
@@ -84,6 +84,7 @@ interface InitiativeFormProps {
 
 export function InitiativeForm({ editing, onSaved, onCancelEdit }: InitiativeFormProps) {
   const { todos, create, update, remove } = useTodos();
+  const { responsaveis } = useResponsaveis();
   const [form, setForm] = useState<InitiativeInput>(emptyInitiative);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -176,8 +177,8 @@ export function InitiativeForm({ editing, onSaved, onCancelEdit }: InitiativeFor
               </div>
               <div className="grid gap-3 md:grid-cols-3">
                 <Field fieldKey="initiative" value={form.initiative} onChange={updateField} required />
-                <Field fieldKey="owner" value={form.owner} onChange={updateField} required options={RESPONSAVEL_OPTIONS} />
-                <Field fieldKey="backup" value={form.backup} onChange={updateField} options={RESPONSAVEL_OPTIONS} />
+                <Field fieldKey="owner" value={form.owner} onChange={updateField} required options={responsaveis} />
+                <Field fieldKey="backup" value={form.backup} onChange={updateField} options={responsaveis} />
               </div>
               <Field fieldKey="description" value={form.description} onChange={updateField} />
             </section>

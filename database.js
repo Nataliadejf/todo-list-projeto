@@ -100,6 +100,15 @@ const createSessionsSql = `
     )
 `;
 
+const createResponsaveisSql = `
+    CREATE TABLE IF NOT EXISTS responsaveis (
+        id TEXT PRIMARY KEY,
+        name TEXT,
+        active BOOLEAN DEFAULT true
+    )
+`;
+const createResponsaveisSqlite = createResponsaveisSql.replace('BOOLEAN DEFAULT true', 'INTEGER DEFAULT 1');
+
 let adapter = null;
 
 function toPgParams(sql) {
@@ -276,6 +285,7 @@ async function initDatabase() {
         await pool.query(createTasksSql);
         await pool.query(createUsersSql);
         await pool.query(createSessionsSql);
+        await pool.query(createResponsaveisSql);
         adapter = { type: 'postgres', pool, persistent: true };
         await ensureApprovalColumns();
         await ensureTaskColumns();
@@ -301,6 +311,9 @@ async function initDatabase() {
     });
     await new Promise((resolve, reject) => {
         db.run(createSessionsSql, (err) => (err ? reject(err) : resolve()));
+    });
+    await new Promise((resolve, reject) => {
+        db.run(createResponsaveisSqlite, (err) => (err ? reject(err) : resolve()));
     });
     await ensureSqliteSchema(db);
 
@@ -584,6 +597,35 @@ async function touchSession(id) {
     await run('UPDATE sessions SET lastSeenAt = ? WHERE id = ?', [new Date().toISOString(), String(id)]);
 }
 
+// ---- Responsáveis (ativo/inativo) ----
+async function listResponsaveis(activeOnly) {
+    const rows = await all(
+        activeOnly ? 'SELECT * FROM responsaveis WHERE active = ? ORDER BY name' : 'SELECT * FROM responsaveis ORDER BY name',
+        activeOnly ? [adapter.type === 'postgres' ? true : 1] : [],
+    );
+    return rows.map((r) => ({ id: r.id, name: r.name, active: Boolean(r.active) }));
+}
+
+async function addResponsavel(name) {
+    const id = require('crypto').randomUUID();
+    await run('INSERT INTO responsaveis (id, name, active) VALUES (?, ?, ?)',
+        [id, String(name), adapter.type === 'postgres' ? true : 1]);
+    return { id, name: String(name), active: true };
+}
+
+async function setResponsavelActive(id, active) {
+    const val = adapter.type === 'postgres' ? Boolean(active) : (active ? 1 : 0);
+    await run('UPDATE responsaveis SET active = ? WHERE id = ?', [val, String(id)]);
+}
+
+async function seedResponsaveisIfEmpty(names) {
+    const rows = await all('SELECT COUNT(*) AS total FROM responsaveis');
+    const total = Number(rows[0]?.total ?? rows[0]?.TOTAL ?? 0);
+    if (total > 0) return;
+    for (const name of names) await addResponsavel(name);
+    console.log(`Responsáveis semeados: ${names.length}.`);
+}
+
 async function getAccessStats() {
     const rows = await all('SELECT * FROM sessions');
     const map = new Map();
@@ -630,4 +672,8 @@ module.exports = {
     startSession,
     touchSession,
     getAccessStats,
+    listResponsaveis,
+    addResponsavel,
+    setResponsavelActive,
+    seedResponsaveisIfEmpty,
 };

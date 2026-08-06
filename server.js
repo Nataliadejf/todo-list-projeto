@@ -194,6 +194,58 @@ app.delete('/api/tasks/:id', async (req, res) => {
     }
 });
 
+// ---------------------------------------------------------------------------
+// Responsáveis (lista gerenciável — ativo/inativo)
+// ---------------------------------------------------------------------------
+
+const RESPONSAVEIS_SEED = [
+    'Beatriz Cavalcante', 'Bruno Fernandes', 'Georgia Leite', 'Larissa Lande', 'Marcelo Araújo',
+    'Thainá Morais', 'Thais Paixão', 'Vitor Moraes', 'Vitoria Ferreira', 'Carlos Merigo',
+    'André Pascoal', 'Natalia de Jesus Franca', 'Gabriel Gopfert', 'Aline Saito', 'Carlos Freires',
+    'Backlog', 'Não alocado',
+];
+
+app.get('/api/responsaveis', async (req, res) => {
+    try {
+        res.json((await store.listResponsaveis(true)).map((r) => r.name));
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/admin/responsaveis', auth.requireAdmin, async (req, res) => {
+    try {
+        res.json(await store.listResponsaveis(false));
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/admin/responsaveis', auth.requireAdmin, async (req, res) => {
+    try {
+        const name = String(req.body?.name || '').trim();
+        if (!name) return res.status(400).json({ error: 'Informe o nome do responsável.' });
+        const existing = await store.listResponsaveis(false);
+        if (existing.some((r) => r.name.toLowerCase() === name.toLowerCase())) {
+            return res.status(409).json({ error: 'Esse responsável já existe.' });
+        }
+        return res.status(201).json(await store.addResponsavel(name));
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/admin/responsaveis/:id/toggle', auth.requireAdmin, async (req, res) => {
+    try {
+        const r = (await store.listResponsaveis(false)).find((x) => x.id === req.params.id);
+        if (!r) return res.status(404).json({ error: 'Responsável não encontrado.' });
+        await store.setResponsavelActive(r.id, !r.active);
+        return res.json({ ...r, active: !r.active });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
 function sendExportedPage(routePath, res) {
     const normalized = routePath.endsWith('/') ? routePath.slice(0, -1) : routePath;
     const candidates = normalized === '' || normalized === '/'
@@ -241,6 +293,7 @@ function mountNextFrontend() {
 async function start() {
     await store.initStore();
     await auth.seedAdmin();
+    await store.seedResponsaveisIfEmpty(RESPONSAVEIS_SEED);
     await seedIfEmpty();
     mountNextFrontend();
 

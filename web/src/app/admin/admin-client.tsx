@@ -1,13 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Check, KeyRound, RefreshCw, ShieldOff } from "lucide-react";
+import { Check, KeyRound, Plus, Power, RefreshCw, ShieldOff } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/components/providers/auth-provider";
 import { apiApproveUser, apiListUsers, apiResetUserPassword, apiRevokeUser, type AdminUserRow } from "@/lib/auth-api";
+import { apiAddResponsavel, apiListResponsaveis, apiToggleResponsavel, type Responsavel } from "@/lib/responsaveis-api";
 
 function fmtDuration(seconds: number) {
   if (!seconds) return "—";
@@ -43,6 +45,44 @@ export function AdminClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [resps, setResps] = useState<Responsavel[]>([]);
+  const [newResp, setNewResp] = useState("");
+  const [respBusy, setRespBusy] = useState(false);
+
+  const loadResps = useCallback(async () => {
+    try {
+      setResps(await apiListResponsaveis());
+    } catch {
+      /* ignora */
+    }
+  }, []);
+
+  const addResp = async () => {
+    const name = newResp.trim();
+    if (!name) return;
+    setRespBusy(true);
+    try {
+      await apiAddResponsavel(name);
+      setNewResp("");
+      await loadResps();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao adicionar responsável.");
+    } finally {
+      setRespBusy(false);
+    }
+  };
+
+  const toggleResp = async (r: Responsavel) => {
+    setRespBusy(true);
+    try {
+      await apiToggleResponsavel(r.id);
+      await loadResps();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao alterar responsável.");
+    } finally {
+      setRespBusy(false);
+    }
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -57,9 +97,13 @@ export function AdminClient() {
   }, []);
 
   useEffect(() => {
-    if (isAdmin) void load();
-    else setLoading(false);
-  }, [isAdmin, load]);
+    if (isAdmin) {
+      void load();
+      void loadResps();
+    } else {
+      setLoading(false);
+    }
+  }, [isAdmin, load, loadResps]);
 
   const act = async (id: string, action: "approve" | "revoke") => {
     setBusyId(id);
@@ -183,6 +227,61 @@ export function AdminClient() {
               )}
             </tbody>
           </table>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Responsáveis</CardTitle>
+          <p className="text-sm text-slate-500">
+            Responsáveis inativos somem da seleção de novas iniciativas, mas o histórico é preservado.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap items-end gap-2">
+            <div className="w-full max-w-xs">
+              <Input
+                value={newResp}
+                onChange={(e) => setNewResp(e.target.value)}
+                placeholder="Nome do novo responsável"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void addResp();
+                  }
+                }}
+              />
+            </div>
+            <Button onClick={() => void addResp()} disabled={respBusy || !newResp.trim()}>
+              <Plus className="h-4 w-4" />
+              Adicionar
+            </Button>
+          </div>
+
+          <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200">
+            {resps.length === 0 ? (
+              <li className="px-4 py-6 text-center text-sm text-slate-500">Nenhum responsável cadastrado.</li>
+            ) : (
+              resps.map((r) => (
+                <li key={r.id} className="flex items-center justify-between px-4 py-2.5">
+                  <span className="flex items-center gap-2 text-sm">
+                    <span className={r.active ? "text-slate-800" : "text-slate-400 line-through"}>{r.name}</span>
+                    <Badge variant={r.active ? "success" : "default"}>{r.active ? "Ativo" : "Inativo"}</Badge>
+                  </span>
+                  <Button
+                    variant={r.active ? "secondary" : "default"}
+                    size="sm"
+                    className="h-8 text-xs"
+                    disabled={respBusy}
+                    onClick={() => void toggleResp(r)}
+                  >
+                    <Power className="h-3.5 w-3.5" />
+                    {r.active ? "Inativar" : "Ativar"}
+                  </Button>
+                </li>
+              ))
+            )}
+          </ul>
         </CardContent>
       </Card>
     </div>

@@ -172,10 +172,17 @@ async function ensureSchema() {
         { name: 'lastSeenAt', type: 'TIMESTAMP' },
     ];
 
+    const responsaveisSchema = [
+        { name: 'id', type: 'STRING' },
+        { name: 'name', type: 'STRING' },
+        { name: 'active', type: 'BOOL' },
+    ];
+
     await ensureTable(dataset, 'todos', todosSchema);
     await ensureTable(dataset, 'tasks', tasksSchema);
     await ensureTable(dataset, 'users', usersSchema);
     await ensureTable(dataset, 'sessions', sessionsSchema);
+    await ensureTable(dataset, 'responsaveis', responsaveisSchema);
     // adiciona colunas novas em tabelas já existentes
     await query(`ALTER TABLE ${tableRef('tasks')} ADD COLUMN IF NOT EXISTS startDate STRING`).catch(() => {});
     await query(`ALTER TABLE ${tableRef('tasks')} ADD COLUMN IF NOT EXISTS endDate STRING`).catch(() => {});
@@ -500,10 +507,59 @@ async function getAccessStats() {
     }));
 }
 
+// ---------------------------------------------------------------------------
+// Responsáveis (lista gerenciável, ativo/inativo)
+// ---------------------------------------------------------------------------
+
+async function listResponsaveis(activeOnly) {
+    const where = activeOnly ? 'WHERE active = true' : '';
+    const rows = await query(`SELECT id, name, active FROM ${tableRef('responsaveis')} ${where} ORDER BY name`);
+    return rows.map((r) => ({ id: r.id, name: r.name, active: Boolean(r.active) }));
+}
+
+async function addResponsavel(name) {
+    const id = crypto.randomUUID();
+    await query(
+        `INSERT INTO ${tableRef('responsaveis')} (id, name, active) VALUES (@id, @name, true)`,
+        { id, name: String(name) }, { id: 'STRING', name: 'STRING' },
+    );
+    return { id, name: String(name), active: true };
+}
+
+async function setResponsavelActive(id, active) {
+    await query(
+        `UPDATE ${tableRef('responsaveis')} SET active = @active WHERE id = @id`,
+        { id: String(id), active: Boolean(active) }, { id: 'STRING', active: 'BOOL' },
+    );
+}
+
+async function seedResponsaveisIfEmpty(names) {
+    const rows = await query(`SELECT COUNT(*) AS total FROM ${tableRef('responsaveis')}`);
+    if ((toNumber(rows[0]?.total) || 0) > 0) return;
+    const params = {};
+    const types = {};
+    const values = names.map((name, i) => {
+        params[`id${i}`] = crypto.randomUUID();
+        params[`name${i}`] = name;
+        types[`id${i}`] = 'STRING';
+        types[`name${i}`] = 'STRING';
+        return `(@id${i}, @name${i}, true)`;
+    });
+    await query(
+        `INSERT INTO ${tableRef('responsaveis')} (id, name, active) VALUES ${values.join(', ')}`,
+        params, types,
+    );
+    console.log(`Responsáveis semeados: ${names.length}.`);
+}
+
 module.exports = {
     isEnabled,
     monthKeys,
     ensureSchema,
+    listResponsaveis,
+    addResponsavel,
+    setResponsavelActive,
+    seedResponsaveisIfEmpty,
     getUserByEmail,
     getUserById,
     createUser,

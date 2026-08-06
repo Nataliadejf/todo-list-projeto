@@ -64,4 +64,8 @@ module.exports = {
     startSession: (...args) => backend.startSession(...args),
     touchSession: (...args) => backend.touchSession(...args),
     getAccessStats: (...args) => backend.getAccessStats(...args),
+    listResponsaveis: (...args) => backend.listResponsaveis(...args),
+    addResponsavel: (...args) => backend.addResponsavel(...args),
+    setResponsavelActive: (...args) => backend.setResponsavelActive(...args),
+    seedResponsaveisIfEmpty: (...args) => backend.seedResponsaveisIfEmpty(...args),
 };
