@@ -527,6 +527,18 @@ async function getAccessStats() {
     }));
 }
 
+async function getUsageByMonth(months = 12) {
+    const rows = await query(
+        `SELECT FORMAT_TIMESTAMP('%Y-%m', loginAt) AS ym,
+                COUNT(*) AS accesses,
+                COUNT(DISTINCT email) AS users
+         FROM ${tableRef('sessions')}
+         WHERE loginAt >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL ${Number(months)} MONTH)
+         GROUP BY ym ORDER BY ym`,
+    );
+    return rows.map((r) => ({ month: r.ym, accesses: toNumber(r.accesses) || 0, users: toNumber(r.users) || 0 }));
+}
+
 // ---------------------------------------------------------------------------
 // Responsáveis (lista gerenciável, ativo/inativo)
 // ---------------------------------------------------------------------------
@@ -591,6 +603,7 @@ module.exports = {
     startSession,
     touchSession,
     getAccessStats,
+    getUsageByMonth,
     getMeta,
     listTodos,
     getTodo,

@@ -678,6 +678,24 @@ async function getAccessStats() {
     return [...map.values()];
 }
 
+async function getUsageByMonth() {
+    const rows = await all('SELECT loginAt, email FROM sessions');
+    const map = new Map();
+    rows.forEach((r) => {
+        const at = r.loginAt ?? r.loginat;
+        const d = at ? new Date(at) : null;
+        if (!d || Number.isNaN(d.getTime())) return;
+        const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        if (!map.has(ym)) map.set(ym, { month: ym, accesses: 0, users: new Set() });
+        const e = map.get(ym);
+        e.accesses += 1;
+        e.users.add(r.email);
+    });
+    return [...map.values()]
+        .map((e) => ({ month: e.month, accesses: e.accesses, users: e.users.size }))
+        .sort((a, b) => a.month.localeCompare(b.month));
+}
+
 module.exports = {
     monthKeys,
     initDatabase,
@@ -709,6 +727,7 @@ module.exports = {
     startSession,
     touchSession,
     getAccessStats,
+    getUsageByMonth,
     listResponsaveis,
     addResponsavel,
     setResponsavelActive,

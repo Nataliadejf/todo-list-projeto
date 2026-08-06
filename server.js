@@ -222,6 +222,14 @@ app.get('/api/admin/responsaveis', auth.requireAdmin, async (req, res) => {
     }
 });
 
+app.get('/api/admin/usage', auth.requireAdmin, async (req, res) => {
+    try {
+        res.json({ byMonth: await store.getUsageByMonth(12) });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.post('/api/admin/responsaveis', auth.requireAdmin, async (req, res) => {
     try {
         const name = String(req.body?.name || '').trim();

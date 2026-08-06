@@ -100,3 +100,13 @@ export function apiSetUserRole(id: string, role: "admin" | "user") {
     body: JSON.stringify({ role }),
   });
 }
+
+export interface UsageMonth {
+  month: string;
+  accesses: number;
+  users: number;
+}
+
+export function apiUsage() {
+  return request<{ byMonth: UsageMonth[] }>("/api/admin/usage");
+}
