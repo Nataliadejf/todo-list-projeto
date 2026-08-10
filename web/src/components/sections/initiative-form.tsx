@@ -86,7 +86,9 @@ interface InitiativeFormProps {
 export function InitiativeForm({ editing, onSaved, onCancelEdit }: InitiativeFormProps) {
   const { todos, create, update, remove } = useTodos();
   const { responsaveis } = useResponsaveis();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
+  // Data Previsão de Fim já preenchida só pode ser alterada pelo admin.
+  const lockEndDate = !isAdmin && Boolean(editing?.plannedEndDate);
   const [form, setForm] = useState<InitiativeInput>(emptyInitiative);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -214,7 +216,7 @@ export function InitiativeForm({ editing, onSaved, onCancelEdit }: InitiativeFor
               <div className="grid gap-3 md:grid-cols-3">
                 <Field fieldKey="status" value={form.status} onChange={updateField} required options={INITIATIVE_STATUS_OPTIONS} />
                 <Field fieldKey="startDate" value={form.startDate} onChange={updateField} />
-                <Field fieldKey="plannedEndDate" value={form.plannedEndDate} onChange={updateField} />
+                <Field fieldKey="plannedEndDate" value={form.plannedEndDate} onChange={updateField} readOnly={lockEndDate} hint={lockEndDate ? "Alteração só pelo administrador" : undefined} />
               </div>
               <div className="grid gap-3 md:grid-cols-2">
                 <Field fieldKey="deadlineDays" value={form.deadlineDays} onChange={updateField} readOnly hint="Calculado: Data Fim − Data Início" />

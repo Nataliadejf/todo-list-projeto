@@ -23,6 +23,8 @@ function stagePatch(stage: KanbanStage): Partial<InitiativeInput> {
       return { status: "Não Iniciado", deprioritized: false, completed: false };
     case "andamento":
       return { status: "Em Andamento", deprioritized: false, completed: false };
+    case "continuo":
+      return { status: "Contínuo", deprioritized: false, completed: false };
     case "concluido":
       return { status: "Concluído", deprioritized: false, completed: true };
     case "despriorizados":

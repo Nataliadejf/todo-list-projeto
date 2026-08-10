@@ -18,12 +18,14 @@ export type MonthKey = (typeof MONTH_KEYS)[number];
 export type InitiativeStatus =
   | "Não Iniciado"
   | "Em Andamento"
+  | "Contínuo"
   | "Concluído"
   | "Despriorizado";
 
 export type KanbanStage =
   | "nao_iniciado"
   | "andamento"
+  | "continuo"
   | "concluido"
   | "despriorizados";
 

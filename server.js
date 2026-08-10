@@ -132,6 +132,13 @@ app.put('/api/todos/:id', async (req, res) => {
     try {
         const dbId = Number(req.params.id);
         const todo = normalizePayload(req.body || {});
+        // Data Previsão de Fim já preenchida só pode ser alterada pelo administrador.
+        if (!(await auth.isAdminReq(req))) {
+            const existing = await store.getTodo(dbId);
+            if (existing && String(existing.plannedEndDate || '').trim()) {
+                todo.plannedEndDate = existing.plannedEndDate;
+            }
+        }
         const updated = await store.updateTodo(dbId, todo);
         if (!updated) return res.status(404).json({ error: 'Iniciativa não encontrada' });
         return res.json(updated);

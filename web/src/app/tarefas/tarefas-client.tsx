@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { CheckCircle2, Circle, Download, Pencil, Search, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -44,10 +45,17 @@ function sameOwner(a?: string, b?: string) {
 export function TarefasClient() {
   const { todos } = useTodos();
   const { tasks, loading, error, create, update, remove } = useTasks();
+  const searchParams = useSearchParams();
 
   const [form, setForm] = useState<TaskInput>(EMPTY_TASK);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [filterInitiative, setFilterInitiative] = useState<string | null>(null);
+  const [filterInitiative, setFilterInitiative] = useState<string | null>(searchParams.get("initiativeDbId"));
+
+  // Ao chegar de "ver tarefas" (Portfólio), já filtra pela iniciativa da URL.
+  useEffect(() => {
+    const p = searchParams.get("initiativeDbId");
+    if (p) setFilterInitiative(p);
+  }, [searchParams]);
   const [filterOwner, setFilterOwner] = useState<string>("");
   const [search, setSearch] = useState("");
   const [saving, setSaving] = useState(false);

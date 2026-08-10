@@ -105,6 +105,7 @@ export const STATUS_OPTIONS = [
   { value: "", label: "Todos" },
   { value: "Não Iniciado", label: "Não Iniciado" },
   { value: "Em Andamento", label: "Em Andamento" },
+  { value: "Contínuo", label: "Contínuo" },
   { value: "Concluído", label: "Concluído" },
   { value: "Despriorizado", label: "Despriorizado" },
 ] as const;
@@ -140,7 +141,7 @@ export const GUT_OPTIONS = ["1", "3", "5"] as const;
 export const PROGRESS_OPTIONS = ["10", "20", "30", "40", "50", "60", "70", "80", "90", "100"] as const;
 export const SIM_NAO_OPTIONS = ["Sim", "Não"] as const;
 export const INITIATIVE_STATUS_OPTIONS = [
-  "Não Iniciado", "Em Andamento", "Concluído", "Despriorizado",
+  "Não Iniciado", "Em Andamento", "Contínuo", "Concluído", "Despriorizado",
 ] as const;
 
 export const DEADLINE_OPTIONS = [
@@ -154,6 +155,7 @@ export const DEADLINE_OPTIONS = [
 export const KANBAN_COLUMNS = [
   { id: "nao_iniciado", title: "Não Iniciado", dotClass: "bg-blue-500" },
   { id: "andamento", title: "Em Andamento", dotClass: "bg-amber-400" },
+  { id: "continuo", title: "Contínuo", dotClass: "bg-cyan-500" },
   { id: "concluido", title: "Concluído", dotClass: "bg-emerald-500" },
   { id: "despriorizados", title: "Despriorizado", dotClass: "bg-slate-400" },
 ] as const;

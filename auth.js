@@ -74,6 +74,16 @@ function requireAuth(req, res, next) {
     if (!req.auth) return res.status(401).json({ error: 'Não autenticado' });
     next();
 }
+async function isAdminReq(req) {
+    if (!req.auth) return false;
+    if (String(req.auth.email || '').toLowerCase() === ADMIN_EMAIL) return true;
+    try {
+        const u = await store.getUserById(req.auth.sub);
+        return Boolean(u) && u.role === 'admin';
+    } catch {
+        return false;
+    }
+}
 async function requireAdmin(req, res, next) {
     if (!req.auth) return res.status(401).json({ error: 'Não autenticado' });
     // checa o papel ATUAL no banco (não o do token) — promoção a admin vale na hora
@@ -241,4 +251,4 @@ function mountRoutes(app) {
     });
 }
 
-module.exports = { middleware, requireAuth, requireAdmin, mountRoutes, seedAdmin, isAdminUser };
+module.exports = { middleware, requireAuth, requireAdmin, mountRoutes, seedAdmin, isAdminUser, isAdminReq };

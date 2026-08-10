@@ -5,6 +5,7 @@ export function normalizeStatus(status: string): string {
   if (raw === "concluido" || raw === "concluído") return "Concluído";
   // "Atrasado" foi descontinuado como status — vira "Em Andamento" (o atraso é visual).
   if (raw === "em andamento" || raw === "atrasado") return "Em Andamento";
+  if (raw === "continuo" || raw === "contínuo") return "Contínuo";
   if (raw === "despriorizado" || raw === "despriorizada") return "Despriorizado";
   if (raw === "a fazer" || raw === "não iniciado" || raw === "nao iniciado") return "Não Iniciado";
   return status || "Não Iniciado";
@@ -15,7 +16,10 @@ export function isOverdue(todo: Initiative): boolean {
   const end = parseDate(todo.plannedEndDate);
   if (!end) return false;
   const status = normalizeStatus(todo.status);
-  if (status === "Concluído" || status === "Despriorizado" || todo.completed || todo.deprioritized) return false;
+  if (
+    status === "Concluído" || status === "Despriorizado" || status === "Contínuo" ||
+    todo.completed || todo.deprioritized
+  ) return false;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   return end < today;
@@ -144,6 +148,7 @@ export function getKanbanStage(todo: Initiative): KanbanStage {
   const status = normalizeStatus(todo.status);
   if (todo.deprioritized || status === "Despriorizado") return "despriorizados";
   if (status === "Concluído" || todo.completed) return "concluido";
+  if (status === "Contínuo") return "continuo";
   if (status === "Em Andamento") return "andamento";
   return "nao_iniciado"; // Não Iniciado (aprovação foi descontinuada)
 }
@@ -251,6 +256,7 @@ export function formatUpdatedTime() {
 export function getDeadlineAlert(todo: Initiative) {
   const status = normalizeStatus(todo.status);
   if (status === "Concluído" || todo.completed) return { label: "—", tone: "muted" as const };
+  if (status === "Contínuo") return { label: "Rotina", tone: "muted" as const };
   if (isOverdue(todo)) return { label: "Atrasado", tone: "danger" as const };
   // Não iniciado → Planejado; Em andamento (dentro do prazo) → No prazo (Urgente se ≤7 dias)
   if (status === "Não Iniciado") return { label: "Planejado", tone: "muted" as const };
