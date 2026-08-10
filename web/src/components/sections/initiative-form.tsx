@@ -187,8 +187,7 @@ export function InitiativeForm({ editing, onSaved, onCancelEdit }: InitiativeFor
           <form onSubmit={(e) => void handleSubmit(e)} className="space-y-6">
             <section className="space-y-3 rounded-2xl border border-slate-200 p-4">
               <h3 className="text-sm font-bold text-slate-800">Identificação</h3>
-              <div className="grid gap-3 md:grid-cols-3">
-                <Field fieldKey="id" value={form.id} onChange={updateField} hint="Opcional — gerado automaticamente se vazio" />
+              <div className="grid gap-3 md:grid-cols-2">
                 <Field fieldKey="area" value={form.area} onChange={updateField} required options={AREA_OPTIONS} />
                 <Field fieldKey="front" value={form.front} onChange={updateField} required suggestions={frentes} />
               </div>
