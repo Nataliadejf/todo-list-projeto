@@ -151,6 +151,15 @@ export function TarefasClient() {
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // Ao chegar de "editar tarefa" (?editTask=ID), abre a tarefa em edição.
+  const editTaskParam = searchParams.get("editTask");
+  useEffect(() => {
+    if (!editTaskParam || tasks.length === 0) return;
+    const t = tasks.find((x) => x.id === editTaskParam);
+    if (t && editingId !== t.id) startEdit(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editTaskParam, tasks]);
+
   const onSelectInitiative = (value: string | null) => {
     const dbId = value ? Number(value) : null;
     const todo = dbId != null ? todos.find((t) => t.dbId === dbId) : null;

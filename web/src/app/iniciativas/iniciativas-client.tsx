@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { InitiativeForm } from "@/components/sections/initiative-form";
 import { InitiativesTable } from "@/components/sections/initiatives-table";
+import { LinkedTasks } from "@/components/sections/linked-tasks";
 import { FiltersPanel } from "@/components/sections/filters-panel";
 import { useTodos } from "@/components/providers/todos-provider";
 import { useResponsaveis } from "@/components/providers/responsaveis-provider";
@@ -43,6 +44,7 @@ export function IniciativasClient() {
               window.history.replaceState({}, "", "/iniciativas");
             }}
           />
+          {editing ? <LinkedTasks initiativeDbId={editing.dbId} /> : null}
           <InitiativesTable todos={filtered} title="Iniciativas cadastradas" tall />
         </div>
       </div>

@@ -139,8 +139,8 @@ export function InitiativesTable({ todos, title = "Todas as Iniciativas", tall =
                               <Pencil className="h-4 w-4" />
                             </Link>
                           </Button>
-                          <Button variant="ghost" size="icon" asChild aria-label={`Ver tarefas de ${todo.initiative}`} title="Ver tarefas vinculadas">
-                            <Link href={`/tarefas?initiativeDbId=${todo.dbId}`}>
+                          <Button variant="ghost" size="icon" asChild aria-label={`Visualizar ${todo.initiative}`} title="Visualizar iniciativa e tarefas">
+                            <Link href={`/iniciativas?edit=${todo.dbId}`}>
                               <Eye className="h-4 w-4" />
                             </Link>
                           </Button>
