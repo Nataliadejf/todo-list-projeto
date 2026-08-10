@@ -668,7 +668,8 @@ async function getAccessStats() {
         const email = r.email;
         const login = new Date(r.loginAt ?? r.loginat);
         const seen = new Date(r.lastSeenAt ?? r.lastseenat);
-        const secs = Math.max(0, Math.round((seen.getTime() - login.getTime()) / 1000));
+        // cada sessão conta no máximo 8h (28800s) para não inflar com abas deixadas abertas
+        const secs = Math.min(28800, Math.max(0, Math.round((seen.getTime() - login.getTime()) / 1000)));
         if (!map.has(email)) map.set(email, { email, sessions: 0, totalSeconds: 0, lastLogin: null });
         const e = map.get(email);
         e.sessions += 1;

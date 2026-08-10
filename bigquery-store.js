@@ -515,9 +515,10 @@ async function touchSession(id) {
 
 async function getAccessStats() {
     const rows = await query(
+        // cada sessão conta no máximo 8h (28800s) para não inflar com abas deixadas abertas
         `SELECT email,
                 COUNT(*) AS sessions,
-                SUM(TIMESTAMP_DIFF(lastSeenAt, loginAt, SECOND)) AS totalSeconds,
+                SUM(LEAST(TIMESTAMP_DIFF(lastSeenAt, loginAt, SECOND), 28800)) AS totalSeconds,
                 MAX(loginAt) AS lastLogin
          FROM ${tableRef('sessions')} GROUP BY email`,
     );

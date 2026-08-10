@@ -44,7 +44,6 @@ export function InitiativesTable({ todos, title = "Todas as Iniciativas", tall =
           <table className="min-w-full text-left text-sm">
             <thead className="sticky top-0 z-10 border-y border-slate-100 bg-slate-50 text-[11px] font-bold uppercase tracking-wide text-slate-500">
               <tr>
-                <th className="px-5 py-3">#</th>
                 <th className="px-5 py-3">Iniciativa</th>
                 <th className="px-4 py-3">Área</th>
                 <th className="px-4 py-3">Tamanho</th>
@@ -60,7 +59,7 @@ export function InitiativesTable({ todos, title = "Todas as Iniciativas", tall =
             <tbody>
               {todos.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="px-5 py-10 text-center text-slate-500">
+                  <td colSpan={10} className="px-5 py-10 text-center text-slate-500">
                     Nenhuma iniciativa encontrada com os filtros atuais.
                   </td>
                 </tr>
@@ -76,7 +75,6 @@ export function InitiativesTable({ todos, title = "Todas as Iniciativas", tall =
                         isOverdue(todo) ? "bg-rose-50/40" : "",
                       )}
                     >
-                      <td className="px-5 py-3.5 font-medium text-slate-700">{todo.id}</td>
                       <td className="max-w-[260px] px-5 py-3.5">
                         <p className="pl-0.5 font-medium leading-snug text-slate-900">{todo.initiative}</p>
                         {todo.front ? (

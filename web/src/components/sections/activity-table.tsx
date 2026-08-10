@@ -25,7 +25,6 @@ export function ActivityTable({ todos }: ActivityTableProps) {
           <table className="min-w-full text-left text-sm">
             <thead className="border-y border-slate-100 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wide text-slate-500">
               <tr>
-                <th className="px-4 py-3">#</th>
                 <th className="px-4 py-3">Iniciativa</th>
                 <th className="px-4 py-3">Responsável</th>
                 <th className="px-4 py-3">Prazo</th>
@@ -38,7 +37,7 @@ export function ActivityTable({ todos }: ActivityTableProps) {
             <tbody>
               {todos.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-10 text-center text-slate-500">
+                  <td colSpan={7} className="px-4 py-10 text-center text-slate-500">
                     Nenhuma atividade encontrada.
                   </td>
                 </tr>
@@ -48,7 +47,6 @@ export function ActivityTable({ todos }: ActivityTableProps) {
                   const stage = getKanbanStage(todo);
                   return (
                     <tr key={todo.dbId} className="border-b border-slate-100 hover:bg-slate-50/60">
-                      <td className="px-4 py-3 font-medium">{todo.id}</td>
                       <td className="max-w-[260px] px-5 py-3.5">
                         <p className="pl-0.5 font-medium leading-snug text-slate-900">{todo.initiative}</p>
                         {todo.front ? (
