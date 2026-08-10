@@ -249,12 +249,15 @@ export function formatUpdatedTime() {
 }
 
 export function getDeadlineAlert(todo: Initiative) {
+  const status = normalizeStatus(todo.status);
+  if (status === "Concluído" || todo.completed) return { label: "—", tone: "muted" as const };
+  if (isOverdue(todo)) return { label: "Atrasado", tone: "danger" as const };
+  // Não iniciado → Planejado; Em andamento (dentro do prazo) → No prazo (Urgente se ≤7 dias)
+  if (status === "Não Iniciado") return { label: "Planejado", tone: "muted" as const };
   const end = parseDate(todo.plannedEndDate);
-  if (!end || normalizeStatus(todo.status) === "Concluído") return { label: "—", tone: "muted" as const };
-  const now = new Date();
-  const diff = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-  if (diff < 0) return { label: "Atrasado", tone: "danger" as const };
-  if (diff <= 7) return { label: "Urgente", tone: "warning" as const };
-  if (diff <= 30) return { label: "No prazo", tone: "success" as const };
-  return { label: "Planejado", tone: "muted" as const };
+  if (end) {
+    const diff = Math.ceil((end.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    if (diff <= 7) return { label: "Urgente", tone: "warning" as const };
+  }
+  return { label: "No prazo", tone: "success" as const };
 }

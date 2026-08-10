@@ -127,7 +127,7 @@ export function InitiativesTable({ todos, title = "Todas as Iniciativas", tall =
                           };
                           const it = map[band];
                           return (
-                            <Badge variant={it.variant} title={`Gravidade × Urgência = ${getPriorityScore(todo)}`}>
+                            <Badge variant={it.variant} title={`Relevância × Urgência = ${getPriorityScore(todo)}`}>
                               {it.label}
                             </Badge>
                           );

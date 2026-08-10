@@ -42,7 +42,27 @@ function normalizePayload(payload) {
     item.completed = bool(payload.completed);
     item.approved = bool(payload.approved);
     item.deprioritized = bool(payload.deprioritized);
+    // Status "Concluído" implica 100% de conclusão automaticamente.
+    if (String(item.status || '').trim() === 'Concluído') {
+        item.progressPercent = '100';
+        item.completed = bool(true);
+    }
     return item;
+}
+
+// Gera o próximo id numérico quando o usuário não informa um.
+async function ensureId(item) {
+    if (item.id && String(item.id).trim()) return;
+    try {
+        const all = await store.listTodos();
+        const maxId = all.reduce((m, t) => {
+            const n = Number.parseInt(t.id, 10);
+            return Number.isFinite(n) && n > m ? n : m;
+        }, 0);
+        item.id = String(maxId + 1);
+    } catch {
+        item.id = String(Date.now());
+    }
 }
 
 async function seedIfEmpty() {
@@ -99,6 +119,7 @@ app.post('/api/todos', async (req, res) => {
         if (req.body?.deprioritized === undefined) {
             todo.deprioritized = useBool ? false : 0;
         }
+        await ensureId(todo);
         const created = await store.insertTodo(todo);
         return res.status(201).json(created);
     } catch (err) {

@@ -8,7 +8,7 @@ import {
   GUT_OPTIONS,
   INITIATIVE_STATUS_OPTIONS,
   LABEL_MAP,
-  MONTH_LABELS,
+  PROGRESS_OPTIONS,
   SIM_NAO_OPTIONS,
   TAMANHO_OPTIONS,
 } from "@/lib/constants";
@@ -111,7 +111,7 @@ export function InitiativeForm({ editing, onSaved, onCancelEdit }: InitiativeFor
   const requiredValid = useMemo(
     () =>
       Boolean(
-        form.id && form.area && form.front && form.initiative && form.owner &&
+        form.area && form.front && form.initiative && form.owner &&
         form.gainCategory && form.size && form.status,
       ),
     [form],
@@ -131,6 +131,13 @@ export function InitiativeForm({ editing, onSaved, onCancelEdit }: InitiativeFor
     }
   }, [form.startDate, form.plannedEndDate]);
 
+  // Status "Concluído" força 100% de conclusão.
+  useEffect(() => {
+    if (form.status === "Concluído" && form.progressPercent !== "100") {
+      setForm((prev) => ({ ...prev, progressPercent: "100" }));
+    }
+  }, [form.status, form.progressPercent]);
+
   function updateField<K extends keyof InitiativeInput>(key: K, value: InitiativeInput[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
@@ -138,7 +145,7 @@ export function InitiativeForm({ editing, onSaved, onCancelEdit }: InitiativeFor
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (!requiredValid) {
-      setMessage("Preencha os campos obrigatórios (*): ID, Área, Frente, Iniciativa, Responsável, Categoria Ganho, Tam e Status.");
+      setMessage("Preencha os campos obrigatórios (*): Área, Frente, Iniciativa, Responsável, Categoria Ganho, Tam e Status.");
       return;
     }
     setSaving(true);
@@ -179,7 +186,7 @@ export function InitiativeForm({ editing, onSaved, onCancelEdit }: InitiativeFor
             <section className="space-y-3 rounded-2xl border border-slate-200 p-4">
               <h3 className="text-sm font-bold text-slate-800">Identificação</h3>
               <div className="grid gap-3 md:grid-cols-3">
-                <Field fieldKey="id" value={form.id} onChange={updateField} required />
+                <Field fieldKey="id" value={form.id} onChange={updateField} hint="Opcional — gerado automaticamente se vazio" />
                 <Field fieldKey="area" value={form.area} onChange={updateField} required options={AREA_OPTIONS} />
                 <Field fieldKey="front" value={form.front} onChange={updateField} required suggestions={frentes} />
               </div>
@@ -214,29 +221,13 @@ export function InitiativeForm({ editing, onSaved, onCancelEdit }: InitiativeFor
                 <Field fieldKey="realEndDate" value={form.realEndDate} onChange={updateField} />
               </div>
               <div className="grid gap-3 md:grid-cols-3">
-                <Field fieldKey="progressPercent" value={form.progressPercent} onChange={updateField} />
+                <Field fieldKey="progressPercent" value={form.progressPercent} onChange={updateField} options={PROGRESS_OPTIONS} readOnly={form.status === "Concluído"} hint={form.status === "Concluído" ? "100% (Concluído)" : undefined} />
                 <Field fieldKey="severity" value={form.severity} onChange={updateField} options={GUT_OPTIONS} />
                 <Field fieldKey="urgency" value={form.urgency} onChange={updateField} options={GUT_OPTIONS} />
               </div>
               <div className="grid gap-3 md:grid-cols-2">
                 <Field fieldKey="strategy" value={form.strategy} onChange={updateField} options={SIM_NAO_OPTIONS} />
                 <Field fieldKey="priority" value={form.priority} onChange={updateField} />
-              </div>
-            </section>
-
-            <section className="space-y-3 rounded-2xl border border-slate-200 p-4">
-              <h3 className="text-sm font-bold text-slate-800">Planejamento mensal</h3>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">
-                {MONTH_KEYS.map((month) => (
-                  <label key={month} className="flex items-center gap-2 rounded-lg border border-slate-200 px-2 py-2 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={Boolean(form[month])}
-                      onChange={(e) => updateField(month, e.target.checked)}
-                    />
-                    {MONTH_LABELS[month]}
-                  </label>
-                ))}
               </div>
             </section>
 

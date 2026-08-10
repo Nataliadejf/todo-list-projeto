@@ -49,7 +49,7 @@ export const LABEL_MAP: Record<string, string> = {
   deadlineDays: "Prazo Dias",
   deadlinePercent: "% Prazo",
   progressPercent: "% Conclusão",
-  severity: "Gravidade",
+  severity: "Relevância",
   urgency: "Urgência",
   strategy: "Estratégia",
   priority: "Prioridade",
@@ -137,6 +137,7 @@ export const CATEGORIA_GANHO_OPTIONS = [
 
 export const TAMANHO_OPTIONS = ["PP", "P", "M", "G", "GG"] as const;
 export const GUT_OPTIONS = ["1", "3", "5"] as const;
+export const PROGRESS_OPTIONS = ["10", "20", "30", "40", "50", "60", "70", "80", "90", "100"] as const;
 export const SIM_NAO_OPTIONS = ["Sim", "Não"] as const;
 export const INITIATIVE_STATUS_OPTIONS = [
   "Não Iniciado", "Em Andamento", "Concluído", "Despriorizado",
