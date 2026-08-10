@@ -57,6 +57,7 @@ export function TarefasClient() {
     if (p) setFilterInitiative(p);
   }, [searchParams]);
   const [filterOwner, setFilterOwner] = useState<string>("");
+  const [filterStatus, setFilterStatus] = useState<string>("");
   const [search, setSearch] = useState("");
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -118,6 +119,7 @@ export function TarefasClient() {
     return tasks.filter((task) => {
       if (filterInitiative && String(task.initiativeDbId) !== filterInitiative) return false;
       if (filterOwner && !sameOwner(task.owner, filterOwner)) return false;
+      if (filterStatus && (task.status || "A fazer") !== filterStatus) return false;
       if (q) {
         const iniName = task.initiativeDbId != null ? initiativeName.get(task.initiativeDbId) ?? "" : "";
         const haystack = normalize(`${task.title} ${task.description} ${task.owner} ${iniName}`);
@@ -125,7 +127,7 @@ export function TarefasClient() {
       }
       return true;
     });
-  }, [tasks, filterInitiative, filterOwner, search, initiativeName]);
+  }, [tasks, filterInitiative, filterOwner, filterStatus, search, initiativeName]);
 
   const resetForm = () => {
     setForm(EMPTY_TASK);
@@ -226,11 +228,12 @@ export function TarefasClient() {
   const clearFilters = () => {
     setFilterInitiative(null);
     setFilterOwner("");
+    setFilterStatus("");
     setSearch("");
   };
 
   const pending = tasks.filter((task) => !task.done).length;
-  const hasFilters = Boolean(filterInitiative || filterOwner || search);
+  const hasFilters = Boolean(filterInitiative || filterOwner || filterStatus || search);
 
   return (
     <div className="space-y-6">
@@ -346,7 +349,7 @@ export function TarefasClient() {
 
         <div className="space-y-4">
           <Card>
-            <CardContent className="grid gap-3 py-4 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_200px_200px]">
+            <CardContent className="grid gap-3 py-4 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_180px_180px_180px]">
               <div className="space-y-1.5">
                 <Label>Buscar tarefas</Label>
                 <div className="relative">
@@ -382,6 +385,18 @@ export function TarefasClient() {
                 onChange={(value) => setFilterInitiative(value)}
                 emptyLabel="Nenhuma iniciativa"
               />
+              <SelectField
+                label="Filtrar por status"
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+              >
+                <option value="">Todos os status</option>
+                {TASK_STATUS_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </SelectField>
             </CardContent>
           </Card>
 
