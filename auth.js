@@ -74,10 +74,19 @@ function requireAuth(req, res, next) {
     if (!req.auth) return res.status(401).json({ error: 'Não autenticado' });
     next();
 }
-function requireAdmin(req, res, next) {
+async function requireAdmin(req, res, next) {
     if (!req.auth) return res.status(401).json({ error: 'Não autenticado' });
-    if (!isAdminUser(req.auth)) return res.status(403).json({ error: 'Acesso restrito ao administrador' });
-    next();
+    // checa o papel ATUAL no banco (não o do token) — promoção a admin vale na hora
+    try {
+        if (String(req.auth.email || '').toLowerCase() === ADMIN_EMAIL) return next();
+        const user = await store.getUserById(req.auth.sub);
+        if (!user || (user.role !== 'admin' && String(user.email || '').toLowerCase() !== ADMIN_EMAIL)) {
+            return res.status(403).json({ error: 'Acesso restrito ao administrador' });
+        }
+        return next();
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
 }
 
 function mountRoutes(app) {
