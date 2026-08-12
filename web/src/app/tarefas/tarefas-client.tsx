@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Autocomplete, type AutocompleteOption } from "@/components/ui/autocomplete";
 import { useTasks } from "@/components/providers/tasks-provider";
 import { useTodos } from "@/components/providers/todos-provider";
+import { useResponsaveis } from "@/components/providers/responsaveis-provider";
 import { EMPTY_TASK, type Task, type TaskInput } from "@/lib/types";
 import { TASK_PRIORITY_OPTIONS, TASK_STATUS_OPTIONS } from "@/lib/constants";
 import { downloadTasksCsv } from "@/lib/csv-export";
@@ -45,6 +46,7 @@ function sameOwner(a?: string, b?: string) {
 export function TarefasClient() {
   const { todos } = useTodos();
   const { tasks, loading, error, create, update, remove } = useTasks();
+  const { inactiveNames } = useResponsaveis();
   const searchParams = useSearchParams();
 
   const [form, setForm] = useState<TaskInput>(EMPTY_TASK);
@@ -84,16 +86,26 @@ export function TarefasClient() {
     };
   };
 
+  // Responsáveis inativos (normalizados) para ocultar dos seletores/filtros.
+  const inactiveSet = useMemo(
+    () => new Set([...inactiveNames].map((n) => normalize(n.trim()))),
+    [inactiveNames],
+  );
+
   // Responsáveis conhecidos (donos das iniciativas) — validação de dados,
   // deduplicados por acento/maiúsculas (ex.: "Natália" e "Natalia" viram um só).
+  // Responsáveis inativados não aparecem.
   const ownerNames = useMemo(() => {
     const map = new Map<string, string>();
     todos.forEach((todo) => {
       const name = todo.owner?.trim();
-      if (name && !map.has(normalize(name))) map.set(normalize(name), name);
+      if (!name) return;
+      const key = normalize(name);
+      if (inactiveSet.has(key)) return;
+      if (!map.has(key)) map.set(key, name);
     });
     return [...map.values()].sort((a, b) => a.localeCompare(b, "pt-BR"));
-  }, [todos]);
+  }, [todos, inactiveSet]);
 
   const ownerOptions: AutocompleteOption[] = useMemo(
     () => ownerNames.map((o) => ({ value: o, label: o })),
