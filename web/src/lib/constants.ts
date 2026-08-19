@@ -144,6 +144,9 @@ export const INITIATIVE_STATUS_OPTIONS = [
   "Não Iniciado", "Em Andamento", "Contínuo", "Concluído", "Despriorizado",
 ] as const;
 
+// Rótulos da coluna "Alerta" (ver getDeadlineAlert) — usados no filtro de Alerta.
+export const ALERT_OPTIONS = ["No prazo", "Urgente", "Atrasado", "Planejado", "Rotina"] as const;
+
 export const DEADLINE_OPTIONS = [
   { value: "", label: "Todos" },
   { value: "overdue", label: "Atrasados" },

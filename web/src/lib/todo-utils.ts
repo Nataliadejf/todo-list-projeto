@@ -101,6 +101,7 @@ export function filterInitiatives(todos: Initiative[], filters: FilterState) {
     if (filters.owner.length && !filters.owner.some((v) => normalizeText(v) === normalizeText(todo.owner))) return false;
     if (filters.area.length && !filters.area.some((v) => normalizeText(v) === normalizeText(todo.area))) return false;
     if (filters.size.length && !filters.size.some((v) => normalizeText(v) === normalizeText(todo.size))) return false;
+    if (filters.alert.length && !filters.alert.includes(getDeadlineAlert(todo).label)) return false;
     if (!matchesDeadline(todo, filters.deadline)) return false;
 
     const rangeStart = parseDate(filters.periodStart);

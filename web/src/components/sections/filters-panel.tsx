@@ -2,13 +2,14 @@
 
 import {
   BarChart3,
+  Bell,
   Calendar,
   RefreshCw,
   Ruler,
   Search,
   User,
 } from "lucide-react";
-import { DEADLINE_OPTIONS, INITIATIVE_STATUS_OPTIONS, TAMANHO_OPTIONS } from "@/lib/constants";
+import { ALERT_OPTIONS, DEADLINE_OPTIONS, INITIATIVE_STATUS_OPTIONS, TAMANHO_OPTIONS } from "@/lib/constants";
 import { getUniqueValues } from "@/lib/todo-utils";
 import { useTodos } from "@/components/providers/todos-provider";
 import { useResponsaveis } from "@/components/providers/responsaveis-provider";
@@ -24,6 +25,7 @@ import { cn } from "@/lib/utils";
 interface FiltersPanelProps {
   showStatus?: boolean;
   showDeadline?: boolean;
+  showAlert?: boolean;
   showArea?: boolean;
   showSize?: boolean;
   showPeriod?: boolean;
@@ -34,6 +36,7 @@ interface FiltersPanelProps {
 export function FiltersPanel({
   showStatus = true,
   showDeadline = true,
+  showAlert = false,
   showArea = false,
   showSize = true,
   showPeriod = false,
@@ -107,6 +110,17 @@ export function FiltersPanel({
             value={filters.area}
             onChange={(v) => setFilters((prev) => ({ ...prev, area: v }))}
             placeholder="Todas"
+          />
+        ) : null}
+
+        {showAlert ? (
+          <MultiSelect
+            label={isHorizontal ? undefined : "Alerta"}
+            icon={<Bell className="h-4 w-4" />}
+            options={[...ALERT_OPTIONS]}
+            value={filters.alert}
+            onChange={(v) => setFilters((prev) => ({ ...prev, alert: v }))}
+            placeholder="Todos os alertas"
           />
         ) : null}
 

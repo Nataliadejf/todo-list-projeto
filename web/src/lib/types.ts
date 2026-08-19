@@ -117,6 +117,7 @@ export interface FilterState {
   size: string[];
   owner: string[];
   area: string[];
+  alert: string[];
   deadline: string;
   periodStart: string;
   periodEnd: string;
@@ -130,6 +131,7 @@ export const EMPTY_FILTERS: FilterState = {
   size: [],
   owner: [],
   area: [],
+  alert: [],
   deadline: "",
   periodStart: "",
   periodEnd: "",

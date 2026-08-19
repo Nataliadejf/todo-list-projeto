@@ -20,7 +20,7 @@ export default function PortfolioPage() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader title="Portfólio" />
-      <FiltersPanel layout="horizontal" showArea showSize showPeriod />
+      <FiltersPanel layout="horizontal" showArea showSize showAlert showPeriod />
 
       {error ? (
         <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">

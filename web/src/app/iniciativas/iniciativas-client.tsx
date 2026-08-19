@@ -44,8 +44,11 @@ export function IniciativasClient() {
               window.history.replaceState({}, "", "/iniciativas");
             }}
           />
-          {editing ? <LinkedTasks initiativeDbId={editing.dbId} /> : null}
-          <InitiativesTable todos={filtered} title="Iniciativas cadastradas" tall />
+          {editing ? (
+            <LinkedTasks initiativeDbId={editing.dbId} />
+          ) : (
+            <InitiativesTable todos={filtered} title="Iniciativas cadastradas" tall />
+          )}
         </div>
       </div>
     </div>
