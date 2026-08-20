@@ -2,6 +2,8 @@ import { MONTH_KEYS, type FilterState, type Initiative, type KanbanStage } from 
 
 export function normalizeStatus(status: string): string {
   const raw = String(status || "").trim().toLowerCase();
+  // "Concluído (Em análise)": concluído porém aguardando análise (exibido em laranja).
+  if (raw.includes("análise") || raw.includes("analise")) return "Concluído (Em análise)";
   if (raw === "concluido" || raw === "concluído") return "Concluído";
   // "Atrasado" foi descontinuado como status — vira "Em Andamento" (o atraso é visual).
   if (raw === "em andamento" || raw === "atrasado") return "Em Andamento";
@@ -17,7 +19,8 @@ export function isOverdue(todo: Initiative): boolean {
   if (!end) return false;
   const status = normalizeStatus(todo.status);
   if (
-    status === "Concluído" || status === "Despriorizado" || status === "Contínuo" ||
+    status === "Concluído" || status === "Concluído (Em análise)" ||
+    status === "Despriorizado" || status === "Contínuo" ||
     todo.completed || todo.deprioritized
   ) return false;
   const today = new Date();
@@ -148,7 +151,7 @@ export function toInitiativeInput(todo: Initiative): Omit<Initiative, "dbId"> {
 export function getKanbanStage(todo: Initiative): KanbanStage {
   const status = normalizeStatus(todo.status);
   if (todo.deprioritized || status === "Despriorizado") return "despriorizados";
-  if (status === "Concluído" || todo.completed) return "concluido";
+  if (status === "Concluído" || status === "Concluído (Em análise)" || todo.completed) return "concluido";
   if (status === "Contínuo") return "continuo";
   if (status === "Em Andamento") return "andamento";
   return "nao_iniciado"; // Não Iniciado (aprovação foi descontinuada)
@@ -257,6 +260,7 @@ export function formatUpdatedTime() {
 export function getDeadlineAlert(todo: Initiative) {
   const status = normalizeStatus(todo.status);
   if (status === "Concluído" || todo.completed) return { label: "—", tone: "muted" as const };
+  if (status === "Concluído (Em análise)") return { label: "Em análise", tone: "muted" as const };
   if (status === "Contínuo") return { label: "Rotina", tone: "muted" as const };
   if (isOverdue(todo)) return { label: "Atrasado", tone: "danger" as const };
   // Não iniciado → Planejado; Em andamento (dentro do prazo) → No prazo (Urgente se ≤7 dias)

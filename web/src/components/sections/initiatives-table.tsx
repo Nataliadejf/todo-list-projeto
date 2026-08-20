@@ -113,7 +113,13 @@ export function InitiativesTable({ todos, title = "Todas as Iniciativas", tall =
                           {alert.label}
                         </Badge>
                       </td>
-                      <td className="px-4 py-3.5">{normalizeStatus(todo.status)}</td>
+                      <td className="px-4 py-3.5">
+                        {normalizeStatus(todo.status) === "Concluído (Em análise)" ? (
+                          <Badge variant="orange">Concluído (Em análise)</Badge>
+                        ) : (
+                          normalizeStatus(todo.status)
+                        )}
+                      </td>
                       <td className="px-4 py-3.5">
                         {(() => {
                           const band = getPriorityBand(todo);

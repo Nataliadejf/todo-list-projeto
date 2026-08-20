@@ -107,6 +107,7 @@ export const STATUS_OPTIONS = [
   { value: "Em Andamento", label: "Em Andamento" },
   { value: "Contínuo", label: "Contínuo" },
   { value: "Concluído", label: "Concluído" },
+  { value: "Concluído (Em análise)", label: "Concluído (Em análise)" },
   { value: "Despriorizado", label: "Despriorizado" },
 ] as const;
 
@@ -141,7 +142,7 @@ export const GUT_OPTIONS = ["1", "3", "5"] as const;
 export const PROGRESS_OPTIONS = ["10", "20", "30", "40", "50", "60", "70", "80", "90", "100"] as const;
 export const SIM_NAO_OPTIONS = ["Sim", "Não"] as const;
 export const INITIATIVE_STATUS_OPTIONS = [
-  "Não Iniciado", "Em Andamento", "Contínuo", "Concluído", "Despriorizado",
+  "Não Iniciado", "Em Andamento", "Contínuo", "Concluído", "Concluído (Em análise)", "Despriorizado",
 ] as const;
 
 // Rótulos da coluna "Alerta" (ver getDeadlineAlert) — usados no filtro de Alerta.
