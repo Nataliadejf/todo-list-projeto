@@ -14,9 +14,15 @@ function statusVariant(status: string): "default" | "success" | "warning" | "inf
   return "info";
 }
 
-export function LinkedTasks({ initiativeDbId }: { initiativeDbId: number }) {
+export function LinkedTasks({ initiativeDbId, owner }: { initiativeDbId: number; owner?: string }) {
   const { tasks, update } = useTasks();
   const linked = tasks.filter((t) => t.initiativeDbId === initiativeDbId);
+
+  // Ao ir para a tela de Tarefas, mantém o filtro por iniciativa e responsável.
+  const ownerParam = owner?.trim() ? `&owner=${encodeURIComponent(owner.trim())}` : "";
+  const newTaskHref = `/tarefas?initiativeDbId=${initiativeDbId}${ownerParam}`;
+  const editTaskHref = (taskId: string) =>
+    `/tarefas?editTask=${taskId}&initiativeDbId=${initiativeDbId}${ownerParam}`;
 
   const toggleDone = async (task: Task) => {
     const done = !task.done;
@@ -39,7 +45,7 @@ export function LinkedTasks({ initiativeDbId }: { initiativeDbId: number }) {
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <CardTitle className="text-base">Tarefas vinculadas ({linked.length})</CardTitle>
         <Button asChild variant="secondary" size="sm">
-          <Link href={`/tarefas?initiativeDbId=${initiativeDbId}`}>
+          <Link href={newTaskHref}>
             <Plus className="h-4 w-4" />
             Nova tarefa
           </Link>
@@ -82,7 +88,7 @@ export function LinkedTasks({ initiativeDbId }: { initiativeDbId: number }) {
                   </div>
                 </div>
                 <Button asChild variant="ghost" size="icon" aria-label="Editar tarefa" title="Editar na tela de Tarefas">
-                  <Link href={`/tarefas?editTask=${task.id}`}>
+                  <Link href={editTaskHref(task.id)}>
                     <Pencil className="h-4 w-4" />
                   </Link>
                 </Button>

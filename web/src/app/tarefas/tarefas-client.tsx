@@ -53,12 +53,15 @@ export function TarefasClient() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [filterInitiative, setFilterInitiative] = useState<string | null>(searchParams.get("initiativeDbId"));
 
-  // Ao chegar de "ver tarefas" (Portfólio), já filtra pela iniciativa da URL.
+  // Ao chegar de "ver tarefas" (Portfólio/Iniciativa), já filtra pela iniciativa
+  // e pelo responsável da URL.
   useEffect(() => {
-    const p = searchParams.get("initiativeDbId");
-    if (p) setFilterInitiative(p);
+    const ini = searchParams.get("initiativeDbId");
+    if (ini) setFilterInitiative(ini);
+    const own = searchParams.get("owner");
+    if (own) setFilterOwner(own);
   }, [searchParams]);
-  const [filterOwner, setFilterOwner] = useState<string>("");
+  const [filterOwner, setFilterOwner] = useState<string>(searchParams.get("owner") ?? "");
   const [filterStatus, setFilterStatus] = useState<string>("");
   const [search, setSearch] = useState("");
   const [saving, setSaving] = useState(false);

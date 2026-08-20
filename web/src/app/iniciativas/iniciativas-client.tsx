@@ -45,7 +45,7 @@ export function IniciativasClient() {
             }}
           />
           {editing ? (
-            <LinkedTasks initiativeDbId={editing.dbId} />
+            <LinkedTasks initiativeDbId={editing.dbId} owner={editing.owner} />
           ) : (
             <InitiativesTable todos={filtered} title="Iniciativas cadastradas" tall />
           )}
