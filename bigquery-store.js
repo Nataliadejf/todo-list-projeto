@@ -171,6 +171,7 @@ async function ensureSchema() {
         { name: 'email', type: 'STRING' },
         { name: 'loginAt', type: 'TIMESTAMP' },
         { name: 'lastSeenAt', type: 'TIMESTAMP' },
+        { name: 'activeSeconds', type: 'INT64' },
     ];
 
     const responsaveisSchema = [
@@ -502,23 +503,30 @@ async function listUsers() {
 
 async function startSession(id, email) {
     await query(
-        `INSERT INTO ${tableRef('sessions')} (id,email,loginAt,lastSeenAt) VALUES (@id,@email,@t,@t)`,
+        `INSERT INTO ${tableRef('sessions')} (id,email,loginAt,lastSeenAt,activeSeconds) VALUES (@id,@email,@t,@t,0)`,
         { id: String(id), email: String(email), t: new Date() },
         { id: 'STRING', email: 'STRING', t: 'TIMESTAMP' },
     );
 }
 
 async function touchSession(id) {
-    await query(`UPDATE ${tableRef('sessions')} SET lastSeenAt=@t WHERE id=@id`,
+    // Credita no máx. 180s de tempo ativo por heartbeat; intervalos maiores (aba
+    // oculta/ociosa) são descartados. Teto de 8h (28800s) por sessão.
+    await query(
+        `UPDATE ${tableRef('sessions')}
+         SET activeSeconds = LEAST(28800, COALESCE(activeSeconds, 0)
+             + LEAST(GREATEST(TIMESTAMP_DIFF(@t, lastSeenAt, SECOND), 0), 180)),
+             lastSeenAt = @t
+         WHERE id=@id`,
         { id: String(id), t: new Date() }, { id: 'STRING', t: 'TIMESTAMP' });
 }
 
 async function getAccessStats() {
     const rows = await query(
-        // cada sessão conta no máximo 8h (28800s) para não inflar com abas deixadas abertas
+        // conta o tempo ATIVO acumulado (heartbeat com aba visível); teto de 8h
         `SELECT email,
                 COUNT(*) AS sessions,
-                SUM(LEAST(TIMESTAMP_DIFF(lastSeenAt, loginAt, SECOND), 28800)) AS totalSeconds,
+                SUM(LEAST(COALESCE(activeSeconds, 0), 28800)) AS totalSeconds,
                 MAX(loginAt) AS lastLogin
          FROM ${tableRef('sessions')} GROUP BY email`,
     );

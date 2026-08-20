@@ -213,6 +213,29 @@ async function ensureTaskColumns() {
     console.log(`Colunas de tarefa adicionadas: ${toAdd.join(', ')}.`);
 }
 
+// Garante a coluna activeSeconds na tabela sessions (tempo ATIVO acumulado).
+async function ensureSessionColumns() {
+    const isPg = adapter.type === 'postgres';
+    let columnNames = [];
+    if (isPg) {
+        const result = await adapter.pool.query(
+            `SELECT column_name FROM information_schema.columns
+             WHERE table_schema = 'public' AND table_name = 'sessions'`,
+        );
+        columnNames = result.rows.map((row) => row.column_name.toLowerCase());
+    } else {
+        const rows = await new Promise((resolve, reject) => {
+            adapter.db.all('PRAGMA table_info(sessions)', (err, data) => (err ? reject(err) : resolve(data || [])));
+        });
+        columnNames = rows.map((row) => String(row.name).toLowerCase());
+    }
+    if (!columnNames.includes('activeseconds')) {
+        if (isPg) await adapter.pool.query('ALTER TABLE sessions ADD COLUMN IF NOT EXISTS activeSeconds INTEGER DEFAULT 0');
+        else await run('ALTER TABLE sessions ADD COLUMN activeSeconds INTEGER DEFAULT 0');
+        console.log('Coluna activeSeconds adicionada à tabela sessions.');
+    }
+}
+
 function resolveDataDir() {
     if (process.env.DATA_DIR) return process.env.DATA_DIR;
     if (process.env.NODE_ENV === 'production' && fs.existsSync('/var/data')) return '/var/data';
@@ -312,6 +335,7 @@ async function initDatabase() {
         await ensureApprovalColumns();
         await ensureTaskColumns();
         await ensureUserColumns();
+        await ensureSessionColumns();
         console.log('Banco PostgreSQL conectado (persistente).');
         return adapter;
     }
@@ -344,6 +368,7 @@ async function initDatabase() {
     await ensureApprovalColumns();
     await ensureTaskColumns();
     await ensureUserColumns();
+    await ensureSessionColumns();
     console.log(`Banco SQLite em ${dbPath}${persistent ? ' (disco persistente)' : ''}.`);
     if (!persistent && process.env.NODE_ENV === 'production') {
         console.warn('AVISO: SQLite sem DATA_DIR/DATABASE_URL — dados podem sumir ao reiniciar no Render.');
@@ -628,8 +653,25 @@ async function startSession(id, email) {
         [String(id), String(email), now, now]);
 }
 
+// Cada heartbeat (aba visível, a cada ~2 min) credita no máx. SESSION_TICK_MAX de
+// tempo ativo. Se houve um intervalo maior (aba oculta/ociosa), o excedente é
+// descartado — assim só conta o tempo em que a ferramenta esteve de fato em uso.
+const SESSION_TICK_MAX = 180; // s (heartbeat 120s + margem)
+const SESSION_CAP = 28800; // s — teto de 8h por sessão
+
 async function touchSession(id) {
-    await run('UPDATE sessions SET lastSeenAt = ? WHERE id = ?', [new Date().toISOString(), String(id)]);
+    const now = Date.now();
+    const rows = await all('SELECT lastSeenAt, activeSeconds FROM sessions WHERE id = ?', [String(id)]);
+    const r = rows[0];
+    if (!r) return;
+    const lastRaw = r.lastSeenAt ?? r.lastseenat;
+    const last = lastRaw ? new Date(lastRaw).getTime() : now;
+    const prev = Number(r.activeSeconds ?? r.activeseconds ?? 0) || 0;
+    const elapsed = Number.isFinite(last) ? Math.round((now - last) / 1000) : 0;
+    const inc = Math.max(0, Math.min(elapsed, SESSION_TICK_MAX));
+    const next = Math.min(SESSION_CAP, prev + inc);
+    await run('UPDATE sessions SET lastSeenAt = ?, activeSeconds = ? WHERE id = ?',
+        [new Date(now).toISOString(), next, String(id)]);
 }
 
 // ---- Responsáveis (ativo/inativo) ----
@@ -667,9 +709,9 @@ async function getAccessStats() {
     rows.forEach((r) => {
         const email = r.email;
         const login = new Date(r.loginAt ?? r.loginat);
-        const seen = new Date(r.lastSeenAt ?? r.lastseenat);
-        // cada sessão conta no máximo 8h (28800s) para não inflar com abas deixadas abertas
-        const secs = Math.min(28800, Math.max(0, Math.round((seen.getTime() - login.getTime()) / 1000)));
+        // Tempo ATIVO acumulado (heartbeat com aba visível). Sessões antigas, sem
+        // esse registro, contam 0 — o histórico inflado por aba aberta é descartado.
+        const secs = Math.min(SESSION_CAP, Math.max(0, Number(r.activeSeconds ?? r.activeseconds ?? 0) || 0));
         if (!map.has(email)) map.set(email, { email, sessions: 0, totalSeconds: 0, lastLogin: null });
         const e = map.get(email);
         e.sessions += 1;

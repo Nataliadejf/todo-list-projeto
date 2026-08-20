@@ -33,13 +33,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setLoading(false));
   }, []);
 
-  // Heartbeat para registrar tempo de acesso enquanto logado.
+  // Heartbeat para registrar tempo ATIVO — só dispara com a aba visível, para não
+  // inflar o uso com abas esquecidas abertas em segundo plano.
   useEffect(() => {
     if (!user) return;
-    const id = setInterval(() => {
+    const beat = () => {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
       void apiHeartbeat().catch(() => {});
-    }, 120000);
-    return () => clearInterval(id);
+    };
+    const id = setInterval(beat, 120000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") beat();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [user]);
 
   const login = useCallback(async (email: string, password: string) => {
