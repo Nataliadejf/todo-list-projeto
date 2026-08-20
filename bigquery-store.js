@@ -191,6 +191,7 @@ async function ensureSchema() {
     await query(`ALTER TABLE ${tableRef('todos')} ADD COLUMN IF NOT EXISTS backup STRING`).catch(() => {});
     await query(`ALTER TABLE ${tableRef('todos')} ADD COLUMN IF NOT EXISTS efficacyIndicator STRING`).catch(() => {});
     await query(`ALTER TABLE ${tableRef('users')} ADD COLUMN IF NOT EXISTS responsavel STRING`).catch(() => {});
+    await query(`ALTER TABLE ${tableRef('sessions')} ADD COLUMN IF NOT EXISTS activeSeconds INT64`).catch(() => {});
 }
 
 async function ensureTable(dataset, name, schema) {
