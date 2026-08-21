@@ -25,10 +25,12 @@ function buildGroups(metaKey: string, allEntries: ExecEntry[], targets: Record<s
     const unidade = parts.slice(2).join("::");
     const entries = metaEntries.filter((e) => groupKey(metaKey, e.indicadorId, e.unidade) === gk);
     const target = targets[gk] ?? { base: 0, alvo: 0 };
-    const desired = target.alvo - target.base;
+    const desired = target.alvo - target.base; // com sinal (para exibir)
+    const magnitude = Math.abs(desired); // quanto é preciso mover, independe do sentido
+    const direction: "reduzir" | "aumentar" = desired < 0 ? "reduzir" : "aumentar";
     const projecao = entries.reduce((s, e) => s + e.contrib * (e.conf / 100), 0);
-    const cobertura = desired > 0 ? (projecao / desired) * 100 : 0;
-    return { gk, indicadorId, unidade, entries, target, desired, projecao, cobertura };
+    const cobertura = magnitude > 0 ? (projecao / magnitude) * 100 : 0;
+    return { gk, indicadorId, unidade, entries, target, desired, magnitude, direction, projecao, cobertura };
   });
 }
 
@@ -318,7 +320,7 @@ export function ExecutivoClient() {
                     <label><span>Base</span><input type="number" step="0.1" value={g.target.base} onChange={(e) => setTarget(g.gk, { base: Number(e.target.value) })} /></label>
                     <span className="arrow">→</span>
                     <label><span>Alvo</span><input type="number" step="0.1" value={g.target.alvo} onChange={(e) => setTarget(g.gk, { alvo: Number(e.target.value) })} /></label>
-                    <div className="gh-desired"><span>meta</span><b>{signed(g.desired)}</b></div>
+                    <div className="gh-desired"><span>{g.direction}</span><b>{g.direction === "reduzir" ? "↓" : "↑"} {nf(g.magnitude)}</b></div>
                   </div>
                   <div className={`gh-cover t-${tone}`}>{Math.round(g.cobertura)}%<span>cobertura</span></div>
                   <button className="gh-del" title="Remover indicador do plano" onClick={() => removeGroup(g.gk)}>✕</button>
@@ -327,7 +329,7 @@ export function ExecutivoClient() {
                   <div className="cover-fill" style={{ width: `${Math.min(Math.max(g.cobertura, 0), 100)}%` }} data-tone={tone} />
                   <div className="cover-goal" />
                 </div>
-                <div className="proj-line">Projeção: <b>{signed(g.projecao)} {g.unidade}</b> de {signed(g.desired)} {g.unidade}</div>
+                <div className="proj-line">Projeção: <b>{nf(g.projecao)} {g.unidade}</b> de {nf(g.magnitude)} {g.unidade} a {g.direction}</div>
 
                 <div className="entries">
                   {g.entries.map((e) => {
