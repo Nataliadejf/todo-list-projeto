@@ -178,10 +178,14 @@ export function ExecutivoClient() {
 
   const todosSorted = [...todos].sort((a, b) => (a.initiative || "").localeCompare(b.initiative || "", "pt-BR"));
   const maes = [...new Set(todos.map((t) => (t.mother || "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"));
-  // quando uma mãe é informada, mostra as iniciativas dela + as ainda SEM mãe (para vincular/sanear)
-  const iniOptions = afMae.trim()
-    ? todosSorted.filter((t) => { const m = (t.mother || "").trim(); return m === afMae.trim() || m === ""; })
-    : todosSorted;
+  // Ao selecionar uma mãe: mostra APENAS as iniciativas atreladas a ela.
+  // Exceção: se for uma mãe nova (sem iniciativas ainda), mostra as sem mãe p/ vincular.
+  const linkedToMae = afMae.trim() ? todosSorted.filter((t) => (t.mother || "").trim() === afMae.trim()) : [];
+  const iniOptions = !afMae.trim()
+    ? todosSorted
+    : linkedToMae.length > 0
+      ? linkedToMae
+      : todosSorted.filter((t) => !(t.mother || "").trim());
 
   return (
     <div className="exec">
@@ -320,7 +324,7 @@ export function ExecutivoClient() {
             <button className="btn primary" onClick={() => void addEntry()}>Adicionar</button>
           </div>
           {metaInds.length === 0 ? <p className="af-warn">Esta meta ainda não tem indicadores. Cadastre em Administração → Indicadores.</p>
-            : <p className="af-warn" style={{ color: "var(--ink-soft)" }}>Se informar a Iniciativa Mãe, a iniciativa escolhida é vinculada a ela ao adicionar (saneamento). A lista mostra as dessa mãe + as ainda sem mãe.</p>}
+            : <p className="af-warn" style={{ color: "var(--ink-soft)" }}>Ao escolher uma Iniciativa Mãe, a lista mostra apenas as iniciativas atreladas a ela. Se digitar uma mãe nova, mostra as sem mãe para vincular ao adicionar.</p>}
         </div>
       ) : null}
 
