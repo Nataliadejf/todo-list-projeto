@@ -6,8 +6,6 @@ import { useAuth } from "@/components/providers/auth-provider";
 import { METAS_GLOBAIS, META_BY_KEY, UNITS } from "@/lib/executive-utils";
 import { fetchIndicadores, getExecPlan, saveExecPlan, type ExecEntry, type ExecPlan, type ExecTarget, type Indicador } from "@/lib/exec-api";
 
-const EXEC_EMAIL = "administradorportfolio@gmail.com";
-
 const nf = (n: number) => n.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
 const signed = (n: number) => (n >= 0 ? "+" : "−") + nf(Math.abs(n));
 const groupKey = (metaGlobal: string, indicadorId: string, unidade: string) => `${metaGlobal}::${indicadorId}::${unidade}`;
@@ -36,8 +34,8 @@ function buildGroups(metaKey: string, allEntries: ExecEntry[], targets: Record<s
 
 export function ExecutivoClient() {
   const { todos } = useTodos();
-  const { user } = useAuth();
-  const canView = (user?.email || "").toLowerCase() === EXEC_EMAIL;
+  const { isAdmin } = useAuth();
+  const canView = isAdmin;
 
   const [indicadores, setIndicadores] = useState<Indicador[]>([]);
   const [plan, setPlan] = useState<ExecPlan>({ targets: {}, entries: [] });

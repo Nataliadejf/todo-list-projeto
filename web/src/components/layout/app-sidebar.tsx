@@ -18,17 +18,14 @@ const iconMap = {
   check: ListTodo,
 } as const;
 
-const EXEC_EMAIL = "administradorportfolio@gmail.com";
-
 export function AppSidebar() {
   const pathname = usePathname();
   const { connected, error, databaseType, databasePersistent } = useTodos();
   const { user, isAdmin, logout } = useAuth();
   const [showChangePwd, setShowChangePwd] = useState(false);
 
-  // Visão Executiva é restrita a um único perfil.
-  const canExec = (user?.email || "").toLowerCase() === EXEC_EMAIL;
-  const navItems = NAV_ITEMS.filter((item) => item.href !== "/executivo" || canExec);
+  // Visão Executiva é restrita aos administradores.
+  const navItems = NAV_ITEMS.filter((item) => item.href !== "/executivo" || isAdmin);
 
   return (
     <aside className="flex w-full shrink-0 flex-col bg-[#0b1120] text-slate-200 lg:fixed lg:inset-y-0 lg:left-0 lg:z-40 lg:w-64">
