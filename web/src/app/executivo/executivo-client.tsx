@@ -12,19 +12,23 @@ const nf = (n: number) => n.toLocaleString("pt-BR", { maximumFractionDigits: 1 }
 const signed = (n: number) => (n >= 0 ? "+" : "−") + nf(Math.abs(n));
 const groupKey = (metaGlobal: string, indicadorId: string, unidade: string) => `${metaGlobal}::${indicadorId}::${unidade}`;
 
-function buildGroups(entries: ExecEntry[], targets: Record<string, ExecTarget>) {
-  const map = new Map<string, { indicadorId: string; unidade: string; entries: ExecEntry[] }>();
-  entries.forEach((e) => {
-    const gk = groupKey(e.metaGlobal, e.indicadorId, e.unidade);
-    if (!map.has(gk)) map.set(gk, { indicadorId: e.indicadorId, unidade: e.unidade, entries: [] });
-    map.get(gk)!.entries.push(e);
-  });
-  return [...map.entries()].map(([gk, g]) => {
+function buildGroups(metaKey: string, allEntries: ExecEntry[], targets: Record<string, ExecTarget>) {
+  const prefix = `${metaKey}::`;
+  const metaEntries = allEntries.filter((e) => e.metaGlobal === metaKey);
+  // grupos vêm das metas registradas (indicador selecionado) E das iniciativas lançadas
+  const keys = new Set<string>();
+  metaEntries.forEach((e) => keys.add(groupKey(metaKey, e.indicadorId, e.unidade)));
+  Object.keys(targets).forEach((k) => { if (k.startsWith(prefix)) keys.add(k); });
+  return [...keys].map((gk) => {
+    const parts = gk.split("::");
+    const indicadorId = parts[1];
+    const unidade = parts.slice(2).join("::");
+    const entries = metaEntries.filter((e) => groupKey(metaKey, e.indicadorId, e.unidade) === gk);
     const target = targets[gk] ?? { base: 0, alvo: 0 };
     const desired = target.alvo - target.base;
-    const projecao = g.entries.reduce((s, e) => s + e.contrib * (e.conf / 100), 0);
+    const projecao = entries.reduce((s, e) => s + e.contrib * (e.conf / 100), 0);
     const cobertura = desired > 0 ? (projecao / desired) * 100 : 0;
-    return { gk, ...g, target, desired, projecao, cobertura };
+    return { gk, indicadorId, unidade, entries, target, desired, projecao, cobertura };
   });
 }
 
@@ -44,6 +48,9 @@ export function ExecutivoClient() {
   // formulário "adicionar iniciativa"
   const [addOpen, setAddOpen] = useState(false);
   const [af, setAf] = useState({ initiativeDbId: "", indicadorId: "", unidade: "%", contrib: 0, conf: 70 });
+  // formulário "adicionar indicador ao plano" (seleciona indicador cadastrado + registra a meta)
+  const [indOpen, setIndOpen] = useState(false);
+  const [indForm, setIndForm] = useState({ indicadorId: "", unidade: "%", base: 0, alvo: 0 });
 
   useEffect(() => {
     if (!canView) return;
@@ -67,14 +74,14 @@ export function ExecutivoClient() {
   const metaEntries = plan.entries.filter((e) => e.metaGlobal === metaKey);
 
   // agrupa por indicador + unidade (meta selecionada)
-  const groups = useMemo(() => buildGroups(metaEntries, plan.targets), [metaEntries, plan.targets]);
+  const groups = useMemo(() => buildGroups(metaKey, plan.entries, plan.targets), [metaKey, plan]);
 
   // consolidação (todas as metas)
   const metaStats = useMemo(() => METAS_GLOBAIS.map((m) => {
-    const es = plan.entries.filter((e) => e.metaGlobal === m.key);
-    const gs = buildGroups(es, plan.targets);
+    const gs = buildGroups(m.key, plan.entries, plan.targets);
     const cov = gs.length ? gs.reduce((a, g) => a + g.cobertura, 0) / gs.length : 0;
-    return { meta: m, indicadores: gs.length, iniciativas: es.length, cobertura: cov };
+    const iniciativas = plan.entries.filter((e) => e.metaGlobal === m.key).length;
+    return { meta: m, indicadores: gs.length, iniciativas, cobertura: cov };
   }), [plan]);
 
   // ganhos projetados somados por unidade (soma só faz sentido dentro da mesma unidade)
@@ -114,6 +121,22 @@ export function ExecutivoClient() {
     setPlan((p) => ({ ...p, entries: [...p.entries, entry] }));
     setAf((f) => ({ ...f, initiativeDbId: "", contrib: 0 }));
     setAddOpen(false);
+    markDirty();
+  };
+  const addIndicadorToPlan = () => {
+    if (!indForm.indicadorId || !indForm.unidade) { setMsg("Selecione o indicador e a unidade."); return; }
+    const gk = groupKey(metaKey, indForm.indicadorId, indForm.unidade);
+    setPlan((p) => ({ ...p, targets: { ...p.targets, [gk]: { base: Number(indForm.base) || 0, alvo: Number(indForm.alvo) || 0 } } }));
+    setIndForm((f) => ({ ...f, indicadorId: "", base: 0, alvo: 0 }));
+    setIndOpen(false);
+    markDirty();
+  };
+  const removeGroup = (gk: string) => {
+    setPlan((p) => {
+      const targets = { ...p.targets }; delete targets[gk];
+      const entries = p.entries.filter((e) => groupKey(e.metaGlobal, e.indicadorId, e.unidade) !== gk);
+      return { targets, entries };
+    });
     markDirty();
   };
   const save = async () => {
@@ -210,10 +233,41 @@ export function ExecutivoClient() {
         <div><b>{metaSummary.indicadores}</b><span>indicadores</span></div>
         <div><b>{metaSummary.iniciativas}</b><span>iniciativas</span></div>
         <div><b className={`t-${toneOf(metaSummary.cobertura)}`}>{Math.round(metaSummary.cobertura)}%</b><span>cobertura média</span></div>
-        <button className="btn add-btn" onClick={() => setAddOpen((v) => !v)}>+ Adicionar iniciativa</button>
+        <div className="ms-actions">
+          <button className="btn add-btn ghost2" onClick={() => setIndOpen((v) => !v)}>+ Adicionar indicador</button>
+          <button className="btn add-btn" onClick={() => setAddOpen((v) => !v)}>+ Adicionar iniciativa</button>
+        </div>
       </div>
 
-      {/* form adicionar */}
+      {/* form adicionar indicador ao plano (seleciona + registra a meta) */}
+      {indOpen ? (
+        <div className="add-form">
+          <div className="af-grid" style={{ gridTemplateColumns: "1.6fr .9fr .9fr .9fr auto" }}>
+            <label className="af-field"><span>Indicador (cadastrado)</span>
+              <select value={indForm.indicadorId} onChange={(e) => setIndForm((f) => ({ ...f, indicadorId: e.target.value }))}>
+                <option value="">— selecione —</option>
+                {metaInds.map((i) => <option key={i.id} value={i.id}>{i.nome}</option>)}
+              </select>
+            </label>
+            <label className="af-field sm"><span>Unidade</span>
+              <select value={indForm.unidade} onChange={(e) => setIndForm((f) => ({ ...f, unidade: e.target.value }))}>
+                {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+              </select>
+            </label>
+            <label className="af-field sm"><span>Base</span>
+              <input type="number" step="0.1" value={indForm.base} onChange={(e) => setIndForm((f) => ({ ...f, base: Number(e.target.value) }))} />
+            </label>
+            <label className="af-field sm"><span>Alvo</span>
+              <input type="number" step="0.1" value={indForm.alvo} onChange={(e) => setIndForm((f) => ({ ...f, alvo: Number(e.target.value) }))} />
+            </label>
+            <button className="btn primary" onClick={addIndicadorToPlan} disabled={!indForm.indicadorId}>Adicionar ao plano</button>
+          </div>
+          {metaInds.length === 0 ? <p className="af-warn">Esta meta ainda não tem indicadores. Cadastre em Administração → Indicadores.</p>
+            : <p className="af-warn" style={{ color: "var(--ink-soft)" }}>Escolha um indicador já cadastrado e registre a meta (base → alvo). Depois adicione iniciativas nele.</p>}
+        </div>
+      ) : null}
+
+      {/* form adicionar iniciativa */}
       {addOpen ? (
         <div className="add-form">
           <div className="af-grid">
@@ -248,7 +302,7 @@ export function ExecutivoClient() {
 
       {/* GRUPOS (indicador + unidade) */}
       {!loaded ? <p className="loading">Carregando plano…</p> : groups.length === 0 ? (
-        <div className="empty-card">Nenhuma iniciativa nesta meta ainda. Clique em <b>“+ Adicionar iniciativa”</b> para começar.</div>
+        <div className="empty-card">Nenhum indicador nesta meta ainda. Clique em <b>“+ Adicionar indicador”</b> para registrar a meta (base → alvo) e depois adicione iniciativas.</div>
       ) : (
         <div className="groups">
           {groups.map((g) => {
@@ -267,6 +321,7 @@ export function ExecutivoClient() {
                     <div className="gh-desired"><span>meta</span><b>{signed(g.desired)}</b></div>
                   </div>
                   <div className={`gh-cover t-${tone}`}>{Math.round(g.cobertura)}%<span>cobertura</span></div>
+                  <button className="gh-del" title="Remover indicador do plano" onClick={() => removeGroup(g.gk)}>✕</button>
                 </div>
                 <div className="cover-bar">
                   <div className="cover-fill" style={{ width: `${Math.min(Math.max(g.cobertura, 0), 100)}%` }} data-tone={tone} />
@@ -347,8 +402,13 @@ const CSS = `
 .exec .meta-summary>div{display:flex;flex-direction:column;}
 .exec .meta-summary b{font-size:22px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums;}
 .exec .meta-summary span{font-size:10.5px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.04em;margin-top:3px;}
-.exec .meta-summary .add-btn{margin-left:auto;background:var(--primary-soft);color:var(--primary);border-color:#EBCF7A;}
+.exec .meta-summary .ms-actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;}
+.exec .meta-summary .add-btn{background:var(--primary-soft);color:var(--primary);border-color:#EBCF7A;}
 .exec .meta-summary .add-btn:hover{background:var(--primary-vivid);color:#1A1D29;}
+.exec .meta-summary .add-btn.ghost2{background:transparent;color:var(--ink-soft);border-color:var(--line);}
+.exec .meta-summary .add-btn.ghost2:hover{background:var(--surface-2);color:var(--ink);border-color:var(--primary);}
+.exec .gh-del{background:none;border:none;color:var(--ink-faint);cursor:pointer;font-size:13px;padding:4px 6px;border-radius:6px;align-self:flex-start;}
+.exec .gh-del:hover{background:var(--bad-soft);color:var(--bad);}
 .exec .t-good{color:var(--good);}.exec .t-warn{color:var(--warn);}.exec .t-bad{color:var(--bad);}
 .exec .add-form{background:var(--surface);border:1px solid var(--primary-vivid);border-radius:14px;padding:16px 18px;margin-bottom:16px;box-shadow:0 1px 2px rgba(20,22,30,.03);}
 .exec .af-grid{display:grid;grid-template-columns:1.6fr 1.4fr .8fr .9fr .9fr auto;gap:12px;align-items:end;}
