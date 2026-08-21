@@ -58,6 +58,7 @@ export interface Initiative {
   impediment: string;
   notes: string;
   weightedDelivery: string;
+  mother: string;
   completed: boolean;
   approved: boolean;
   deprioritized: boolean;
@@ -117,6 +118,7 @@ export interface FilterState {
   size: string[];
   owner: string[];
   area: string[];
+  mother: string[];
   alert: string[];
   deadline: string;
   periodStart: string;
@@ -131,6 +133,7 @@ export const EMPTY_FILTERS: FilterState = {
   size: [],
   owner: [],
   area: [],
+  mother: [],
   alert: [],
   deadline: "",
   periodStart: "",

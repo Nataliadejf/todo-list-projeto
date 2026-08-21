@@ -67,6 +67,7 @@ function emptyInitiative(): InitiativeInput {
     impediment: "",
     notes: "",
     weightedDelivery: "",
+    mother: "",
     completed: false,
     approved: false,
     deprioritized: false,
@@ -121,6 +122,7 @@ export function InitiativeForm({ editing, onSaved, onCancelEdit }: InitiativeFor
 
   // Frentes já cadastradas (lista com sugestões — a V4 tem valores variados).
   const frentes = useMemo(() => getUniqueValues(todos, "front"), [todos]);
+  const maes = useMemo(() => getUniqueValues(todos, "mother"), [todos]);
 
   // Prazo (dias) calculado automaticamente a partir das datas.
   useEffect(() => {
@@ -187,9 +189,10 @@ export function InitiativeForm({ editing, onSaved, onCancelEdit }: InitiativeFor
           <form onSubmit={(e) => void handleSubmit(e)} className="space-y-6">
             <section className="space-y-3 rounded-2xl border border-slate-200 p-4">
               <h3 className="text-sm font-bold text-slate-800">Identificação</h3>
-              <div className="grid gap-3 md:grid-cols-2">
+              <div className="grid gap-3 md:grid-cols-3">
                 <Field fieldKey="area" value={form.area} onChange={updateField} required options={AREA_OPTIONS} />
                 <Field fieldKey="front" value={form.front} onChange={updateField} required suggestions={frentes} />
+                <Field fieldKey="mother" value={form.mother} onChange={updateField} suggestions={maes} hint="Agrupador — selecione uma existente ou digite uma nova" />
               </div>
               <div className="grid gap-3 md:grid-cols-3">
                 <Field fieldKey="initiative" value={form.initiative} onChange={updateField} required />

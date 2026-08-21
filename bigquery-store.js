@@ -19,7 +19,7 @@ const monthKeys = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set'
 const textFields = [
     'id', 'area', 'front', 'initiative', 'owner', 'backup', 'efficacyIndicator', 'description', 'deliveries', 'gainCategory', 'gainDescription', 'size',
     'weight', 'status', 'startDate', 'plannedEndDate', 'realEndDate', 'deadlineDays', 'deadlinePercent', 'progressPercent',
-    'severity', 'urgency', 'strategy', 'priority', 'impediment', 'notes', 'weightedDelivery',
+    'severity', 'urgency', 'strategy', 'priority', 'impediment', 'notes', 'weightedDelivery', 'mother',
 ];
 const boolFields = [...monthKeys, 'completed', 'approved', 'deprioritized'];
 const todoColumns = ['dbId', ...textFields, ...boolFields];
@@ -204,6 +204,7 @@ async function ensureSchema() {
     await query(`ALTER TABLE ${tableRef('todos')} ADD COLUMN IF NOT EXISTS efficacyIndicator STRING`).catch(() => {});
     await query(`ALTER TABLE ${tableRef('users')} ADD COLUMN IF NOT EXISTS responsavel STRING`).catch(() => {});
     await query(`ALTER TABLE ${tableRef('sessions')} ADD COLUMN IF NOT EXISTS activeSeconds INT64`).catch(() => {});
+    await query(`ALTER TABLE ${tableRef('todos')} ADD COLUMN IF NOT EXISTS mother STRING`).catch(() => {});
 }
 
 async function ensureTable(dataset, name, schema) {

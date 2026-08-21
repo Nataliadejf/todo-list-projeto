@@ -4,6 +4,7 @@ import {
   BarChart3,
   Bell,
   Calendar,
+  GitBranch,
   RefreshCw,
   Ruler,
   Search,
@@ -27,6 +28,7 @@ interface FiltersPanelProps {
   showDeadline?: boolean;
   showAlert?: boolean;
   showArea?: boolean;
+  showMother?: boolean;
   showSize?: boolean;
   showPeriod?: boolean;
   compact?: boolean;
@@ -38,6 +40,7 @@ export function FiltersPanel({
   showDeadline = true,
   showAlert = false,
   showArea = false,
+  showMother = false,
   showSize = true,
   showPeriod = false,
   compact = false,
@@ -48,6 +51,7 @@ export function FiltersPanel({
   const { isAdmin } = useAuth();
   const owners = getUniqueValues(todos, "owner").filter((o) => !inactiveNames.has(o.trim()));
   const areas = getUniqueValues(todos, "area");
+  const maes = getUniqueValues(todos, "mother");
   const isHorizontal = layout === "horizontal";
 
   const content = (
@@ -110,6 +114,17 @@ export function FiltersPanel({
             value={filters.area}
             onChange={(v) => setFilters((prev) => ({ ...prev, area: v }))}
             placeholder="Todas"
+          />
+        ) : null}
+
+        {showMother ? (
+          <MultiSelect
+            label={isHorizontal ? undefined : "Iniciativa Mãe"}
+            icon={<GitBranch className="h-4 w-4" />}
+            options={maes}
+            value={filters.mother}
+            onChange={(v) => setFilters((prev) => ({ ...prev, mother: v }))}
+            placeholder="Todas as mães"
           />
         ) : null}
 

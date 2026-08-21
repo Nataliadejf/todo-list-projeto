@@ -57,6 +57,7 @@ export const LABEL_MAP: Record<string, string> = {
   impediment: "Impedimento",
   notes: "Observação",
   weightedDelivery: "Entrega Ponderada2",
+  mother: "Iniciativa Mãe",
 };
 
 export const EDITABLE_KEYS = [
@@ -85,6 +86,7 @@ export const EDITABLE_KEYS = [
   "impediment",
   "notes",
   "weightedDelivery",
+  "mother",
 ] as const;
 
 export const MONTH_LABELS: Record<MonthKey, string> = {

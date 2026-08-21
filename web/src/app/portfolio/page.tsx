@@ -16,11 +16,24 @@ export default function PortfolioPage() {
   const { isAdmin } = useAuth();
   const base = isAdmin && filters.showInactive ? todos : hideInactiveOwners(todos, inactiveNames);
   const filtered = filterInitiatives(base, filters);
+  const maesCount = new Set(filtered.map((t) => (t.mother || "").trim()).filter(Boolean)).size;
+  const semMae = filtered.filter((t) => !(t.mother || "").trim()).length;
 
   return (
     <div className="flex flex-col gap-4">
       <PageHeader title="Portfólio" />
-      <FiltersPanel layout="horizontal" showArea showSize showAlert showPeriod />
+      <FiltersPanel layout="horizontal" showArea showMother showSize showAlert showPeriod />
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_8px_30px_rgba(15,23,42,0.06)]">
+          <span className="absolute inset-y-0 left-0 w-1 bg-violet-500" />
+          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Iniciativas Mãe</p>
+          <div className="mt-2 text-2xl font-bold tabular-nums text-slate-900">{maesCount}</div>
+          <p className="mt-1 text-[11px] text-slate-500">
+            agrupadores em uso{semMae > 0 ? ` · ${semMae} sem mãe` : ""}
+          </p>
+        </div>
+      </div>
 
       {error ? (
         <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">

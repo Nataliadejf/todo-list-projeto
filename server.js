@@ -26,7 +26,7 @@ app.use('/api/tasks', requireData);
 const baseFields = [
     'id', 'area', 'front', 'initiative', 'owner', 'backup', 'efficacyIndicator', 'description', 'deliveries', 'gainCategory', 'gainDescription', 'size',
     'weight', 'status', 'startDate', 'plannedEndDate', 'realEndDate', 'deadlineDays', 'deadlinePercent', 'progressPercent',
-    'severity', 'urgency', 'strategy', 'priority', 'impediment', 'notes', 'weightedDelivery',
+    'severity', 'urgency', 'strategy', 'priority', 'impediment', 'notes', 'weightedDelivery', 'mother',
 ];
 
 function normalizePayload(payload) {
