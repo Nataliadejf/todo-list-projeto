@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTodos } from "@/components/providers/todos-provider";
 import { useAuth } from "@/components/providers/auth-provider";
+import { toInitiativeInput } from "@/lib/todo-utils";
 import { METAS_GLOBAIS, META_BY_KEY, UNITS } from "@/lib/executive-utils";
 import { fetchIndicadores, getExecPlan, saveExecPlan, type ExecEntry, type ExecPlan, type ExecTarget, type Indicador } from "@/lib/exec-api";
 
@@ -33,7 +34,7 @@ function buildGroups(metaKey: string, allEntries: ExecEntry[], targets: Record<s
 }
 
 export function ExecutivoClient() {
-  const { todos } = useTodos();
+  const { todos, update } = useTodos();
   const { isAdmin } = useAuth();
   const canView = isAdmin;
 
@@ -108,7 +109,7 @@ export function ExecutivoClient() {
     setPlan((p) => ({ ...p, entries: p.entries.filter((e) => e.key !== key) }));
     markDirty();
   };
-  const addEntry = () => {
+  const addEntry = async () => {
     if (!af.indicadorId || !af.unidade) { setMsg("Selecione o indicador e a unidade."); return; }
     const entry: ExecEntry = {
       key: (typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now() + Math.random()),
@@ -119,6 +120,15 @@ export function ExecutivoClient() {
       contrib: Number(af.contrib) || 0,
       conf: Number(af.conf) || 0,
     };
+    // Saneamento: se informou a Iniciativa Mãe, vincula-a à iniciativa (persiste no cadastro).
+    const mae = afMae.trim();
+    if (mae && af.initiativeDbId) {
+      const todo = todos.find((t) => t.dbId === Number(af.initiativeDbId));
+      if (todo && (todo.mother || "").trim() !== mae) {
+        try { await update(todo.dbId, { ...toInitiativeInput(todo), mother: mae }); }
+        catch (e) { setMsg(e instanceof Error ? e.message : "Erro ao vincular a iniciativa mãe."); }
+      }
+    }
     setPlan((p) => ({ ...p, entries: [...p.entries, entry] }));
     setAf((f) => ({ ...f, initiativeDbId: "", contrib: 0 }));
     setAddOpen(false);
@@ -168,7 +178,10 @@ export function ExecutivoClient() {
 
   const todosSorted = [...todos].sort((a, b) => (a.initiative || "").localeCompare(b.initiative || "", "pt-BR"));
   const maes = [...new Set(todos.map((t) => (t.mother || "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"));
-  const iniOptions = afMae ? todosSorted.filter((t) => (t.mother || "").trim() === afMae) : todosSorted;
+  // quando uma mãe é informada, mostra as iniciativas dela + as ainda SEM mãe (para vincular/sanear)
+  const iniOptions = afMae.trim()
+    ? todosSorted.filter((t) => { const m = (t.mother || "").trim(); return m === afMae.trim() || m === ""; })
+    : todosSorted;
 
   return (
     <div className="exec">
@@ -273,16 +286,15 @@ export function ExecutivoClient() {
       {/* form adicionar iniciativa */}
       {addOpen ? (
         <div className="add-form">
-          <div style={{ marginBottom: 10, maxWidth: 320 }}>
-            <label className="af-field"><span>Filtrar por Iniciativa Mãe</span>
-              <select value={afMae} onChange={(e) => { setAfMae(e.target.value); setAf((f) => ({ ...f, initiativeDbId: "" })); }}>
-                <option value="">Todas as mães</option>
-                {maes.map((m) => <option key={m} value={m}>{m}</option>)}
-              </select>
+          <div style={{ marginBottom: 10, maxWidth: 380 }}>
+            <label className="af-field"><span>Iniciativa Mãe (filtra e vincula)</span>
+              <input list="exec-maes" value={afMae} placeholder="Selecione ou digite uma nova mãe…"
+                onChange={(e) => { setAfMae(e.target.value); setAf((f) => ({ ...f, initiativeDbId: "" })); }} />
+              <datalist id="exec-maes">{maes.map((m) => <option key={m} value={m} />)}</datalist>
             </label>
           </div>
           <div className="af-grid">
-            <label className="af-field"><span>Iniciativa{afMae ? ` (${iniOptions.length})` : ""}</span>
+            <label className="af-field"><span>Iniciativa{afMae.trim() ? ` (${iniOptions.length})` : ""}</span>
               <select value={af.initiativeDbId} onChange={(e) => setAf((f) => ({ ...f, initiativeDbId: e.target.value }))}>
                 <option value="">— selecione —</option>
                 {iniOptions.map((t) => <option key={t.dbId} value={t.dbId}>{t.initiative || `#${t.dbId}`}</option>)}
@@ -305,9 +317,10 @@ export function ExecutivoClient() {
             <label className="af-field sm"><span>Confiança %</span>
               <input type="number" min={0} max={100} step={5} value={af.conf} onChange={(e) => setAf((f) => ({ ...f, conf: Number(e.target.value) }))} />
             </label>
-            <button className="btn primary" onClick={addEntry}>Adicionar</button>
+            <button className="btn primary" onClick={() => void addEntry()}>Adicionar</button>
           </div>
-          {metaInds.length === 0 ? <p className="af-warn">Esta meta ainda não tem indicadores. Cadastre em Administração → Indicadores.</p> : null}
+          {metaInds.length === 0 ? <p className="af-warn">Esta meta ainda não tem indicadores. Cadastre em Administração → Indicadores.</p>
+            : <p className="af-warn" style={{ color: "var(--ink-soft)" }}>Se informar a Iniciativa Mãe, a iniciativa escolhida é vinculada a ela ao adicionar (saneamento). A lista mostra as dessa mãe + as ainda sem mãe.</p>}
         </div>
       ) : null}
 
