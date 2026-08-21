@@ -313,7 +313,7 @@ function mountNextFrontend() {
     app.use(express.static(webOut, { index: false }));
     app.get('/', (req, res) => res.redirect(302, '/portfolio'));
 
-    ['/portfolio', '/projetos', '/iniciativas', '/tarefas', '/admin'].forEach((routePath) => {
+    ['/portfolio', '/executivo', '/projetos', '/iniciativas', '/tarefas', '/admin'].forEach((routePath) => {
         app.get(routePath, (req, res) => sendExportedPage(routePath, res));
         app.get(`${routePath}/`, (req, res) => sendExportedPage(routePath, res));
     });

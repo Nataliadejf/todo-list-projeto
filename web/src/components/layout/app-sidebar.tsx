@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { CheckCircle2, FolderKanban, KeyRound, ListChecks, ListTodo, LogOut, Rocket, ShieldCheck } from "lucide-react";
+import { CheckCircle2, FolderKanban, KeyRound, ListChecks, ListTodo, LogOut, Rocket, ShieldCheck, Target } from "lucide-react";
 import { BRAND, NAV_ITEMS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { useTodos } from "@/components/providers/todos-provider";
@@ -12,6 +12,7 @@ import { ChangePasswordDialog } from "@/components/auth/change-password-dialog";
 
 const iconMap = {
   folder: FolderKanban,
+  target: Target,
   rocket: Rocket,
   list: ListChecks,
   check: ListTodo,

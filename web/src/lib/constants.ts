@@ -10,6 +10,7 @@ export const BRAND = {
 
 export const NAV_ITEMS = [
   { href: "/portfolio", label: "Portfólio", icon: "folder" as const },
+  { href: "/executivo", label: "Visão Executiva", icon: "target" as const },
   { href: "/projetos", label: "Projetos", icon: "rocket" as const },
   { href: "/iniciativas", label: "Iniciativas", icon: "list" as const },
   { href: "/tarefas", label: "Tarefas", icon: "check" as const },
