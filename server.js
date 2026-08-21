@@ -283,6 +283,99 @@ app.post('/api/admin/responsaveis/:id/toggle', auth.requireAdmin, async (req, re
     }
 });
 
+// ---------------------------------------------------------------------------
+// Indicadores (Visão Executiva) — metas globais fixas; indicadores cadastráveis
+// ---------------------------------------------------------------------------
+
+// As 5 metas globais da empresa (chaves estáveis; rótulos exibidos no front).
+const METAS_GLOBAIS = ['lucratividade', 'horizontalizacao', 'inovacao', 'pessoas', 'internacionalizacao'];
+
+const INDICADORES_SEED = [
+    ['lucratividade', 'EBITDA'], ['lucratividade', 'Redução de despesas'], ['lucratividade', 'Faturamento'],
+    ['lucratividade', 'Receita líquida'], ['lucratividade', 'Receita bruta'], ['lucratividade', 'Margem bruta'], ['lucratividade', 'Custo evitado'],
+    ['horizontalizacao', 'Expansão de filiais'], ['horizontalizacao', 'Aumento de clientes'], ['horizontalizacao', 'Ticket médio'],
+    ['horizontalizacao', 'Volume de vendas'], ['horizontalizacao', 'Pedidos por cliente'], ['horizontalizacao', 'Reativação de clientes'],
+    ['inovacao', 'Automações entregues'], ['inovacao', 'Redução de retrabalho'], ['inovacao', 'Processos padronizados'],
+    ['inovacao', 'Novos produtos/serviços'], ['inovacao', 'Tempo de ciclo'], ['inovacao', 'Aderência ISO'],
+    ['pessoas', 'Turnover'], ['pessoas', 'Absenteísmo'], ['pessoas', 'Treinamentos'], ['pessoas', 'Clima / eNPS'],
+    ['pessoas', 'Produtividade (H/H)'], ['pessoas', 'Vagas no prazo'],
+    ['internacionalizacao', 'Novos mercados/países'], ['internacionalizacao', 'Receita de exportação'],
+    ['internacionalizacao', 'Clientes internacionais'], ['internacionalizacao', 'Volume exportado'], ['internacionalizacao', 'Parcerias'],
+].map(([metaGlobal, nome]) => ({ metaGlobal, nome }));
+
+// Lista de indicadores ativos — usada pela Visão Executiva.
+app.get('/api/indicadores', async (req, res) => {
+    try {
+        res.json(await store.listIndicadores(true));
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/admin/indicadores', auth.requireAdmin, async (req, res) => {
+    try {
+        res.json(await store.listIndicadores(false));
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/admin/indicadores', auth.requireAdmin, async (req, res) => {
+    try {
+        const metaGlobal = String(req.body?.metaGlobal || '').trim();
+        const nome = String(req.body?.nome || '').trim();
+        if (!METAS_GLOBAIS.includes(metaGlobal)) return res.status(400).json({ error: 'Meta global inválida.' });
+        if (!nome) return res.status(400).json({ error: 'Informe o nome do indicador.' });
+        const existing = await store.listIndicadores(false);
+        if (existing.some((i) => i.metaGlobal === metaGlobal && i.nome.toLowerCase() === nome.toLowerCase())) {
+            return res.status(409).json({ error: 'Esse indicador já existe nesta meta.' });
+        }
+        return res.status(201).json(await store.addIndicador(metaGlobal, nome));
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/admin/indicadores/:id/toggle', auth.requireAdmin, async (req, res) => {
+    try {
+        const it = (await store.listIndicadores(false)).find((x) => x.id === req.params.id);
+        if (!it) return res.status(404).json({ error: 'Indicador não encontrado.' });
+        await store.setIndicadorActive(it.id, !it.active);
+        return res.json({ ...it, active: !it.active });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete('/api/admin/indicadores/:id', auth.requireAdmin, async (req, res) => {
+    try {
+        await store.deleteIndicador(req.params.id);
+        return res.status(204).send();
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+// Plano executivo (configuração da Visão Executiva) — blob persistido.
+app.get('/api/exec-plan', auth.requireAdmin, async (req, res) => {
+    try {
+        const raw = await store.getSetting('exec_plan');
+        res.json(raw ? JSON.parse(raw) : { targets: {}, entries: [] });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.put('/api/exec-plan', auth.requireAdmin, async (req, res) => {
+    try {
+        const plan = { targets: req.body?.targets || {}, entries: Array.isArray(req.body?.entries) ? req.body.entries : [] };
+        await store.setSetting('exec_plan', JSON.stringify(plan));
+        res.json({ ok: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 function sendExportedPage(routePath, res) {
     const normalized = routePath.endsWith('/') ? routePath.slice(0, -1) : routePath;
     const candidates = normalized === '' || normalized === '/'
@@ -331,6 +424,7 @@ async function start() {
     await store.initStore();
     await auth.seedAdmin();
     await store.seedResponsaveisIfEmpty(RESPONSAVEIS_SEED);
+    await store.seedIndicadoresIfEmpty(INDICADORES_SEED);
     await seedIfEmpty();
     mountNextFrontend();
 

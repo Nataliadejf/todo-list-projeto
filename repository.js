@@ -71,4 +71,11 @@ module.exports = {
     addResponsavel: (...args) => backend.addResponsavel(...args),
     setResponsavelActive: (...args) => backend.setResponsavelActive(...args),
     seedResponsaveisIfEmpty: (...args) => backend.seedResponsaveisIfEmpty(...args),
+    listIndicadores: (...args) => backend.listIndicadores(...args),
+    addIndicador: (...args) => backend.addIndicador(...args),
+    setIndicadorActive: (...args) => backend.setIndicadorActive(...args),
+    deleteIndicador: (...args) => backend.deleteIndicador(...args),
+    seedIndicadoresIfEmpty: (...args) => backend.seedIndicadoresIfEmpty(...args),
+    getSetting: (...args) => backend.getSetting(...args),
+    setSetting: (...args) => backend.setSetting(...args),
 };

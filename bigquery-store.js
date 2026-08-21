@@ -179,12 +179,24 @@ async function ensureSchema() {
         { name: 'name', type: 'STRING' },
         { name: 'active', type: 'BOOL' },
     ];
+    const indicadoresSchema = [
+        { name: 'id', type: 'STRING' },
+        { name: 'metaGlobal', type: 'STRING' },
+        { name: 'nome', type: 'STRING' },
+        { name: 'active', type: 'BOOL' },
+    ];
+    const settingsSchema = [
+        { name: 'k', type: 'STRING' },
+        { name: 'v', type: 'STRING' },
+    ];
 
     await ensureTable(dataset, 'todos', todosSchema);
     await ensureTable(dataset, 'tasks', tasksSchema);
     await ensureTable(dataset, 'users', usersSchema);
     await ensureTable(dataset, 'sessions', sessionsSchema);
     await ensureTable(dataset, 'responsaveis', responsaveisSchema);
+    await ensureTable(dataset, 'indicadores', indicadoresSchema);
+    await ensureTable(dataset, 'settings', settingsSchema);
     // adiciona colunas novas em tabelas já existentes
     await query(`ALTER TABLE ${tableRef('tasks')} ADD COLUMN IF NOT EXISTS startDate STRING`).catch(() => {});
     await query(`ALTER TABLE ${tableRef('tasks')} ADD COLUMN IF NOT EXISTS endDate STRING`).catch(() => {});
@@ -594,6 +606,57 @@ async function seedResponsaveisIfEmpty(names) {
     console.log(`Responsáveis semeados: ${names.length}.`);
 }
 
+// ---- Indicadores (Visão Executiva) ----
+async function listIndicadores(activeOnly) {
+    const where = activeOnly ? 'WHERE active = true' : '';
+    const rows = await query(`SELECT id, metaGlobal, nome, active FROM ${tableRef('indicadores')} ${where} ORDER BY metaGlobal, nome`);
+    return rows.map((r) => ({ id: r.id, metaGlobal: r.metaGlobal, nome: r.nome, active: Boolean(r.active) }));
+}
+
+async function addIndicador(metaGlobal, nome) {
+    const id = crypto.randomUUID();
+    await query(
+        `INSERT INTO ${tableRef('indicadores')} (id, metaGlobal, nome, active) VALUES (@id, @metaGlobal, @nome, true)`,
+        { id, metaGlobal: String(metaGlobal), nome: String(nome) }, { id: 'STRING', metaGlobal: 'STRING', nome: 'STRING' },
+    );
+    return { id, metaGlobal: String(metaGlobal), nome: String(nome), active: true };
+}
+
+async function setIndicadorActive(id, active) {
+    await query(
+        `UPDATE ${tableRef('indicadores')} SET active = @active WHERE id = @id`,
+        { id: String(id), active: Boolean(active) }, { id: 'STRING', active: 'BOOL' },
+    );
+}
+
+async function deleteIndicador(id) {
+    await query(`DELETE FROM ${tableRef('indicadores')} WHERE id = @id`, { id: String(id) }, { id: 'STRING' });
+}
+
+async function seedIndicadoresIfEmpty(seed) {
+    const rows = await query(`SELECT COUNT(*) AS total FROM ${tableRef('indicadores')}`);
+    if ((toNumber(rows[0]?.total) || 0) > 0) return;
+    const params = {}; const types = {};
+    const values = seed.map((it, i) => {
+        params[`id${i}`] = crypto.randomUUID(); params[`m${i}`] = it.metaGlobal; params[`n${i}`] = it.nome;
+        types[`id${i}`] = 'STRING'; types[`m${i}`] = 'STRING'; types[`n${i}`] = 'STRING';
+        return `(@id${i}, @m${i}, @n${i}, true)`;
+    });
+    await query(`INSERT INTO ${tableRef('indicadores')} (id, metaGlobal, nome, active) VALUES ${values.join(', ')}`, params, types);
+    console.log(`Indicadores semeados: ${seed.length}.`);
+}
+
+// ---- Settings (blob chave/valor) ----
+async function getSetting(k) {
+    const rows = await query(`SELECT v FROM ${tableRef('settings')} WHERE k = @k LIMIT 1`, { k: String(k) }, { k: 'STRING' });
+    return rows[0] ? (rows[0].v ?? null) : null;
+}
+
+async function setSetting(k, v) {
+    await query(`DELETE FROM ${tableRef('settings')} WHERE k = @k`, { k: String(k) }, { k: 'STRING' });
+    await query(`INSERT INTO ${tableRef('settings')} (k, v) VALUES (@k, @v)`, { k: String(k), v: String(v) }, { k: 'STRING', v: 'STRING' });
+}
+
 module.exports = {
     isEnabled,
     monthKeys,
@@ -602,6 +665,13 @@ module.exports = {
     addResponsavel,
     setResponsavelActive,
     seedResponsaveisIfEmpty,
+    listIndicadores,
+    addIndicador,
+    setIndicadorActive,
+    deleteIndicador,
+    seedIndicadoresIfEmpty,
+    getSetting,
+    setSetting,
     getUserByEmail,
     getUserById,
     createUser,

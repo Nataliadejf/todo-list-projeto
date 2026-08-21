@@ -110,6 +110,23 @@ const createResponsaveisSql = `
 `;
 const createResponsaveisSqlite = createResponsaveisSql.replace('BOOLEAN DEFAULT true', 'INTEGER DEFAULT 1');
 
+const createIndicadoresSql = `
+    CREATE TABLE IF NOT EXISTS indicadores (
+        id TEXT PRIMARY KEY,
+        metaGlobal TEXT,
+        nome TEXT,
+        active BOOLEAN DEFAULT true
+    )
+`;
+const createIndicadoresSqlite = createIndicadoresSql.replace('BOOLEAN DEFAULT true', 'INTEGER DEFAULT 1');
+
+const createSettingsSql = `
+    CREATE TABLE IF NOT EXISTS settings (
+        k TEXT PRIMARY KEY,
+        v TEXT
+    )
+`;
+
 let adapter = null;
 
 function toPgParams(sql) {
@@ -331,6 +348,8 @@ async function initDatabase() {
         await pool.query(createUsersSql);
         await pool.query(createSessionsSql);
         await pool.query(createResponsaveisSql);
+        await pool.query(createIndicadoresSql);
+        await pool.query(createSettingsSql);
         adapter = { type: 'postgres', pool, persistent: true };
         await ensureApprovalColumns();
         await ensureTaskColumns();
@@ -361,6 +380,12 @@ async function initDatabase() {
     });
     await new Promise((resolve, reject) => {
         db.run(createResponsaveisSqlite, (err) => (err ? reject(err) : resolve()));
+    });
+    await new Promise((resolve, reject) => {
+        db.run(createIndicadoresSqlite, (err) => (err ? reject(err) : resolve()));
+    });
+    await new Promise((resolve, reject) => {
+        db.run(createSettingsSql, (err) => (err ? reject(err) : resolve()));
     });
     await ensureSqliteSchema(db);
 
@@ -703,6 +728,51 @@ async function seedResponsaveisIfEmpty(names) {
     console.log(`Responsáveis semeados: ${names.length}.`);
 }
 
+// ---- Indicadores (Visão Executiva: nome + meta global) ----
+async function listIndicadores(activeOnly) {
+    const rows = await all(
+        activeOnly ? 'SELECT * FROM indicadores WHERE active = ? ORDER BY metaGlobal, nome' : 'SELECT * FROM indicadores ORDER BY metaGlobal, nome',
+        activeOnly ? [adapter.type === 'postgres' ? true : 1] : [],
+    );
+    return rows.map((r) => ({ id: r.id, metaGlobal: r.metaGlobal ?? r.metaglobal, nome: r.nome, active: Boolean(r.active) }));
+}
+
+async function addIndicador(metaGlobal, nome) {
+    const id = require('crypto').randomUUID();
+    await run('INSERT INTO indicadores (id, metaGlobal, nome, active) VALUES (?, ?, ?, ?)',
+        [id, String(metaGlobal), String(nome), adapter.type === 'postgres' ? true : 1]);
+    return { id, metaGlobal: String(metaGlobal), nome: String(nome), active: true };
+}
+
+async function setIndicadorActive(id, active) {
+    const val = adapter.type === 'postgres' ? Boolean(active) : (active ? 1 : 0);
+    await run('UPDATE indicadores SET active = ? WHERE id = ?', [val, String(id)]);
+}
+
+async function deleteIndicador(id) {
+    await run('DELETE FROM indicadores WHERE id = ?', [String(id)]);
+}
+
+async function seedIndicadoresIfEmpty(seed) {
+    const rows = await all('SELECT COUNT(*) AS total FROM indicadores');
+    const total = Number(rows[0]?.total ?? rows[0]?.TOTAL ?? 0);
+    if (total > 0) return;
+    let n = 0;
+    for (const it of seed) { await addIndicador(it.metaGlobal, it.nome); n += 1; }
+    console.log(`Indicadores semeados: ${n}.`);
+}
+
+// ---- Settings (blob chave/valor — usado pelo plano executivo) ----
+async function getSetting(k) {
+    const rows = await all('SELECT v FROM settings WHERE k = ?', [String(k)]);
+    return rows[0] ? (rows[0].v ?? rows[0].V ?? null) : null;
+}
+
+async function setSetting(k, v) {
+    await run('DELETE FROM settings WHERE k = ?', [String(k)]);
+    await run('INSERT INTO settings (k, v) VALUES (?, ?)', [String(k), String(v)]);
+}
+
 async function getAccessStats() {
     const rows = await all('SELECT * FROM sessions');
     const map = new Map();
@@ -775,4 +845,11 @@ module.exports = {
     addResponsavel,
     setResponsavelActive,
     seedResponsaveisIfEmpty,
+    listIndicadores,
+    addIndicador,
+    setIndicadorActive,
+    deleteIndicador,
+    seedIndicadoresIfEmpty,
+    getSetting,
+    setSetting,
 };

@@ -11,6 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/components/providers/auth-provider";
 import { apiApproveUser, apiListUsers, apiResetUserPassword, apiRevokeUser, apiSetUserResponsavel, apiSetUserRole, apiUsage, type AdminUserRow, type UsageMonth } from "@/lib/auth-api";
 import { apiAddResponsavel, apiListResponsaveis, apiToggleResponsavel, type Responsavel } from "@/lib/responsaveis-api";
+import { apiAddIndicador, apiDeleteIndicador, apiListIndicadores, apiToggleIndicador, type Indicador } from "@/lib/exec-api";
+import { METAS_GLOBAIS } from "@/lib/executive-utils";
 
 function lastMonths(n: number): string[] {
   const out: string[] = [];
@@ -75,6 +77,10 @@ export function AdminClient() {
   const [newResp, setNewResp] = useState("");
   const [respBusy, setRespBusy] = useState(false);
   const [byMonth, setByMonth] = useState<UsageMonth[]>([]);
+  const [inds, setInds] = useState<Indicador[]>([]);
+  const [newIndMeta, setNewIndMeta] = useState(METAS_GLOBAIS[0].key);
+  const [newIndNome, setNewIndNome] = useState("");
+  const [indBusy, setIndBusy] = useState(false);
 
   const loadUsage = useCallback(async () => {
     try {
@@ -120,6 +126,53 @@ export function AdminClient() {
     }
   };
 
+  const loadInds = useCallback(async () => {
+    try {
+      setInds(await apiListIndicadores());
+    } catch {
+      /* ignora */
+    }
+  }, []);
+
+  const addInd = async () => {
+    const nome = newIndNome.trim();
+    if (!nome) return;
+    setIndBusy(true);
+    try {
+      await apiAddIndicador(newIndMeta, nome);
+      setNewIndNome("");
+      await loadInds();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao adicionar indicador.");
+    } finally {
+      setIndBusy(false);
+    }
+  };
+
+  const toggleInd = async (it: Indicador) => {
+    setIndBusy(true);
+    try {
+      await apiToggleIndicador(it.id);
+      await loadInds();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao alterar indicador.");
+    } finally {
+      setIndBusy(false);
+    }
+  };
+
+  const removeInd = async (it: Indicador) => {
+    setIndBusy(true);
+    try {
+      await apiDeleteIndicador(it.id);
+      await loadInds();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao remover indicador.");
+    } finally {
+      setIndBusy(false);
+    }
+  };
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -137,10 +190,11 @@ export function AdminClient() {
       void load();
       void loadResps();
       void loadUsage();
+      void loadInds();
     } else {
       setLoading(false);
     }
-  }, [isAdmin, load, loadResps, loadUsage]);
+  }, [isAdmin, load, loadResps, loadUsage, loadInds]);
 
   const act = async (id: string, action: "approve" | "revoke") => {
     setBusyId(id);
@@ -476,6 +530,68 @@ export function AdminClient() {
               ))
             )}
           </ul>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Indicadores (Visão Executiva)</CardTitle>
+          <p className="text-sm text-slate-500">
+            Tipos de indicador por meta global. A Visão Executiva usa esta lista; a unidade e o alvo são definidos lá.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap items-end gap-2">
+            <select
+              value={newIndMeta}
+              onChange={(e) => setNewIndMeta(e.target.value)}
+              className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900"
+            >
+              {METAS_GLOBAIS.map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}
+            </select>
+            <div className="w-full max-w-xs">
+              <Input
+                value={newIndNome}
+                onChange={(e) => setNewIndNome(e.target.value)}
+                placeholder="Nome do indicador (ex.: EBITDA)"
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void addInd(); } }}
+              />
+            </div>
+            <Button onClick={() => void addInd()} disabled={indBusy || !newIndNome.trim()}>
+              <Plus className="h-4 w-4" />
+              Adicionar
+            </Button>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {METAS_GLOBAIS.map((m) => {
+              const items = inds.filter((i) => i.metaGlobal === m.key);
+              return (
+                <div key={m.key} className="rounded-xl border border-slate-200">
+                  <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-2.5">
+                    <span className="h-2.5 w-2.5 rounded-sm" style={{ background: m.accent }} />
+                    <span className="text-sm font-bold text-slate-800">{m.label}</span>
+                    <span className="ml-auto text-xs text-slate-400">{items.length}</span>
+                  </div>
+                  <ul className="divide-y divide-slate-100">
+                    {items.length === 0 ? (
+                      <li className="px-4 py-4 text-center text-xs text-slate-400">Nenhum indicador.</li>
+                    ) : items.map((it) => (
+                      <li key={it.id} className="flex items-center justify-between gap-2 px-4 py-2">
+                        <span className={`text-sm ${it.active ? "text-slate-700" : "text-slate-400 line-through"}`}>{it.nome}</span>
+                        <span className="flex items-center gap-1">
+                          <Button variant={it.active ? "secondary" : "default"} size="sm" className="h-7 text-xs" disabled={indBusy} onClick={() => void toggleInd(it)}>
+                            {it.active ? "Inativar" : "Ativar"}
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-rose-600" disabled={indBusy} onClick={() => void removeInd(it)} title="Remover">✕</Button>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
+          </div>
         </CardContent>
       </Card>
     </div>
