@@ -36,10 +36,14 @@ interface SimRow {
   conf: number;
 }
 
+const EXEC_EMAIL = "administradorportfolio@gmail.com";
+
 export function ExecutivoClient() {
   const { todos } = useTodos();
   const { inactiveNames } = useResponsaveis();
-  const { isAdmin } = useAuth();
+  const { user, isAdmin } = useAuth();
+
+  const canView = (user?.email || "").toLowerCase() === EXEC_EMAIL;
 
   const base = useMemo(
     () => (isAdmin ? todos : hideInactiveOwners(todos, inactiveNames)),
@@ -115,6 +119,20 @@ export function ExecutivoClient() {
     warn: { text: "text-amber-600", bg: "bg-amber-500", soft: "bg-amber-50 text-amber-700", bar: "before:bg-amber-500" },
     bad: { text: "text-rose-600", bg: "bg-rose-500", soft: "bg-rose-50 text-rose-700", bar: "before:bg-rose-500" },
   }[cls];
+
+  if (!canView) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-[0_8px_30px_rgba(15,23,42,0.06)]">
+          <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
+            <Target className="h-5 w-5" />
+          </div>
+          <h2 className="text-lg font-bold text-slate-900">Acesso restrito</h2>
+          <p className="mt-1.5 text-sm text-slate-500">A Visão Executiva está disponível apenas para o perfil executivo.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

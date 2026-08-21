@@ -18,11 +18,17 @@ const iconMap = {
   check: ListTodo,
 } as const;
 
+const EXEC_EMAIL = "administradorportfolio@gmail.com";
+
 export function AppSidebar() {
   const pathname = usePathname();
   const { connected, error, databaseType, databasePersistent } = useTodos();
   const { user, isAdmin, logout } = useAuth();
   const [showChangePwd, setShowChangePwd] = useState(false);
+
+  // Visão Executiva é restrita a um único perfil.
+  const canExec = (user?.email || "").toLowerCase() === EXEC_EMAIL;
+  const navItems = NAV_ITEMS.filter((item) => item.href !== "/executivo" || canExec);
 
   return (
     <aside className="flex w-full shrink-0 flex-col bg-[#0b1120] text-slate-200 lg:fixed lg:inset-y-0 lg:left-0 lg:z-40 lg:w-64">
@@ -43,7 +49,7 @@ export function AppSidebar() {
       <nav className="flex-1 px-3 py-4" aria-label="Navegação principal">
         <p className="px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">Navegação</p>
         <ul className="mt-3 space-y-1">
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const Icon = iconMap[item.icon];
             const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
             return (
