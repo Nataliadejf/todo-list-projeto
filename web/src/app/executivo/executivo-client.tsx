@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTodos } from "@/components/providers/todos-provider";
 import { useAuth } from "@/components/providers/auth-provider";
 import { METAS_GLOBAIS, META_BY_KEY, UNITS } from "@/lib/executive-utils";
-import { apiAddIndicador, fetchIndicadores, getExecPlan, saveExecPlan, type ExecEntry, type ExecPlan, type ExecTarget, type Indicador } from "@/lib/exec-api";
+import { fetchIndicadores, getExecPlan, saveExecPlan, type ExecEntry, type ExecPlan, type ExecTarget, type Indicador } from "@/lib/exec-api";
 
 const EXEC_EMAIL = "administradorportfolio@gmail.com";
 
@@ -44,25 +44,6 @@ export function ExecutivoClient() {
   // formulário "adicionar iniciativa"
   const [addOpen, setAddOpen] = useState(false);
   const [af, setAf] = useState({ initiativeDbId: "", indicadorId: "", unidade: "%", contrib: 0, conf: 70 });
-  // formulário "adicionar indicador" (cadastro rápido na meta atual)
-  const [indOpen, setIndOpen] = useState(false);
-  const [indNome, setIndNome] = useState("");
-  const [indBusy, setIndBusy] = useState(false);
-
-  const addIndicadorInline = async () => {
-    const nome = indNome.trim();
-    if (!nome) return;
-    setIndBusy(true); setMsg(null);
-    try {
-      await apiAddIndicador(metaKey, nome);
-      setIndNome(""); setIndOpen(false);
-      setIndicadores(await fetchIndicadores());
-    } catch (e) {
-      setMsg(e instanceof Error ? e.message : "Erro ao cadastrar indicador.");
-    } finally {
-      setIndBusy(false);
-    }
-  };
 
   useEffect(() => {
     if (!canView) return;
@@ -229,25 +210,8 @@ export function ExecutivoClient() {
         <div><b>{metaSummary.indicadores}</b><span>indicadores</span></div>
         <div><b>{metaSummary.iniciativas}</b><span>iniciativas</span></div>
         <div><b className={`t-${toneOf(metaSummary.cobertura)}`}>{Math.round(metaSummary.cobertura)}%</b><span>cobertura média</span></div>
-        <div className="ms-actions">
-          <button className="btn add-btn ghost2" onClick={() => setIndOpen((v) => !v)}>+ Adicionar indicador</button>
-          <button className="btn add-btn" onClick={() => setAddOpen((v) => !v)}>+ Adicionar iniciativa</button>
-        </div>
+        <button className="btn add-btn" onClick={() => setAddOpen((v) => !v)}>+ Adicionar iniciativa</button>
       </div>
-
-      {/* form adicionar indicador */}
-      {indOpen ? (
-        <div className="add-form">
-          <div className="af-grid" style={{ gridTemplateColumns: "1fr auto" }}>
-            <label className="af-field"><span>Novo indicador em “{META_BY_KEY[metaKey]?.label}”</span>
-              <input value={indNome} onChange={(e) => setIndNome(e.target.value)} placeholder="Ex.: EBITDA, Redução de despesas…"
-                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void addIndicadorInline(); } }} />
-            </label>
-            <button className="btn primary" onClick={() => void addIndicadorInline()} disabled={indBusy || !indNome.trim()}>Cadastrar indicador</button>
-          </div>
-          <p className="af-warn" style={{ color: "var(--ink-soft)" }}>O indicador fica disponível para vincular iniciativas e também aparece na Administração.</p>
-        </div>
-      ) : null}
 
       {/* form adicionar */}
       {addOpen ? (
@@ -383,11 +347,8 @@ const CSS = `
 .exec .meta-summary>div{display:flex;flex-direction:column;}
 .exec .meta-summary b{font-size:22px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums;}
 .exec .meta-summary span{font-size:10.5px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.04em;margin-top:3px;}
-.exec .meta-summary .ms-actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;}
-.exec .meta-summary .add-btn{background:var(--primary-soft);color:var(--primary);border-color:#EBCF7A;}
+.exec .meta-summary .add-btn{margin-left:auto;background:var(--primary-soft);color:var(--primary);border-color:#EBCF7A;}
 .exec .meta-summary .add-btn:hover{background:var(--primary-vivid);color:#1A1D29;}
-.exec .meta-summary .add-btn.ghost2{background:transparent;color:var(--ink-soft);border-color:var(--line);}
-.exec .meta-summary .add-btn.ghost2:hover{background:var(--surface-2);color:var(--ink);border-color:var(--primary);}
 .exec .t-good{color:var(--good);}.exec .t-warn{color:var(--warn);}.exec .t-bad{color:var(--bad);}
 .exec .add-form{background:var(--surface);border:1px solid var(--primary-vivid);border-radius:14px;padding:16px 18px;margin-bottom:16px;box-shadow:0 1px 2px rgba(20,22,30,.03);}
 .exec .af-grid{display:grid;grid-template-columns:1.6fr 1.4fr .8fr .9fr .9fr auto;gap:12px;align-items:end;}
