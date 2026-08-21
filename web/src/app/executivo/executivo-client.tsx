@@ -48,6 +48,7 @@ export function ExecutivoClient() {
   // formulário "adicionar iniciativa"
   const [addOpen, setAddOpen] = useState(false);
   const [af, setAf] = useState({ initiativeDbId: "", indicadorId: "", unidade: "%", contrib: 0, conf: 70 });
+  const [afMae, setAfMae] = useState(""); // filtro por Iniciativa Mãe no form de adicionar
   // formulário "adicionar indicador ao plano" (seleciona indicador cadastrado + registra a meta)
   const [indOpen, setIndOpen] = useState(false);
   const [indForm, setIndForm] = useState({ indicadorId: "", unidade: "%", base: 0, alvo: 0 });
@@ -166,6 +167,8 @@ export function ExecutivoClient() {
   }
 
   const todosSorted = [...todos].sort((a, b) => (a.initiative || "").localeCompare(b.initiative || "", "pt-BR"));
+  const maes = [...new Set(todos.map((t) => (t.mother || "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  const iniOptions = afMae ? todosSorted.filter((t) => (t.mother || "").trim() === afMae) : todosSorted;
 
   return (
     <div className="exec">
@@ -270,11 +273,19 @@ export function ExecutivoClient() {
       {/* form adicionar iniciativa */}
       {addOpen ? (
         <div className="add-form">
+          <div style={{ marginBottom: 10, maxWidth: 320 }}>
+            <label className="af-field"><span>Filtrar por Iniciativa Mãe</span>
+              <select value={afMae} onChange={(e) => { setAfMae(e.target.value); setAf((f) => ({ ...f, initiativeDbId: "" })); }}>
+                <option value="">Todas as mães</option>
+                {maes.map((m) => <option key={m} value={m}>{m}</option>)}
+              </select>
+            </label>
+          </div>
           <div className="af-grid">
-            <label className="af-field"><span>Iniciativa</span>
+            <label className="af-field"><span>Iniciativa{afMae ? ` (${iniOptions.length})` : ""}</span>
               <select value={af.initiativeDbId} onChange={(e) => setAf((f) => ({ ...f, initiativeDbId: e.target.value }))}>
                 <option value="">— selecione —</option>
-                {todosSorted.map((t) => <option key={t.dbId} value={t.dbId}>{t.initiative || `#${t.dbId}`}</option>)}
+                {iniOptions.map((t) => <option key={t.dbId} value={t.dbId}>{t.initiative || `#${t.dbId}`}</option>)}
               </select>
             </label>
             <label className="af-field"><span>Indicador</span>
