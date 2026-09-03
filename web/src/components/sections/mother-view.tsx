@@ -16,6 +16,17 @@ function band(gut: number): { label: string; variant: "danger" | "warning" | "in
   return { label: "Baixa", variant: "info" };
 }
 
+// Média de conclusão: considera o progresso parcial de cada iniciativa (não só as 100%).
+function avgProgress(filhas: Initiative[]): number {
+  if (!filhas.length) return 0;
+  const total = filhas.reduce((sum, t) => {
+    if (isConcluida(t)) return sum + 100;
+    const p = Number.parseInt(t.progressPercent || "0", 10);
+    return sum + (Number.isFinite(p) ? Math.min(Math.max(p, 0), 100) : 0);
+  }, 0);
+  return Math.round(total / filhas.length);
+}
+
 export function MotherView({ todos }: { todos: Initiative[] }) {
   const [open, setOpen] = useState<Set<string>>(new Set());
 
@@ -32,7 +43,7 @@ export function MotherView({ todos }: { todos: Initiative[] }) {
         const esforco = filhas.reduce((s, t) => s + sizeWeight(t.size), 0);
         const guts = filhas.map(getPriorityScore).filter((g) => g > 0);
         const gutAvg = guts.length ? Math.round((guts.reduce((a, b) => a + b, 0) / guts.length) * 10) / 10 : 0;
-        return { mother, filhas, done, donePct: filhas.length ? Math.round((done / filhas.length) * 100) : 0, esforco, gutAvg };
+        return { mother, filhas, done, progressPct: avgProgress(filhas), esforco, gutAvg };
       })
       .sort((a, b) => {
         if (a.mother === SEM_MAE) return 1;
@@ -74,11 +85,11 @@ export function MotherView({ todos }: { todos: Initiative[] }) {
                 <span>Esforço <b className="tabular-nums text-slate-800">{g.esforco}</b></span>
                 <span className="inline-flex items-center gap-1">Prioridade <Badge variant={b.variant}>{b.label}</Badge></span>
               </span>
-              <span className="flex w-28 shrink-0 items-center gap-2">
+              <span className="flex w-28 shrink-0 items-center gap-2" title="Média de conclusão das iniciativas, incluindo as parciais">
                 <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
-                  <span className="block h-full rounded-full bg-emerald-500" style={{ width: `${g.donePct}%` }} />
+                  <span className="block h-full rounded-full bg-emerald-500" style={{ width: `${g.progressPct}%` }} />
                 </span>
-                <span className="w-9 text-right text-xs font-bold tabular-nums text-slate-700">{g.donePct}%</span>
+                <span className="w-9 text-right text-xs font-bold tabular-nums text-slate-700">{g.progressPct}%</span>
               </span>
             </button>
             {isOpen ? (

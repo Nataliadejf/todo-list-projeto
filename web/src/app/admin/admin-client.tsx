@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Check, Clock, Crown, GitBranch, KeyRound, LogIn, Plus, Power, RefreshCw, ShieldOff, Trash2, Users } from "lucide-react";
+import { Check, Clock, Crown, GitBranch, KeyRound, LogIn, Pencil, Plus, Power, RefreshCw, ShieldOff, Trash2, Users } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -74,6 +74,8 @@ export function AdminClient() {
   const { todos, update } = useTodos();
   const [maeBusy, setMaeBusy] = useState<string | null>(null);
   const [maeConfirm, setMaeConfirm] = useState<string | null>(null);
+  const [maeEditing, setMaeEditing] = useState<string | null>(null);
+  const [maeEditValue, setMaeEditValue] = useState("");
 
   // Mães em uso (derivadas das iniciativas) + contagem de filhas.
   const maes = useMemo(() => {
@@ -93,6 +95,30 @@ export function AdminClient() {
       setMaeConfirm(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao excluir a iniciativa mãe.");
+    } finally {
+      setMaeBusy(null);
+    }
+  };
+
+  const startEditMae = (nome: string) => {
+    setMaeEditing(nome);
+    setMaeEditValue(nome);
+    setMaeConfirm(null);
+  };
+
+  // "Editar" a mãe = renomear em todas as iniciativas que usam esse nome.
+  const renameMae = async (oldNome: string) => {
+    const newNome = maeEditValue.trim();
+    if (!newNome || newNome === oldNome) { setMaeEditing(null); return; }
+    setMaeBusy(oldNome);
+    try {
+      const filhas = todos.filter((t) => (t.mother || "").trim() === oldNome);
+      for (const t of filhas) {
+        await update(t.dbId, { ...toInitiativeInput(t), mother: newNome });
+      }
+      setMaeEditing(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao editar a iniciativa mãe.");
     } finally {
       setMaeBusy(null);
     }
@@ -627,7 +653,7 @@ export function AdminClient() {
         <CardHeader>
           <CardTitle>Iniciativas Mãe</CardTitle>
           <p className="text-sm text-slate-500">
-            Excluir uma mãe remove o vínculo de todas as iniciativas que a usam — as iniciativas permanecem, apenas ficam sem mãe.
+            Editar renomeia a mãe em todas as iniciativas vinculadas. Excluir remove o vínculo — as iniciativas permanecem, apenas ficam sem mãe.
           </p>
         </CardHeader>
         <CardContent>
@@ -639,12 +665,36 @@ export function AdminClient() {
             <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200">
               {maes.map((m) => (
                 <li key={m.nome} className="flex items-center justify-between gap-2 px-4 py-2.5">
-                  <span className="flex min-w-0 items-center gap-2 text-sm">
-                    <GitBranch className="h-4 w-4 shrink-0 text-slate-400" />
-                    <span className="truncate font-medium text-slate-800">{m.nome}</span>
-                    <Badge variant="default">{m.filhas} {m.filhas === 1 ? "filha" : "filhas"}</Badge>
-                  </span>
-                  {maeConfirm === m.nome ? (
+                  {maeEditing === m.nome ? (
+                    <span className="flex min-w-0 flex-1 items-center gap-2">
+                      <GitBranch className="h-4 w-4 shrink-0 text-slate-400" />
+                      <Input
+                        value={maeEditValue}
+                        onChange={(e) => setMaeEditValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") { e.preventDefault(); void renameMae(m.nome); }
+                          if (e.key === "Escape") setMaeEditing(null);
+                        }}
+                        autoFocus
+                        className="h-8 max-w-xs text-sm"
+                      />
+                    </span>
+                  ) : (
+                    <span className="flex min-w-0 items-center gap-2 text-sm">
+                      <GitBranch className="h-4 w-4 shrink-0 text-slate-400" />
+                      <span className="truncate font-medium text-slate-800">{m.nome}</span>
+                      <Badge variant="default">{m.filhas} {m.filhas === 1 ? "filha" : "filhas"}</Badge>
+                    </span>
+                  )}
+
+                  {maeEditing === m.nome ? (
+                    <span className="flex items-center gap-1">
+                      <Button variant="default" size="sm" className="h-8 text-xs" disabled={maeBusy === m.nome || !maeEditValue.trim()} onClick={() => void renameMae(m.nome)}>
+                        {maeBusy === m.nome ? "Salvando…" : "Salvar"}
+                      </Button>
+                      <Button variant="ghost" size="sm" className="h-8 text-xs" disabled={maeBusy === m.nome} onClick={() => setMaeEditing(null)}>Cancelar</Button>
+                    </span>
+                  ) : maeConfirm === m.nome ? (
                     <span className="flex items-center gap-1">
                       <Button variant="destructive" size="sm" className="h-8 text-xs" disabled={maeBusy === m.nome} onClick={() => void deleteMae(m.nome)}>
                         {maeBusy === m.nome ? "Excluindo…" : "Confirmar exclusão"}
@@ -652,10 +702,16 @@ export function AdminClient() {
                       <Button variant="ghost" size="sm" className="h-8 text-xs" disabled={maeBusy === m.nome} onClick={() => setMaeConfirm(null)}>Cancelar</Button>
                     </span>
                   ) : (
-                    <Button variant="ghost" size="sm" className="h-8 text-xs text-rose-600" onClick={() => setMaeConfirm(m.nome)}>
-                      <Trash2 className="h-3.5 w-3.5" />
-                      Excluir
-                    </Button>
+                    <span className="flex items-center gap-1">
+                      <Button variant="ghost" size="sm" className="h-8 text-xs text-slate-600" onClick={() => startEditMae(m.nome)}>
+                        <Pencil className="h-3.5 w-3.5" />
+                        Editar
+                      </Button>
+                      <Button variant="ghost" size="sm" className="h-8 text-xs text-rose-600" onClick={() => setMaeConfirm(m.nome)}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Excluir
+                      </Button>
+                    </span>
                   )}
                 </li>
               ))}
