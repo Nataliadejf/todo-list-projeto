@@ -122,13 +122,8 @@ export function InitiativeForm({ editing, onSaved, onCancelEdit }: InitiativeFor
 
   // Frentes já cadastradas (lista com sugestões — a V4 tem valores variados).
   const frentes = useMemo(() => getUniqueValues(todos, "front"), [todos]);
-  // Mães = mães já usadas + nomes de iniciativas existentes (permite "classificar" uma iniciativa como mãe).
-  const maes = useMemo(() => {
-    const set = new Set<string>();
-    todos.forEach((t) => { const m = (t.mother || "").trim(); if (m) set.add(m); });
-    todos.forEach((t) => { const n = (t.initiative || "").trim(); if (n) set.add(n); });
-    return [...set].sort((a, b) => a.localeCompare(b, "pt-BR"));
-  }, [todos]);
+  // Mães = apenas as mães já usadas (sugestões). O usuário pode digitar/repetir livremente.
+  const maes = useMemo(() => getUniqueValues(todos, "mother"), [todos]);
 
   // Prazo (dias) calculado automaticamente a partir das datas.
   useEffect(() => {

@@ -27,7 +27,7 @@ interface TodosContextValue {
   filters: FilterState;
   setFilters: React.Dispatch<React.SetStateAction<FilterState>>;
   clearFilters: () => void;
-  refresh: () => Promise<void>;
+  refresh: (silent?: boolean) => Promise<void>;
   create: (payload: InitiativeInput) => Promise<Initiative>;
   update: (dbId: number, payload: InitiativeInput) => Promise<Initiative>;
   remove: (dbId: number) => Promise<void>;
@@ -44,8 +44,8 @@ export function TodosProvider({ children }: { children: ReactNode }) {
   const [databasePersistent, setDatabasePersistent] = useState(false);
   const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS);
 
-  const refresh = useCallback(async () => {
-    setLoading(true);
+  const refresh = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const [data, healthRes] = await Promise.all([
         fetchInitiatives(),
@@ -66,12 +66,21 @@ export function TodosProvider({ children }: { children: ReactNode }) {
       setConnected(false);
       setError(err instanceof Error ? err.message : "Erro ao conectar com a API");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
     void refresh();
+    // Mantém os dados frescos entre usuários: recarrega (silencioso) ao focar/voltar à aba.
+    const onFocus = () => { void refresh(true); };
+    const onVisible = () => { if (document.visibilityState === "visible") void refresh(true); };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [refresh]);
 
   const create = useCallback(async (payload: InitiativeInput) => {
