@@ -2,13 +2,15 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Check, Clock, Crown, KeyRound, LogIn, Plus, Power, RefreshCw, ShieldOff, Users } from "lucide-react";
+import { Check, Clock, Crown, GitBranch, KeyRound, LogIn, Plus, Power, RefreshCw, ShieldOff, Trash2, Users } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/components/providers/auth-provider";
+import { useTodos } from "@/components/providers/todos-provider";
+import { toInitiativeInput } from "@/lib/todo-utils";
 import { apiApproveUser, apiListUsers, apiResetUserPassword, apiRevokeUser, apiSetUserResponsavel, apiSetUserRole, apiUsage, type AdminUserRow, type UsageMonth } from "@/lib/auth-api";
 import { apiAddResponsavel, apiListResponsaveis, apiToggleResponsavel, type Responsavel } from "@/lib/responsaveis-api";
 import { apiAddIndicador, apiDeleteIndicador, apiListIndicadores, apiToggleIndicador, type Indicador } from "@/lib/exec-api";
@@ -69,6 +71,32 @@ const statusLabel: Record<string, string> = {
 
 export function AdminClient() {
   const { isAdmin } = useAuth();
+  const { todos, update } = useTodos();
+  const [maeBusy, setMaeBusy] = useState<string | null>(null);
+  const [maeConfirm, setMaeConfirm] = useState<string | null>(null);
+
+  // Mães em uso (derivadas das iniciativas) + contagem de filhas.
+  const maes = useMemo(() => {
+    const map = new Map<string, number>();
+    todos.forEach((t) => { const m = (t.mother || "").trim(); if (m) map.set(m, (map.get(m) || 0) + 1); });
+    return [...map.entries()].map(([nome, filhas]) => ({ nome, filhas })).sort((a, b) => b.filhas - a.filhas);
+  }, [todos]);
+
+  // "Excluir" a mãe = remover o vínculo de todas as iniciativas que a usam.
+  const deleteMae = async (nome: string) => {
+    setMaeBusy(nome);
+    try {
+      const filhas = todos.filter((t) => (t.mother || "").trim() === nome);
+      for (const t of filhas) {
+        await update(t.dbId, { ...toInitiativeInput(t), mother: "" });
+      }
+      setMaeConfirm(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao excluir a iniciativa mãe.");
+    } finally {
+      setMaeBusy(null);
+    }
+  };
   const [rows, setRows] = useState<AdminUserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -592,6 +620,47 @@ export function AdminClient() {
               );
             })}
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Iniciativas Mãe</CardTitle>
+          <p className="text-sm text-slate-500">
+            Excluir uma mãe remove o vínculo de todas as iniciativas que a usam — as iniciativas permanecem, apenas ficam sem mãe.
+          </p>
+        </CardHeader>
+        <CardContent>
+          {maes.length === 0 ? (
+            <p className="rounded-xl border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-400">
+              Nenhuma iniciativa mãe em uso.
+            </p>
+          ) : (
+            <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200">
+              {maes.map((m) => (
+                <li key={m.nome} className="flex items-center justify-between gap-2 px-4 py-2.5">
+                  <span className="flex min-w-0 items-center gap-2 text-sm">
+                    <GitBranch className="h-4 w-4 shrink-0 text-slate-400" />
+                    <span className="truncate font-medium text-slate-800">{m.nome}</span>
+                    <Badge variant="default">{m.filhas} {m.filhas === 1 ? "filha" : "filhas"}</Badge>
+                  </span>
+                  {maeConfirm === m.nome ? (
+                    <span className="flex items-center gap-1">
+                      <Button variant="destructive" size="sm" className="h-8 text-xs" disabled={maeBusy === m.nome} onClick={() => void deleteMae(m.nome)}>
+                        {maeBusy === m.nome ? "Excluindo…" : "Confirmar exclusão"}
+                      </Button>
+                      <Button variant="ghost" size="sm" className="h-8 text-xs" disabled={maeBusy === m.nome} onClick={() => setMaeConfirm(null)}>Cancelar</Button>
+                    </span>
+                  ) : (
+                    <Button variant="ghost" size="sm" className="h-8 text-xs text-rose-600" onClick={() => setMaeConfirm(m.nome)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Excluir
+                    </Button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
         </CardContent>
       </Card>
     </div>
