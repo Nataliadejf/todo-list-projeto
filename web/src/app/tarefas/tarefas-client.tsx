@@ -115,11 +115,11 @@ export function TarefasClient() {
     [ownerNames],
   );
 
-  // No formulário, as iniciativas são filtradas pelo responsável selecionado.
+  // A tarefa pode ter responsável diferente da iniciativa — lista todas as iniciativas.
   const formInitiativeOptions = useMemo(
-    () => (form.owner ? todos.filter((t) => sameOwner(t.owner, form.owner)) : todos).map(toOption),
+    () => todos.map(toOption),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [todos, form.owner],
+    [todos],
   );
 
   // No filtro, idem: escolher o responsável restringe as iniciativas.
@@ -183,20 +183,15 @@ export function TarefasClient() {
     setForm((prev) => ({
       ...prev,
       initiativeDbId: dbId,
-      // vincula o responsável da iniciativa (validação de dados)
-      owner: todo?.owner?.trim() ? todo.owner : prev.owner,
+      // apenas sugere o responsável da iniciativa quando ainda não há um definido;
+      // a tarefa pode ter responsável diferente.
+      owner: prev.owner?.trim() ? prev.owner : (todo?.owner || ""),
     }));
   };
 
   const onSelectOwner = (value: string | null) => {
-    const owner = value ?? "";
-    setForm((prev) => {
-      // se a iniciativa atual não pertence a esse responsável, limpa o vínculo
-      const stillValid =
-        prev.initiativeDbId != null &&
-        todos.some((t) => t.dbId === prev.initiativeDbId && sameOwner(t.owner, owner));
-      return { ...prev, owner, initiativeDbId: owner && !stillValid ? null : prev.initiativeDbId };
-    });
+    // responsável independente da iniciativa
+    setForm((prev) => ({ ...prev, owner: value ?? "" }));
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -287,7 +282,7 @@ export function TarefasClient() {
                 options={formInitiativeOptions}
                 value={form.initiativeDbId != null ? String(form.initiativeDbId) : null}
                 onChange={onSelectInitiative}
-                emptyLabel={form.owner ? "Sem iniciativas deste responsável" : "Nenhuma iniciativa encontrada"}
+                emptyLabel="Nenhuma iniciativa encontrada"
               />
 
               <div className="grid grid-cols-2 gap-3">

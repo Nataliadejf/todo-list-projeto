@@ -1,19 +1,24 @@
 "use client";
 
+import { useState } from "react";
+import { GitBranch, ListTree } from "lucide-react";
 import { FiltersPanel } from "@/components/sections/filters-panel";
 import { InitiativesChart } from "@/components/sections/initiatives-chart";
 import { InitiativesTable } from "@/components/sections/initiatives-table";
+import { MotherView } from "@/components/sections/mother-view";
 import { MetricsRow } from "@/components/sections/metrics-row";
 import { PageHeader } from "@/components/layout/page-header";
 import { useTodos } from "@/components/providers/todos-provider";
 import { useResponsaveis } from "@/components/providers/responsaveis-provider";
 import { useAuth } from "@/components/providers/auth-provider";
 import { filterInitiatives, hideInactiveOwners } from "@/lib/todo-utils";
+import { cn } from "@/lib/utils";
 
 export default function PortfolioPage() {
   const { todos, filters, loading, error } = useTodos();
   const { inactiveNames } = useResponsaveis();
   const { isAdmin } = useAuth();
+  const [view, setView] = useState<"filha" | "mae">("filha");
   const base = isAdmin && filters.showInactive ? todos : hideInactiveOwners(todos, inactiveNames);
   const filtered = filterInitiatives(base, filters);
   const maesCount = new Set(filtered.map((t) => (t.mother || "").trim()).filter(Boolean)).size;
@@ -46,7 +51,35 @@ export default function PortfolioPage() {
 
       <InitiativesChart todos={filtered} />
 
-      <InitiativesTable todos={filtered} tall />
+      <div className="flex items-center gap-2">
+        <span className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Ver por:</span>
+        <div className="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
+          <button
+            type="button"
+            onClick={() => setView("filha")}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors",
+              view === "filha" ? "bg-slate-900 text-white" : "text-slate-500 hover:text-slate-900",
+            )}
+          >
+            <ListTree className="h-3.5 w-3.5" />
+            Iniciativa (filha)
+          </button>
+          <button
+            type="button"
+            onClick={() => setView("mae")}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors",
+              view === "mae" ? "bg-slate-900 text-white" : "text-slate-500 hover:text-slate-900",
+            )}
+          >
+            <GitBranch className="h-3.5 w-3.5" />
+            Iniciativa Mãe
+          </button>
+        </div>
+      </div>
+
+      {view === "mae" ? <MotherView todos={filtered} /> : <InitiativesTable todos={filtered} tall />}
     </div>
   );
 }
