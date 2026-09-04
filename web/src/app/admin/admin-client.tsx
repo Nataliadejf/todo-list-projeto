@@ -535,7 +535,8 @@ export function AdminClient() {
                     <td className="px-4 py-3">{u.sessions > 0 ? fmtDuration(Math.round(u.totalSeconds / u.sessions)) : "—"}</td>
                     <td className="px-4 py-3 text-slate-600">{fmtDate(u.lastLogin)}</td>
                     <td className="px-4 py-3">
-                      {u.role === "admin" ? (
+                      {u.status === "approved" && u.role === "admin" ? (
+                        // Admin já aprovado: protegido contra revogação acidental por aqui.
                         <span className="text-xs text-slate-400">—</span>
                       ) : (
                         <div className="flex gap-1">
