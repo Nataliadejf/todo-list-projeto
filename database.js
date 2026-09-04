@@ -565,6 +565,7 @@ function formatTask(row) {
         done: Boolean(row.done),
         createdAt: row.createdAt ?? row.createdat ?? null,
         updatedAt: row.updatedAt ?? row.updatedat ?? null,
+        completedAt: row.completedAt ?? row.completedat ?? null,
     };
 }
 

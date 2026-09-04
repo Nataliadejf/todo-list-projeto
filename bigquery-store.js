@@ -117,6 +117,7 @@ function formatTask(row) {
         done: Boolean(row.done),
         createdAt: toIso(row.createdAt),
         updatedAt: toIso(row.updatedAt),
+        completedAt: row.completedAt || null,
     };
 }
 
