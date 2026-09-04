@@ -1,4 +1,4 @@
-import { MONTH_KEYS, type FilterState, type Initiative, type KanbanStage } from "./types";
+import { MONTH_KEYS, type FilterState, type Initiative, type InitiativeInput, type KanbanStage } from "./types";
 
 export function normalizeStatus(status: string): string {
   const raw = String(status || "").trim().toLowerCase();
@@ -78,6 +78,59 @@ function matchesDeadline(todo: Initiative, deadline: string) {
   return true;
 }
 
+function startOfWeek(d: Date) {
+  const date = new Date(d);
+  const day = date.getDay(); // 0=dom ... 6=sáb
+  const diff = (day === 0 ? -6 : 1) - day; // volta até segunda-feira
+  date.setDate(date.getDate() + diff);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function endOfWeek(d: Date) {
+  const start = startOfWeek(d);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+  end.setHours(23, 59, 59, 999);
+  return end;
+}
+
+/** Intervalo de datas do filtro "Concluídas em" (null = sem filtro, mostra tudo). */
+export function getCompletedRange(filters: FilterState): { start: Date; end: Date } | null {
+  const now = new Date();
+  if (filters.completedPeriod === "week") {
+    return { start: startOfWeek(now), end: endOfWeek(now) };
+  }
+  if (filters.completedPeriod === "lastWeek") {
+    const lastWeek = new Date(now);
+    lastWeek.setDate(lastWeek.getDate() - 7);
+    return { start: startOfWeek(lastWeek), end: endOfWeek(lastWeek) };
+  }
+  if (filters.completedPeriod === "month") {
+    const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    return { start, end };
+  }
+  if (filters.completedPeriod === "custom") {
+    const start = parseDate(filters.completedStart);
+    const end = parseDate(filters.completedEnd);
+    if (!start && !end) return null;
+    const s = start ? new Date(start.getFullYear(), start.getMonth(), start.getDate(), 0, 0, 0, 0) : new Date(0);
+    const e = end ? new Date(end.getFullYear(), end.getMonth(), end.getDate(), 23, 59, 59, 999) : new Date(8640000000000000);
+    return { start: s, end: e };
+  }
+  return null;
+}
+
+/** true se `dateStr` (ISO) cai dentro do range do filtro "Concluídas em" — sem filtro ativo, sempre true. */
+export function matchesCompletedPeriod(dateStr: string | null | undefined, filters: FilterState): boolean {
+  const range = getCompletedRange(filters);
+  if (!range) return true;
+  const d = parseDate(dateStr || undefined);
+  if (!d) return false;
+  return d >= range.start && d <= range.end;
+}
+
 // Oculta iniciativas cujo responsável está inativo (dados preservados no banco).
 export function hideInactiveOwners(todos: Initiative[], inactive: Set<string>): Initiative[] {
   if (!inactive || inactive.size === 0) return todos;
@@ -107,6 +160,7 @@ export function filterInitiatives(todos: Initiative[], filters: FilterState) {
     if (filters.size.length && !filters.size.some((v) => normalizeText(v) === normalizeText(todo.size))) return false;
     if (filters.alert.length && !filters.alert.includes(getDeadlineAlert(todo).label)) return false;
     if (!matchesDeadline(todo, filters.deadline)) return false;
+    if (!matchesCompletedPeriod(todo.completedAt, filters)) return false;
 
     const rangeStart = parseDate(filters.periodStart);
     const rangeEnd = parseDate(filters.periodEnd);
@@ -144,8 +198,8 @@ export function getMetrics(todos: Initiative[]) {
   };
 }
 
-export function toInitiativeInput(todo: Initiative): Omit<Initiative, "dbId"> {
-  const { dbId: _dbId, ...rest } = todo;
+export function toInitiativeInput(todo: Initiative): InitiativeInput {
+  const { dbId: _dbId, completedAt: _completedAt, ...rest } = todo;
   return rest;
 }
 

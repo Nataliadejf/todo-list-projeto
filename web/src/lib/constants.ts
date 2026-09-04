@@ -160,6 +160,15 @@ export const DEADLINE_OPTIONS = [
   { value: "year", label: "Este ano" },
 ] as const;
 
+// Filtro "Concluídas em" (Portfólio) — usa o timestamp automático de conclusão.
+export const COMPLETED_PERIOD_OPTIONS = [
+  { value: "", label: "Todas" },
+  { value: "week", label: "Esta semana" },
+  { value: "lastWeek", label: "Semana passada" },
+  { value: "month", label: "Este mês" },
+  { value: "custom", label: "Período customizado" },
+] as const;
+
 export const KANBAN_COLUMNS = [
   { id: "nao_iniciado", title: "Não Iniciado", dotClass: "bg-blue-500" },
   { id: "andamento", title: "Em Andamento", dotClass: "bg-amber-400" },

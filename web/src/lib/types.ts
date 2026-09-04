@@ -59,6 +59,8 @@ export interface Initiative {
   notes: string;
   weightedDelivery: string;
   mother: string;
+  /** Preenchido pelo servidor quando a iniciativa é concluída (ISO). Não editável no formulário. */
+  completedAt: string;
   completed: boolean;
   approved: boolean;
   deprioritized: boolean;
@@ -76,7 +78,7 @@ export interface Initiative {
   dez: boolean;
 }
 
-export type InitiativeInput = Omit<Initiative, "dbId">;
+export type InitiativeInput = Omit<Initiative, "dbId" | "completedAt">;
 
 export type TaskStatus = "A fazer" | "Em andamento" | "Concluído";
 
@@ -94,9 +96,11 @@ export interface Task {
   done: boolean;
   createdAt: string | null;
   updatedAt: string | null;
+  /** Preenchido pelo servidor quando a tarefa é concluída (ISO). Não editável no formulário. */
+  completedAt: string | null;
 }
 
-export type TaskInput = Omit<Task, "id" | "createdAt" | "updatedAt">;
+export type TaskInput = Omit<Task, "id" | "createdAt" | "updatedAt" | "completedAt">;
 
 export const EMPTY_TASK: TaskInput = {
   initiativeDbId: null,
@@ -124,6 +128,10 @@ export interface FilterState {
   periodStart: string;
   periodEnd: string;
   showInactive: boolean;
+  /** Filtro "Concluídas em" — usa o timestamp automático de conclusão (completedAt). */
+  completedPeriod: string;
+  completedStart: string;
+  completedEnd: string;
 }
 
 export const EMPTY_FILTERS: FilterState = {
@@ -139,4 +147,7 @@ export const EMPTY_FILTERS: FilterState = {
   periodStart: "",
   periodEnd: "",
   showInactive: false,
+  completedPeriod: "",
+  completedStart: "",
+  completedEnd: "",
 };

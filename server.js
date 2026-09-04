@@ -50,6 +50,14 @@ function normalizePayload(payload) {
     return item;
 }
 
+// Considera concluída para fins de "completedAt" (grava/limpa o timestamp na transição).
+function isConcludedInitiative(item) {
+    return /conclu/i.test(String(item?.status || '').trim()) || Boolean(item?.completed);
+}
+function isConcludedTask(task) {
+    return Boolean(task?.done) || /conclu/i.test(String(task?.status || '').trim());
+}
+
 // Gera o próximo id numérico quando o usuário não informa um.
 async function ensureId(item) {
     if (item.id && String(item.id).trim()) return;
@@ -119,6 +127,7 @@ app.post('/api/todos', async (req, res) => {
         if (req.body?.deprioritized === undefined) {
             todo.deprioritized = useBool ? false : 0;
         }
+        todo.completedAt = isConcludedInitiative(todo) ? new Date().toISOString() : '';
         await ensureId(todo);
         const created = await store.insertTodo(todo);
         return res.status(201).json(created);
@@ -132,13 +141,17 @@ app.put('/api/todos/:id', async (req, res) => {
     try {
         const dbId = Number(req.params.id);
         const todo = normalizePayload(req.body || {});
+        const existing = await store.getTodo(dbId);
         // Data Previsão de Fim já preenchida só pode ser alterada pelo administrador.
-        if (!(await auth.isAdminReq(req))) {
-            const existing = await store.getTodo(dbId);
-            if (existing && String(existing.plannedEndDate || '').trim()) {
-                todo.plannedEndDate = existing.plannedEndDate;
-            }
+        if (existing && String(existing.plannedEndDate || '').trim() && !(await auth.isAdminReq(req))) {
+            todo.plannedEndDate = existing.plannedEndDate;
         }
+        // Registra o momento da conclusão na transição (e limpa se voltar a não-concluída).
+        const wasConcluded = existing ? isConcludedInitiative(existing) : false;
+        const nowConcluded = isConcludedInitiative(todo);
+        if (nowConcluded && !wasConcluded) todo.completedAt = new Date().toISOString();
+        else if (!nowConcluded && wasConcluded) todo.completedAt = '';
+        else todo.completedAt = existing?.completedAt || '';
         const updated = await store.updateTodo(dbId, todo);
         if (!updated) return res.status(404).json({ error: 'Iniciativa não encontrada' });
         return res.json(updated);
@@ -194,6 +207,7 @@ app.post('/api/tasks', async (req, res) => {
         if (!task.title.trim()) {
             return res.status(400).json({ error: 'O título da tarefa é obrigatório.' });
         }
+        task.completedAt = isConcludedTask(task) ? new Date().toISOString() : '';
         const created = await store.insertTask(task);
         return res.status(201).json(created);
     } catch (err) {
@@ -205,6 +219,13 @@ app.post('/api/tasks', async (req, res) => {
 app.put('/api/tasks/:id', async (req, res) => {
     try {
         const task = normalizeTaskPayload(req.body || {});
+        const existing = await store.getTask(req.params.id);
+        // Registra o momento da conclusão na transição (e limpa se voltar a não-concluída).
+        const wasConcluded = existing ? isConcludedTask(existing) : false;
+        const nowConcluded = isConcludedTask(task);
+        if (nowConcluded && !wasConcluded) task.completedAt = new Date().toISOString();
+        else if (!nowConcluded && wasConcluded) task.completedAt = '';
+        else task.completedAt = existing?.completedAt || '';
         const updated = await store.updateTask(req.params.id, task);
         if (!updated) return res.status(404).json({ error: 'Tarefa não encontrada' });
         return res.json(updated);

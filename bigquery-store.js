@@ -19,12 +19,12 @@ const monthKeys = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set'
 const textFields = [
     'id', 'area', 'front', 'initiative', 'owner', 'backup', 'efficacyIndicator', 'description', 'deliveries', 'gainCategory', 'gainDescription', 'size',
     'weight', 'status', 'startDate', 'plannedEndDate', 'realEndDate', 'deadlineDays', 'deadlinePercent', 'progressPercent',
-    'severity', 'urgency', 'strategy', 'priority', 'impediment', 'notes', 'weightedDelivery', 'mother',
+    'severity', 'urgency', 'strategy', 'priority', 'impediment', 'notes', 'weightedDelivery', 'mother', 'completedAt',
 ];
 const boolFields = [...monthKeys, 'completed', 'approved', 'deprioritized'];
 const todoColumns = ['dbId', ...textFields, ...boolFields];
 
-const taskColumns = ['id', 'initiativeDbId', 'title', 'description', 'owner', 'status', 'priority', 'dueDate', 'startDate', 'endDate', 'done', 'createdAt', 'updatedAt'];
+const taskColumns = ['id', 'initiativeDbId', 'title', 'description', 'owner', 'status', 'priority', 'dueDate', 'startDate', 'endDate', 'done', 'createdAt', 'updatedAt', 'completedAt'];
 
 const DATASET = process.env.BQ_DATASET || 'todolist';
 const LOCATION = process.env.BQ_LOCATION || 'US';
@@ -205,6 +205,8 @@ async function ensureSchema() {
     await query(`ALTER TABLE ${tableRef('users')} ADD COLUMN IF NOT EXISTS responsavel STRING`).catch(() => {});
     await query(`ALTER TABLE ${tableRef('sessions')} ADD COLUMN IF NOT EXISTS activeSeconds INT64`).catch(() => {});
     await query(`ALTER TABLE ${tableRef('todos')} ADD COLUMN IF NOT EXISTS mother STRING`).catch(() => {});
+    await query(`ALTER TABLE ${tableRef('todos')} ADD COLUMN IF NOT EXISTS completedAt STRING`).catch(() => {});
+    await query(`ALTER TABLE ${tableRef('tasks')} ADD COLUMN IF NOT EXISTS completedAt STRING`).catch(() => {});
 }
 
 async function ensureTable(dataset, name, schema) {
@@ -377,11 +379,12 @@ async function insertTask(task) {
         done: Boolean(task.done),
         createdAt: now,
         updatedAt: now,
+        completedAt: task.completedAt ?? '',
     };
     const types = {
         id: 'STRING', initiativeDbId: 'INT64', title: 'STRING', description: 'STRING', owner: 'STRING',
         status: 'STRING', priority: 'STRING', dueDate: 'STRING', startDate: 'STRING', endDate: 'STRING',
-        done: 'BOOL', createdAt: 'TIMESTAMP', updatedAt: 'TIMESTAMP',
+        done: 'BOOL', createdAt: 'TIMESTAMP', updatedAt: 'TIMESTAMP', completedAt: 'STRING',
     };
     const columnsSql = taskColumns.map(col).join(', ');
     const valuesSql = taskColumns.map((name) => `@${name}`).join(', ');
@@ -407,17 +410,18 @@ async function updateTask(id, task) {
         endDate: task.endDate ?? '',
         done: Boolean(task.done),
         updatedAt: new Date(),
+        completedAt: task.completedAt ?? '',
     };
     const types = {
         id: 'STRING', initiativeDbId: 'INT64', title: 'STRING', description: 'STRING', owner: 'STRING',
         status: 'STRING', priority: 'STRING', dueDate: 'STRING', startDate: 'STRING', endDate: 'STRING',
-        done: 'BOOL', updatedAt: 'TIMESTAMP',
+        done: 'BOOL', updatedAt: 'TIMESTAMP', completedAt: 'STRING',
     };
     await query(
         `UPDATE ${tableRef('tasks')} SET
             initiativeDbId = @initiativeDbId, title = @title, description = @description, owner = @owner,
             status = @status, priority = @priority, dueDate = @dueDate, startDate = @startDate, endDate = @endDate,
-            done = @done, updatedAt = @updatedAt
+            done = @done, updatedAt = @updatedAt, completedAt = @completedAt
          WHERE id = @id`,
         params,
         types,

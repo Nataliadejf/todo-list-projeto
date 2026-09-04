@@ -4,13 +4,14 @@ import {
   BarChart3,
   Bell,
   Calendar,
+  CheckCircle2,
   GitBranch,
   RefreshCw,
   Ruler,
   Search,
   User,
 } from "lucide-react";
-import { ALERT_OPTIONS, DEADLINE_OPTIONS, INITIATIVE_STATUS_OPTIONS, TAMANHO_OPTIONS } from "@/lib/constants";
+import { ALERT_OPTIONS, COMPLETED_PERIOD_OPTIONS, DEADLINE_OPTIONS, INITIATIVE_STATUS_OPTIONS, TAMANHO_OPTIONS } from "@/lib/constants";
 import { getUniqueValues } from "@/lib/todo-utils";
 import { useTodos } from "@/components/providers/todos-provider";
 import { useResponsaveis } from "@/components/providers/responsaveis-provider";
@@ -31,6 +32,7 @@ interface FiltersPanelProps {
   showMother?: boolean;
   showSize?: boolean;
   showPeriod?: boolean;
+  showCompletedPeriod?: boolean;
   compact?: boolean;
   layout?: "sidebar" | "horizontal";
 }
@@ -43,6 +45,7 @@ export function FiltersPanel({
   showMother = false,
   showSize = true,
   showPeriod = false,
+  showCompletedPeriod = false,
   compact = false,
   layout = "sidebar",
 }: FiltersPanelProps) {
@@ -167,6 +170,38 @@ export function FiltersPanel({
               value={filters.periodEnd}
               onChange={(e) => setFilters((prev) => ({ ...prev, periodEnd: e.target.value }))}
               aria-label="Período final"
+            />
+          </>
+        ) : null}
+
+        {showCompletedPeriod ? (
+          <SelectField
+            label={isHorizontal ? undefined : "Concluídas em"}
+            icon={<CheckCircle2 className="h-4 w-4" />}
+            value={filters.completedPeriod}
+            onChange={(e) => setFilters((prev) => ({ ...prev, completedPeriod: e.target.value }))}
+          >
+            {COMPLETED_PERIOD_OPTIONS.map((option) => (
+              <option key={option.value || "all"} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </SelectField>
+        ) : null}
+
+        {showCompletedPeriod && filters.completedPeriod === "custom" ? (
+          <>
+            <Input
+              type="date"
+              value={filters.completedStart}
+              onChange={(e) => setFilters((prev) => ({ ...prev, completedStart: e.target.value }))}
+              aria-label="Concluídas a partir de"
+            />
+            <Input
+              type="date"
+              value={filters.completedEnd}
+              onChange={(e) => setFilters((prev) => ({ ...prev, completedEnd: e.target.value }))}
+              aria-label="Concluídas até"
             />
           </>
         ) : null}

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { GitBranch, ListTree } from "lucide-react";
+import { useMemo, useState } from "react";
+import { CheckCircle2, GitBranch, ListTree } from "lucide-react";
 import { FiltersPanel } from "@/components/sections/filters-panel";
 import { InitiativesChart } from "@/components/sections/initiatives-chart";
 import { InitiativesTable } from "@/components/sections/initiatives-table";
@@ -9,13 +9,15 @@ import { MotherView } from "@/components/sections/mother-view";
 import { MetricsRow } from "@/components/sections/metrics-row";
 import { PageHeader } from "@/components/layout/page-header";
 import { useTodos } from "@/components/providers/todos-provider";
+import { useTasks } from "@/components/providers/tasks-provider";
 import { useResponsaveis } from "@/components/providers/responsaveis-provider";
 import { useAuth } from "@/components/providers/auth-provider";
-import { filterInitiatives, hideInactiveOwners } from "@/lib/todo-utils";
+import { filterInitiatives, getCompletedRange, hideInactiveOwners } from "@/lib/todo-utils";
 import { cn } from "@/lib/utils";
 
 export default function PortfolioPage() {
   const { todos, filters, loading, error } = useTodos();
+  const { tasks } = useTasks();
   const { inactiveNames } = useResponsaveis();
   const { isAdmin } = useAuth();
   const [view, setView] = useState<"filha" | "mae">("filha");
@@ -24,10 +26,38 @@ export default function PortfolioPage() {
   const maesCount = new Set(filtered.map((t) => (t.mother || "").trim()).filter(Boolean)).size;
   const semMae = filtered.filter((t) => !(t.mother || "").trim()).length;
 
+  const completedRange = useMemo(() => getCompletedRange(filters), [filters]);
+  const iniName = useMemo(() => {
+    const m = new Map<number, string>();
+    todos.forEach((t) => m.set(t.dbId, t.initiative || t.id || `Iniciativa ${t.dbId}`));
+    return m;
+  }, [todos]);
+  const completedInitiatives = useMemo(() => {
+    if (!completedRange) return [];
+    return filtered
+      .filter((t) => t.completedAt)
+      .filter((t) => {
+        const d = new Date(t.completedAt);
+        return !Number.isNaN(d.getTime()) && d >= completedRange.start && d <= completedRange.end;
+      })
+      .sort((a, b) => (b.completedAt || "").localeCompare(a.completedAt || ""));
+  }, [filtered, completedRange]);
+  const completedTasks = useMemo(() => {
+    if (!completedRange) return [];
+    return tasks
+      .filter((t) => t.completedAt)
+      .filter((t) => {
+        const d = new Date(t.completedAt as string);
+        return !Number.isNaN(d.getTime()) && d >= completedRange.start && d <= completedRange.end;
+      })
+      .sort((a, b) => (b.completedAt || "").localeCompare(a.completedAt || ""));
+  }, [tasks, completedRange]);
+  const fmtDateTime = (iso: string) => new Date(iso).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+
   return (
     <div className="flex flex-col gap-4">
       <PageHeader title="Portfólio" />
-      <FiltersPanel layout="horizontal" showArea showMother showSize showAlert showPeriod />
+      <FiltersPanel layout="horizontal" showArea showMother showSize showAlert showPeriod showCompletedPeriod />
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_8px_30px_rgba(15,23,42,0.06)]">
@@ -80,6 +110,60 @@ export default function PortfolioPage() {
       </div>
 
       {view === "mae" ? <MotherView todos={filtered} /> : <InitiativesTable todos={filtered} tall />}
+
+      {completedRange ? (
+        <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/40 p-4 shadow-[0_8px_30px_rgba(15,23,42,0.04)]">
+          <div className="mb-3 flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+            <h3 className="text-sm font-bold text-slate-900">Concluídas no período selecionado</h3>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                Iniciativas ({completedInitiatives.length})
+              </p>
+              {completedInitiatives.length === 0 ? (
+                <p className="rounded-xl border border-dashed border-slate-200 bg-white px-3 py-4 text-center text-xs text-slate-400">
+                  Nenhuma iniciativa concluída neste período.
+                </p>
+              ) : (
+                <ul className="space-y-1.5">
+                  {completedInitiatives.map((t) => (
+                    <li key={t.dbId} className="flex items-center justify-between gap-2 rounded-lg bg-white px-3 py-2 text-xs shadow-sm">
+                      <span className="min-w-0 flex-1 truncate font-medium text-slate-700">{t.initiative}</span>
+                      <span className="shrink-0 text-slate-400">{fmtDateTime(t.completedAt)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div>
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                Tarefas ({completedTasks.length})
+              </p>
+              {completedTasks.length === 0 ? (
+                <p className="rounded-xl border border-dashed border-slate-200 bg-white px-3 py-4 text-center text-xs text-slate-400">
+                  Nenhuma tarefa concluída neste período.
+                </p>
+              ) : (
+                <ul className="max-h-72 space-y-1.5 overflow-auto pr-1">
+                  {completedTasks.map((t) => (
+                    <li key={t.id} className="rounded-lg bg-white px-3 py-2 text-xs shadow-sm">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="min-w-0 flex-1 truncate font-medium text-slate-700">{t.title}</span>
+                        <span className="shrink-0 text-slate-400">{fmtDateTime(t.completedAt as string)}</span>
+                      </div>
+                      <div className="mt-0.5 truncate text-[10.5px] text-slate-400">
+                        {t.owner || "—"}{t.initiativeDbId != null ? ` · ${iniName.get(t.initiativeDbId) || `#${t.initiativeDbId}`}` : ""}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

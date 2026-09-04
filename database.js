@@ -34,6 +34,7 @@ const createTableSql = `
         notes TEXT,
         weightedDelivery TEXT,
         mother TEXT,
+        completedAt TEXT,
         jan BOOLEAN DEFAULT false,
         fev BOOLEAN DEFAULT false,
         mar BOOLEAN DEFAULT false,
@@ -70,7 +71,8 @@ const createTasksSql = `
         endDate TEXT,
         done BOOLEAN DEFAULT false,
         createdAt TEXT,
-        updatedAt TEXT
+        updatedAt TEXT,
+        completedAt TEXT
     )
 `;
 
@@ -188,6 +190,11 @@ async function ensureApprovalColumns() {
         else await run('ALTER TABLE todos ADD COLUMN mother TEXT');
         console.log('Coluna mother (iniciativa mãe) adicionada ao banco.');
     }
+    if (!columnNames.includes('completedat') && !columnNames.includes('completedAt')) {
+        if (isPg) await adapter.pool.query('ALTER TABLE todos ADD COLUMN IF NOT EXISTS completedAt TEXT');
+        else await run('ALTER TABLE todos ADD COLUMN completedAt TEXT');
+        console.log('Coluna completedAt (iniciativas) adicionada ao banco.');
+    }
 
     if (columnNames.includes('approved')) return;
 
@@ -224,6 +231,7 @@ async function ensureTaskColumns() {
     const toAdd = [];
     if (!lower.includes('startdate')) toAdd.push('startDate');
     if (!lower.includes('enddate')) toAdd.push('endDate');
+    if (!lower.includes('completedat')) toAdd.push('completedAt');
     if (toAdd.length === 0) return;
 
     for (const column of toAdd) {
@@ -460,11 +468,11 @@ function getAdapter() {
 const INSERT_COLUMNS = `
     id, area, front, initiative, owner, backup, efficacyIndicator, description, deliveries, gainCategory, gainDescription, size,
     weight, status, startDate, plannedEndDate, realEndDate, deadlineDays, deadlinePercent, progressPercent,
-    severity, urgency, strategy, priority, impediment, notes, weightedDelivery, mother,
+    severity, urgency, strategy, priority, impediment, notes, weightedDelivery, mother, completedAt,
     jan, fev, mar, abr, mai, jun, jul, ago, "set", "out", nov, dez, completed, approved, deprioritized
 `;
 
-const INSERT_PLACEHOLDERS = Array(43).fill('?').join(', ');
+const INSERT_PLACEHOLDERS = Array(44).fill('?').join(', ');
 
 const INSERT_SQL = `INSERT INTO todos (${INSERT_COLUMNS}) VALUES (${INSERT_PLACEHOLDERS})`;
 
@@ -473,7 +481,7 @@ function buildInsertParams(item) {
         item.id, item.area, item.front, item.initiative, item.owner, item.backup, item.efficacyIndicator, item.description, item.deliveries,
         item.gainCategory, item.gainDescription, item.size, item.weight, item.status, item.startDate,
         item.plannedEndDate, item.realEndDate, item.deadlineDays, item.deadlinePercent, item.progressPercent,
-        item.severity, item.urgency, item.strategy, item.priority, item.impediment, item.notes, item.weightedDelivery, item.mother,
+        item.severity, item.urgency, item.strategy, item.priority, item.impediment, item.notes, item.weightedDelivery, item.mother, item.completedAt,
         item.jan, item.fev, item.mar, item.abr, item.mai, item.jun, item.jul, item.ago, item.set, item.out,
         item.nov, item.dez, item.completed, item.approved, item.deprioritized,
     ];
@@ -481,8 +489,8 @@ function buildInsertParams(item) {
 
 async function insertTodo(item) {
     const params = buildInsertParams(item);
-    if (params.length !== 43) {
-        throw new Error(`Parâmetros inválidos no insert (${params.length}/43).`);
+    if (params.length !== 44) {
+        throw new Error(`Parâmetros inválidos no insert (${params.length}/44).`);
     }
 
     const result = await run(INSERT_SQL, params);
@@ -517,7 +525,7 @@ const UPDATE_SQL = `
     UPDATE todos SET
         id = ?, area = ?, front = ?, initiative = ?, owner = ?, backup = ?, efficacyIndicator = ?, description = ?, deliveries = ?, gainCategory = ?, gainDescription = ?, size = ?,
         weight = ?, status = ?, startDate = ?, plannedEndDate = ?, realEndDate = ?, deadlineDays = ?, deadlinePercent = ?, progressPercent = ?,
-        severity = ?, urgency = ?, strategy = ?, priority = ?, impediment = ?, notes = ?, weightedDelivery = ?, mother = ?,
+        severity = ?, urgency = ?, strategy = ?, priority = ?, impediment = ?, notes = ?, weightedDelivery = ?, mother = ?, completedAt = ?,
         jan = ?, fev = ?, mar = ?, abr = ?, mai = ?, jun = ?, jul = ?, ago = ?, "set" = ?, "out" = ?, nov = ?, dez = ?, completed = ?,
         approved = ?, deprioritized = ?
     WHERE "dbId" = ?
@@ -585,13 +593,13 @@ async function insertTask(task) {
     const id = task.id || require('crypto').randomUUID();
     const now = new Date().toISOString();
     await run(
-        `INSERT INTO tasks (id, initiativeDbId, title, description, owner, status, priority, dueDate, startDate, endDate, done, createdAt, updatedAt)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO tasks (id, initiativeDbId, title, description, owner, status, priority, dueDate, startDate, endDate, done, createdAt, updatedAt, completedAt)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
             id,
             task.initiativeDbId != null ? Number(task.initiativeDbId) : null,
             task.title ?? '', task.description ?? '', task.owner ?? '', task.status ?? '', task.priority ?? '',
-            task.dueDate ?? '', task.startDate ?? '', task.endDate ?? '', taskBool(task.done), now, now,
+            task.dueDate ?? '', task.startDate ?? '', task.endDate ?? '', taskBool(task.done), now, now, task.completedAt ?? '',
         ],
     );
     return getTask(id);
@@ -602,12 +610,12 @@ async function updateTask(id, task) {
     await run(
         `UPDATE tasks SET
             initiativeDbId = ?, title = ?, description = ?, owner = ?, status = ?, priority = ?, dueDate = ?,
-            startDate = ?, endDate = ?, done = ?, updatedAt = ?
+            startDate = ?, endDate = ?, done = ?, updatedAt = ?, completedAt = ?
          WHERE id = ?`,
         [
             task.initiativeDbId != null ? Number(task.initiativeDbId) : null,
             task.title ?? '', task.description ?? '', task.owner ?? '', task.status ?? '', task.priority ?? '',
-            task.dueDate ?? '', task.startDate ?? '', task.endDate ?? '', taskBool(task.done), now, String(id),
+            task.dueDate ?? '', task.startDate ?? '', task.endDate ?? '', taskBool(task.done), now, task.completedAt ?? '', String(id),
         ],
     );
     return getTask(id);
