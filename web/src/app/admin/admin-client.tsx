@@ -299,7 +299,27 @@ export function AdminClient() {
   const respOptions = (current: string) =>
     current && !activeRespNames.includes(current) ? [current, ...activeRespNames] : activeRespNames;
 
+  const NEW_RESP_OPTION = "__new__";
+
   const setUserResp = async (u: AdminUserRow, value: string) => {
+    if (value === NEW_RESP_OPTION) {
+      const name = typeof window !== "undefined" ? window.prompt("Nome do novo responsável:")?.trim() : "";
+      if (!name) return;
+      setBusyId(u.id);
+      try {
+        if (!resps.some((r) => r.name.toLowerCase() === name.toLowerCase())) {
+          await apiAddResponsavel(name);
+          await loadResps();
+        }
+        await apiSetUserResponsavel(u.id, name);
+        await load();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Erro ao criar/vincular responsável.");
+      } finally {
+        setBusyId(null);
+      }
+      return;
+    }
     setBusyId(u.id);
     try {
       await apiSetUserResponsavel(u.id, value);
@@ -507,6 +527,7 @@ export function AdminClient() {
                         {respOptions(u.responsavel).map((name) => (
                           <option key={name} value={name}>{name}</option>
                         ))}
+                        <option value={NEW_RESP_OPTION}>+ Criar novo responsável…</option>
                       </select>
                     </td>
                     <td className="px-4 py-3">{u.sessions}</td>
