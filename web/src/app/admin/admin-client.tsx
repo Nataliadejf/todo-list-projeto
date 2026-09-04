@@ -227,15 +227,15 @@ export function AdminClient() {
     }
   };
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       setRows(await apiListUsers());
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao carregar usuários.");
+      if (!silent) setError(err instanceof Error ? err.message : "Erro ao carregar usuários.");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
 
@@ -249,6 +249,19 @@ export function AdminClient() {
       setLoading(false);
     }
   }, [isAdmin, load, loadResps, loadUsage, loadInds]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    // Mantém pendentes de aprovação em dia: recarrega (silencioso) ao focar/voltar à aba.
+    const onFocus = () => { void load(true); };
+    const onVisible = () => { if (document.visibilityState === "visible") void load(true); };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [isAdmin, load]);
 
   const act = async (id: string, action: "approve" | "revoke") => {
     setBusyId(id);
