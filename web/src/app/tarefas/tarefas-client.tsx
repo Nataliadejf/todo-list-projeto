@@ -16,8 +16,9 @@ import { useTasks } from "@/components/providers/tasks-provider";
 import { useTodos } from "@/components/providers/todos-provider";
 import { useResponsaveis } from "@/components/providers/responsaveis-provider";
 import { EMPTY_TASK, type Task, type TaskInput } from "@/lib/types";
-import { TASK_PRIORITY_OPTIONS, TASK_STATUS_OPTIONS } from "@/lib/constants";
+import { COMPLETED_PERIOD_OPTIONS, TASK_PRIORITY_OPTIONS, TASK_STATUS_OPTIONS } from "@/lib/constants";
 import { downloadTasksCsv } from "@/lib/csv-export";
+import { matchesCompletedPeriod } from "@/lib/todo-utils";
 
 function statusVariant(status: string): "default" | "success" | "warning" | "info" {
   if (status === "Concluído") return "success";
@@ -63,6 +64,9 @@ export function TarefasClient() {
   }, [searchParams]);
   const [filterOwner, setFilterOwner] = useState<string>(searchParams.get("owner") ?? "");
   const [filterStatus, setFilterStatus] = useState<string>("");
+  const [completedPeriod, setCompletedPeriod] = useState<string>("");
+  const [completedStart, setCompletedStart] = useState<string>("");
+  const [completedEnd, setCompletedEnd] = useState<string>("");
   const [search, setSearch] = useState("");
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -135,6 +139,7 @@ export function TarefasClient() {
       if (filterInitiative && String(task.initiativeDbId) !== filterInitiative) return false;
       if (filterOwner && !sameOwner(task.owner, filterOwner)) return false;
       if (filterStatus && (task.status || "A fazer") !== filterStatus) return false;
+      if (!matchesCompletedPeriod(task.completedAt, { completedPeriod, completedStart, completedEnd })) return false;
       if (q) {
         const iniName = task.initiativeDbId != null ? initiativeName.get(task.initiativeDbId) ?? "" : "";
         const haystack = normalize(`${task.title} ${task.description} ${task.owner} ${iniName}`);
@@ -142,7 +147,7 @@ export function TarefasClient() {
       }
       return true;
     });
-  }, [tasks, filterInitiative, filterOwner, filterStatus, search, initiativeName]);
+  }, [tasks, filterInitiative, filterOwner, filterStatus, completedPeriod, completedStart, completedEnd, search, initiativeName]);
 
   const resetForm = () => {
     setForm(EMPTY_TASK);
@@ -239,11 +244,14 @@ export function TarefasClient() {
     setFilterInitiative(null);
     setFilterOwner("");
     setFilterStatus("");
+    setCompletedPeriod("");
+    setCompletedStart("");
+    setCompletedEnd("");
     setSearch("");
   };
 
   const pending = tasks.filter((task) => !task.done).length;
-  const hasFilters = Boolean(filterInitiative || filterOwner || filterStatus || search);
+  const hasFilters = Boolean(filterInitiative || filterOwner || filterStatus || completedPeriod || search);
 
   return (
     <div className="space-y-6">
@@ -359,7 +367,7 @@ export function TarefasClient() {
 
         <div className="space-y-4">
           <Card>
-            <CardContent className="grid gap-3 py-4 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_180px_180px_180px]">
+            <CardContent className="grid gap-3 py-4 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_160px_160px_160px_170px]">
               <div className="space-y-1.5">
                 <Label>Buscar tarefas</Label>
                 <div className="relative">
@@ -407,6 +415,29 @@ export function TarefasClient() {
                   </option>
                 ))}
               </SelectField>
+              <SelectField
+                label="Concluídas em"
+                value={completedPeriod}
+                onChange={(e) => setCompletedPeriod(e.target.value)}
+              >
+                {COMPLETED_PERIOD_OPTIONS.map((opt) => (
+                  <option key={opt.value || "all"} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </SelectField>
+              {completedPeriod === "custom" ? (
+                <>
+                  <div className="space-y-1.5">
+                    <Label>Concluídas a partir de</Label>
+                    <Input type="date" value={completedStart} onChange={(e) => setCompletedStart(e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Concluídas até</Label>
+                    <Input type="date" value={completedEnd} onChange={(e) => setCompletedEnd(e.target.value)} />
+                  </div>
+                </>
+              ) : null}
             </CardContent>
           </Card>
 
@@ -479,6 +510,11 @@ export function TarefasClient() {
                         {task.startDate ? <span>Início: {task.startDate}</span> : null}
                         {task.endDate ? <span>Término: {task.endDate}</span> : null}
                         {task.dueDate ? <span>Prazo: {task.dueDate}</span> : null}
+                        {task.completedAt ? (
+                          <span className="text-emerald-600">
+                            Concluída em: {new Date(task.completedAt).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                        ) : null}
                       </div>
                     </div>
 

@@ -95,8 +95,10 @@ function endOfWeek(d: Date) {
   return end;
 }
 
+export type CompletedPeriodFilter = Pick<FilterState, "completedPeriod" | "completedStart" | "completedEnd">;
+
 /** Intervalo de datas do filtro "Concluídas em" (null = sem filtro, mostra tudo). */
-export function getCompletedRange(filters: FilterState): { start: Date; end: Date } | null {
+export function getCompletedRange(filters: CompletedPeriodFilter): { start: Date; end: Date } | null {
   const now = new Date();
   if (filters.completedPeriod === "week") {
     return { start: startOfWeek(now), end: endOfWeek(now) };
@@ -123,7 +125,7 @@ export function getCompletedRange(filters: FilterState): { start: Date; end: Dat
 }
 
 /** true se `dateStr` (ISO) cai dentro do range do filtro "Concluídas em" — sem filtro ativo, sempre true. */
-export function matchesCompletedPeriod(dateStr: string | null | undefined, filters: FilterState): boolean {
+export function matchesCompletedPeriod(dateStr: string | null | undefined, filters: CompletedPeriodFilter): boolean {
   const range = getCompletedRange(filters);
   if (!range) return true;
   const d = parseDate(dateStr || undefined);
