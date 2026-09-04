@@ -190,20 +190,26 @@ export function FiltersPanel({
         ) : null}
 
         {showCompletedPeriod && filters.completedPeriod === "custom" ? (
-          <>
-            <Input
-              type="date"
-              value={filters.completedStart}
-              onChange={(e) => setFilters((prev) => ({ ...prev, completedStart: e.target.value }))}
-              aria-label="Concluídas a partir de"
-            />
-            <Input
-              type="date"
-              value={filters.completedEnd}
-              onChange={(e) => setFilters((prev) => ({ ...prev, completedEnd: e.target.value }))}
-              aria-label="Concluídas até"
-            />
-          </>
+          <div className={cn("grid grid-cols-2 gap-2", isHorizontal && "sm:col-span-2 lg:col-span-4 xl:col-span-6")}>
+            <div className="space-y-1">
+              {!isHorizontal ? <label className="text-xs font-medium text-slate-600">Concluídas a partir de</label> : null}
+              <Input
+                type="date"
+                value={filters.completedStart}
+                onChange={(e) => setFilters((prev) => ({ ...prev, completedStart: e.target.value }))}
+                aria-label="Concluídas a partir de"
+              />
+            </div>
+            <div className="space-y-1">
+              {!isHorizontal ? <label className="text-xs font-medium text-slate-600">Concluídas até</label> : null}
+              <Input
+                type="date"
+                value={filters.completedEnd}
+                onChange={(e) => setFilters((prev) => ({ ...prev, completedEnd: e.target.value }))}
+                aria-label="Concluídas até"
+              />
+            </div>
+          </div>
         ) : null}
       </div>
 

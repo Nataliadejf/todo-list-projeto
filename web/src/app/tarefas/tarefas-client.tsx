@@ -427,7 +427,7 @@ export function TarefasClient() {
                 ))}
               </SelectField>
               {completedPeriod === "custom" ? (
-                <>
+                <div className="grid grid-cols-2 gap-3 md:col-span-2 xl:col-span-5">
                   <div className="space-y-1.5">
                     <Label>Concluídas a partir de</Label>
                     <Input type="date" value={completedStart} onChange={(e) => setCompletedStart(e.target.value)} />
@@ -436,7 +436,7 @@ export function TarefasClient() {
                     <Label>Concluídas até</Label>
                     <Input type="date" value={completedEnd} onChange={(e) => setCompletedEnd(e.target.value)} />
                   </div>
-                </>
+                </div>
               ) : null}
             </CardContent>
           </Card>
