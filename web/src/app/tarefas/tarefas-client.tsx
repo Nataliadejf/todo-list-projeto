@@ -367,7 +367,7 @@ export function TarefasClient() {
 
         <div className="space-y-4">
           <Card>
-            <CardContent className="grid gap-3 py-4 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_160px_160px_160px_170px]">
+            <CardContent className="space-y-3 py-4">
               <div className="space-y-1.5">
                 <Label>Buscar tarefas</Label>
                 <div className="relative">
@@ -380,54 +380,58 @@ export function TarefasClient() {
                   />
                 </div>
               </div>
-              <SelectField
-                label="Filtrar por responsável"
-                value={filterOwner}
-                onChange={(e) => {
-                  setFilterOwner(e.target.value);
-                  setFilterInitiative(null);
-                }}
-              >
-                <option value="">Todos os responsáveis</option>
-                {ownerNames.map((owner) => (
-                  <option key={owner} value={owner}>
-                    {owner}
-                  </option>
-                ))}
-              </SelectField>
-              <Autocomplete
-                label="Filtrar por iniciativa"
-                placeholder="Todas as iniciativas"
-                options={filterInitiativeOptions}
-                value={filterInitiative}
-                onChange={(value) => setFilterInitiative(value)}
-                emptyLabel="Nenhuma iniciativa"
-              />
-              <SelectField
-                label="Filtrar por status"
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-              >
-                <option value="">Todos os status</option>
-                {TASK_STATUS_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </SelectField>
-              <SelectField
-                label="Concluídas em"
-                value={completedPeriod}
-                onChange={(e) => setCompletedPeriod(e.target.value)}
-              >
-                {COMPLETED_PERIOD_OPTIONS.map((opt) => (
-                  <option key={opt.value || "all"} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </SelectField>
+
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <SelectField
+                  label="Filtrar por responsável"
+                  value={filterOwner}
+                  onChange={(e) => {
+                    setFilterOwner(e.target.value);
+                    setFilterInitiative(null);
+                  }}
+                >
+                  <option value="">Todos os responsáveis</option>
+                  {ownerNames.map((owner) => (
+                    <option key={owner} value={owner}>
+                      {owner}
+                    </option>
+                  ))}
+                </SelectField>
+                <Autocomplete
+                  label="Filtrar por iniciativa"
+                  placeholder="Todas as iniciativas"
+                  options={filterInitiativeOptions}
+                  value={filterInitiative}
+                  onChange={(value) => setFilterInitiative(value)}
+                  emptyLabel="Nenhuma iniciativa"
+                />
+                <SelectField
+                  label="Filtrar por status"
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                >
+                  <option value="">Todos os status</option>
+                  {TASK_STATUS_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </SelectField>
+                <SelectField
+                  label="Concluídas em"
+                  value={completedPeriod}
+                  onChange={(e) => setCompletedPeriod(e.target.value)}
+                >
+                  {COMPLETED_PERIOD_OPTIONS.map((opt) => (
+                    <option key={opt.value || "all"} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </SelectField>
+              </div>
+
               {completedPeriod === "custom" ? (
-                <div className="grid grid-cols-2 gap-3 md:col-span-2 xl:col-span-5">
+                <div className="grid grid-cols-2 gap-3 sm:max-w-md">
                   <div className="space-y-1.5">
                     <Label>Concluídas a partir de</Label>
                     <Input type="date" value={completedStart} onChange={(e) => setCompletedStart(e.target.value)} />
