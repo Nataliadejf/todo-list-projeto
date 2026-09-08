@@ -232,7 +232,6 @@ export function InitiativeForm({ editing, onSaved, onCancelEdit }: InitiativeFor
               </div>
               <div className="grid gap-3 md:grid-cols-2">
                 <Field fieldKey="strategy" value={form.strategy} onChange={updateField} options={SIM_NAO_OPTIONS} />
-                <Field fieldKey="priority" value={form.priority} onChange={updateField} />
               </div>
             </section>
 
