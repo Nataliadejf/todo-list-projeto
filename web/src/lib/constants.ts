@@ -61,10 +61,12 @@ export const LABEL_MAP: Record<string, string> = {
   mother: "Iniciativa Mãe",
 };
 
+// Campos exportados na planilha de Iniciativas (mesma ordem do formulário).
+// Sem "id" (irrelevante para leitura) e sem as flags mensais (jan..dez).
 export const EDITABLE_KEYS = [
-  "id",
   "area",
   "front",
+  "mother",
   "initiative",
   "owner",
   "backup",
@@ -87,7 +89,6 @@ export const EDITABLE_KEYS = [
   "impediment",
   "notes",
   "weightedDelivery",
-  "mother",
 ] as const;
 
 export const MONTH_LABELS: Record<MonthKey, string> = {

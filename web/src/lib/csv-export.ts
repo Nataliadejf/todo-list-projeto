@@ -1,7 +1,7 @@
-import { EDITABLE_KEYS, LABEL_MAP, MONTH_LABELS } from "./constants";
-import { MONTH_KEYS, type Initiative, type Task } from "./types";
+import { EDITABLE_KEYS, LABEL_MAP } from "./constants";
+import type { Initiative, Task } from "./types";
 
-const EXPORT_KEYS = [...EDITABLE_KEYS, ...MONTH_KEYS, "completed"] as const;
+const EXPORT_KEYS = EDITABLE_KEYS;
 
 function escapeCsvCell(value: unknown) {
   const s = String(value ?? "");
@@ -10,15 +10,10 @@ function escapeCsvCell(value: unknown) {
 }
 
 function headerLabel(key: string) {
-  if (LABEL_MAP[key]) return LABEL_MAP[key];
-  if (key in MONTH_LABELS) return `Mês ${MONTH_LABELS[key as keyof typeof MONTH_LABELS]}`;
-  if (key === "completed") return "Marcado concluído";
-  return key;
+  return LABEL_MAP[key] ?? key;
 }
 
 function cellValue(todo: Initiative, key: string) {
-  if ((MONTH_KEYS as readonly string[]).includes(key)) return todo[key as keyof Initiative] ? "Sim" : "Não";
-  if (key === "completed") return todo.completed ? "Sim" : "Não";
   return todo[key as keyof Initiative] ?? "";
 }
 
