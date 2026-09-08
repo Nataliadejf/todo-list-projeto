@@ -367,18 +367,27 @@ export function AdminClient() {
     return withUse.reduce((a, b) => (b.totalSeconds > a.totalSeconds ? b : a));
   }, [rows]);
 
-  const userChart = useMemo(
-    () =>
-      rows
-        .filter((r) => r.sessions > 0)
-        .sort((a, b) => b.totalSeconds - a.totalSeconds)
-        .slice(0, 12)
-        .map((u) => ({
-          name: (u.name || u.email || "—").split(" ")[0],
-          horas: Math.round((u.totalSeconds / 3600) * 10) / 10,
-        })),
-    [rows],
-  );
+  const userChart = useMemo(() => {
+    const top = rows
+      .filter((r) => r.sessions > 0)
+      .sort((a, b) => b.totalSeconds - a.totalSeconds)
+      .slice(0, 12);
+    // Nomes duplicados (ex.: dois "Carlos") ganham o sobrenome para diferenciar.
+    const firstNameCount = new Map<string, number>();
+    top.forEach((u) => {
+      const first = (u.name || u.email || "—").trim().split(" ")[0];
+      firstNameCount.set(first, (firstNameCount.get(first) || 0) + 1);
+    });
+    return top.map((u) => {
+      const full = (u.name || u.email || "—").trim();
+      const parts = full.split(" ").filter(Boolean);
+      const first = parts[0] || "—";
+      const name = parts.length > 1 && (firstNameCount.get(first) || 0) > 1
+        ? `${first} ${parts[parts.length - 1]}`
+        : first;
+      return { name, horas: Math.round((u.totalSeconds / 3600) * 10) / 10 };
+    });
+  }, [rows]);
 
   if (!isAdmin) {
     return (
