@@ -211,6 +211,7 @@ export function InitiativeForm({ editing, onSaved, onCancelEdit }: InitiativeFor
                 <Field fieldKey="size" value={form.size} onChange={updateField} required options={TAMANHO_OPTIONS} />
               </div>
               <Field fieldKey="gainDescription" value={form.gainDescription} onChange={updateField} />
+              <Field fieldKey="efficacyIndicator" value={form.efficacyIndicator} onChange={updateField} />
             </section>
 
             <section className="space-y-3 rounded-2xl border border-slate-200 p-4">
