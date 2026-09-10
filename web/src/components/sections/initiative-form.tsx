@@ -9,7 +9,6 @@ import {
   INITIATIVE_STATUS_OPTIONS,
   LABEL_MAP,
   PROGRESS_OPTIONS,
-  SIM_NAO_OPTIONS,
   TAMANHO_OPTIONS,
 } from "@/lib/constants";
 import { useResponsaveis } from "@/components/providers/responsaveis-provider";
@@ -230,14 +229,10 @@ export function InitiativeForm({ editing, onSaved, onCancelEdit }: InitiativeFor
                 <Field fieldKey="severity" value={form.severity} onChange={updateField} options={GUT_OPTIONS} />
                 <Field fieldKey="urgency" value={form.urgency} onChange={updateField} options={GUT_OPTIONS} />
               </div>
-              <div className="grid gap-3 md:grid-cols-2">
-                <Field fieldKey="strategy" value={form.strategy} onChange={updateField} options={SIM_NAO_OPTIONS} />
-              </div>
             </section>
 
             <section className="space-y-3 rounded-2xl border border-slate-200 p-4">
               <h3 className="text-sm font-bold text-slate-800">Riscos e observações</h3>
-              <Field fieldKey="impediment" value={form.impediment} onChange={updateField} options={SIM_NAO_OPTIONS} />
               <Field fieldKey="notes" value={form.notes} onChange={updateField} />
             </section>
 

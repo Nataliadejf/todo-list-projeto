@@ -63,7 +63,8 @@ export const LABEL_MAP: Record<string, string> = {
 
 // Campos exportados na planilha de Iniciativas (mesma ordem do formulário).
 // Sem "id" (irrelevante para leitura), sem as flags mensais (jan..dez),
-// sem "priority" (Prioridade) e sem "weightedDelivery" (Entrega Ponderada) —
+// sem "priority" (Prioridade), "weightedDelivery" (Entrega Ponderada),
+// "strategy" (Estratégia) e "impediment" (Impedimento) —
 // campos legados/pouco usados, retirados do cadastro e agora da exportação.
 export const EDITABLE_KEYS = [
   "area",
@@ -86,8 +87,6 @@ export const EDITABLE_KEYS = [
   "progressPercent",
   "severity",
   "urgency",
-  "strategy",
-  "impediment",
   "notes",
 ] as const;
 
