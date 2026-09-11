@@ -142,6 +142,14 @@ export function InitiativeForm({ editing, onSaved, onCancelEdit }: InitiativeFor
     }
   }, [form.status, form.progressPercent]);
 
+  // Regra: Data Fim Real deve refletir a data de registro da conclusão.
+  useEffect(() => {
+    if (form.status === "Concluído" && !form.realEndDate) {
+      const today = new Date().toISOString().slice(0, 10);
+      setForm((prev) => (prev.realEndDate ? prev : { ...prev, realEndDate: today }));
+    }
+  }, [form.status, form.realEndDate]);
+
   function updateField<K extends keyof InitiativeInput>(key: K, value: InitiativeInput[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }

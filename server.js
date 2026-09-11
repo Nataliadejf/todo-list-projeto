@@ -46,6 +46,10 @@ function normalizePayload(payload) {
     if (String(item.status || '').trim() === 'Concluído') {
         item.progressPercent = '100';
         item.completed = bool(true);
+        // Regra: Data Fim Real deve refletir a data de registro da conclusão.
+        if (!String(item.realEndDate || '').trim()) {
+            item.realEndDate = new Date().toISOString().slice(0, 10);
+        }
     }
     return item;
 }
