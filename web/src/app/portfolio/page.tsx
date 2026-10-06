@@ -12,7 +12,15 @@ import { useTodos } from "@/components/providers/todos-provider";
 import { useTasks } from "@/components/providers/tasks-provider";
 import { useResponsaveis } from "@/components/providers/responsaveis-provider";
 import { useAuth } from "@/components/providers/auth-provider";
-import { filterInitiatives, getCompletedRange, hideInactiveOwners } from "@/lib/todo-utils";
+import {
+  filterInitiatives,
+  getCompletedRange,
+  getInitiativeConclusionDate,
+  getTaskConclusionDate,
+  hideInactiveOwners,
+  matchesCompletedPeriod,
+  parseConclusionDate,
+} from "@/lib/todo-utils";
 import { cn } from "@/lib/utils";
 
 export default function PortfolioPage() {
@@ -35,24 +43,22 @@ export default function PortfolioPage() {
   const completedInitiatives = useMemo(() => {
     if (!completedRange) return [];
     return filtered
-      .filter((t) => t.completedAt)
-      .filter((t) => {
-        const d = new Date(t.completedAt);
-        return !Number.isNaN(d.getTime()) && d >= completedRange.start && d <= completedRange.end;
-      })
-      .sort((a, b) => (b.completedAt || "").localeCompare(a.completedAt || ""));
-  }, [filtered, completedRange]);
+      .filter((t) => matchesCompletedPeriod(getInitiativeConclusionDate(t), filters))
+      .sort((a, b) => getInitiativeConclusionDate(b).localeCompare(getInitiativeConclusionDate(a)));
+  }, [filtered, completedRange, filters]);
   const completedTasks = useMemo(() => {
     if (!completedRange) return [];
     return tasks
-      .filter((t) => t.completedAt)
-      .filter((t) => {
-        const d = new Date(t.completedAt as string);
-        return !Number.isNaN(d.getTime()) && d >= completedRange.start && d <= completedRange.end;
-      })
-      .sort((a, b) => (b.completedAt || "").localeCompare(a.completedAt || ""));
-  }, [tasks, completedRange]);
-  const fmtDateTime = (iso: string) => new Date(iso).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+      .filter((t) => matchesCompletedPeriod(getTaskConclusionDate(t), filters))
+      .sort((a, b) => getTaskConclusionDate(b).localeCompare(getTaskConclusionDate(a)));
+  }, [tasks, completedRange, filters]);
+  const fmtDateTime = (value: string) => {
+    const d = parseConclusionDate(value);
+    if (!d) return "—";
+    return value.includes("T")
+      ? d.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
+      : d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+  };
 
   return (
     <div className="flex flex-col gap-4">
@@ -131,7 +137,7 @@ export default function PortfolioPage() {
                   {completedInitiatives.map((t) => (
                     <li key={t.dbId} className="flex items-center justify-between gap-2 rounded-lg bg-white px-3 py-2 text-xs shadow-sm">
                       <span className="min-w-0 flex-1 truncate font-medium text-slate-700">{t.initiative}</span>
-                      <span className="shrink-0 text-slate-400">{fmtDateTime(t.completedAt)}</span>
+                      <span className="shrink-0 text-slate-400">{fmtDateTime(getInitiativeConclusionDate(t))}</span>
                     </li>
                   ))}
                 </ul>
@@ -151,7 +157,7 @@ export default function PortfolioPage() {
                     <li key={t.id} className="rounded-lg bg-white px-3 py-2 text-xs shadow-sm">
                       <div className="flex items-center justify-between gap-2">
                         <span className="min-w-0 flex-1 truncate font-medium text-slate-700">{t.title}</span>
-                        <span className="shrink-0 text-slate-400">{fmtDateTime(t.completedAt as string)}</span>
+                        <span className="shrink-0 text-slate-400">{fmtDateTime(getTaskConclusionDate(t))}</span>
                       </div>
                       <div className="mt-0.5 truncate text-[10.5px] text-slate-400">
                         {t.owner || "—"}{t.initiativeDbId != null ? ` · ${iniName.get(t.initiativeDbId) || `#${t.initiativeDbId}`}` : ""}

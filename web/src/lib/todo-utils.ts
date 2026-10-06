@@ -1,4 +1,4 @@
-import { MONTH_KEYS, type FilterState, type Initiative, type InitiativeInput, type KanbanStage } from "./types";
+import { MONTH_KEYS, type FilterState, type Initiative, type InitiativeInput, type KanbanStage, type Task } from "./types";
 
 export function normalizeStatus(status: string): string {
   const raw = String(status || "").trim().toLowerCase();
@@ -114,8 +114,8 @@ export function getCompletedRange(filters: CompletedPeriodFilter): { start: Date
     return { start, end };
   }
   if (filters.completedPeriod === "custom") {
-    const start = parseDate(filters.completedStart);
-    const end = parseDate(filters.completedEnd);
+    const start = parseConclusionDate(filters.completedStart);
+    const end = parseConclusionDate(filters.completedEnd);
     if (!start && !end) return null;
     const s = start ? new Date(start.getFullYear(), start.getMonth(), start.getDate(), 0, 0, 0, 0) : new Date(0);
     const e = end ? new Date(end.getFullYear(), end.getMonth(), end.getDate(), 23, 59, 59, 999) : new Date(8640000000000000);
@@ -124,11 +124,37 @@ export function getCompletedRange(filters: CompletedPeriodFilter): { start: Date
   return null;
 }
 
-/** true se `dateStr` (ISO) cai dentro do range do filtro "Concluídas em" — sem filtro ativo, sempre true. */
+// "AAAA-MM-DD" vira data local (new Date() a trataria como UTC e deslocaria o dia no fuso do Brasil).
+export function parseConclusionDate(value: string | null | undefined): Date | null {
+  const s = String(value ?? "").trim();
+  if (!s) return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12, 0, 0, 0);
+  const d = new Date(s);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function isConcludedInitiative(todo: Initiative): boolean {
+  return /conclu/i.test(String(todo.status || "")) || Boolean(todo.completed);
+}
+
+/** Data de conclusão da iniciativa: Data Fim Real (regra de negócio) ou, na falta dela, o timestamp automático. */
+export function getInitiativeConclusionDate(todo: Initiative): string {
+  if (!isConcludedInitiative(todo)) return "";
+  return (todo.realEndDate || "").trim() || todo.completedAt || "";
+}
+
+/** Data de conclusão da tarefa: timestamp automático ou, no legado, a data de término. */
+export function getTaskConclusionDate(task: Pick<Task, "completedAt" | "endDate" | "done" | "status">): string {
+  if (!task.done && !/conclu/i.test(String(task.status || ""))) return "";
+  return task.completedAt || (task.endDate || "").trim() || "";
+}
+
+/** true se `dateStr` cai dentro do range do filtro "Concluídas em" — sem filtro ativo, sempre true. */
 export function matchesCompletedPeriod(dateStr: string | null | undefined, filters: CompletedPeriodFilter): boolean {
   const range = getCompletedRange(filters);
   if (!range) return true;
-  const d = parseDate(dateStr || undefined);
+  const d = parseConclusionDate(dateStr);
   if (!d) return false;
   return d >= range.start && d <= range.end;
 }
@@ -162,7 +188,7 @@ export function filterInitiatives(todos: Initiative[], filters: FilterState) {
     if (filters.size.length && !filters.size.some((v) => normalizeText(v) === normalizeText(todo.size))) return false;
     if (filters.alert.length && !filters.alert.includes(getDeadlineAlert(todo).label)) return false;
     if (!matchesDeadline(todo, filters.deadline)) return false;
-    if (!matchesCompletedPeriod(todo.completedAt, filters)) return false;
+    if (!matchesCompletedPeriod(getInitiativeConclusionDate(todo), filters)) return false;
 
     const rangeStart = parseDate(filters.periodStart);
     const rangeEnd = parseDate(filters.periodEnd);

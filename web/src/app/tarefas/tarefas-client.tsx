@@ -18,7 +18,7 @@ import { useResponsaveis } from "@/components/providers/responsaveis-provider";
 import { EMPTY_TASK, type Task, type TaskInput } from "@/lib/types";
 import { COMPLETED_PERIOD_OPTIONS, TASK_PRIORITY_OPTIONS, TASK_STATUS_OPTIONS } from "@/lib/constants";
 import { downloadTasksCsv } from "@/lib/csv-export";
-import { matchesCompletedPeriod } from "@/lib/todo-utils";
+import { getTaskConclusionDate, matchesCompletedPeriod } from "@/lib/todo-utils";
 
 function statusVariant(status: string): "default" | "success" | "warning" | "info" {
   if (status === "Concluído") return "success";
@@ -139,7 +139,7 @@ export function TarefasClient() {
       if (filterInitiative && String(task.initiativeDbId) !== filterInitiative) return false;
       if (filterOwner && !sameOwner(task.owner, filterOwner)) return false;
       if (filterStatus && (task.status || "A fazer") !== filterStatus) return false;
-      if (!matchesCompletedPeriod(task.completedAt, { completedPeriod, completedStart, completedEnd })) return false;
+      if (!matchesCompletedPeriod(getTaskConclusionDate(task), { completedPeriod, completedStart, completedEnd })) return false;
       if (q) {
         const iniName = task.initiativeDbId != null ? initiativeName.get(task.initiativeDbId) ?? "" : "";
         const haystack = normalize(`${task.title} ${task.description} ${task.owner} ${iniName}`);
