@@ -1,5 +1,65 @@
 import type { Initiative, Task } from "./types";
-import { getPriorityScore, normalizeStatus } from "./todo-utils";
+import { getPriorityScore, normalizeStatus, parseConclusionDate } from "./todo-utils";
+
+export interface GerencialFilter {
+  owners: string[];
+  start: Date | null;
+  end: Date | null;
+}
+
+const toDay = (d: Date | null) => (d ? new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12) : null);
+const sameName = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+
+// Atividade no período: o intervalo [início, fim] do item cruza o intervalo filtrado.
+function overlapsPeriod(start: Date | null, end: Date | null, f: GerencialFilter): boolean {
+  if (!f.start && !f.end) return true;
+  if (!start && !end) return false;
+  const s = start ?? end!;
+  const e = end; // null = em aberto (ainda em andamento)
+  if (f.end && s > f.end) return false;
+  if (f.start && e && e < f.start) return false;
+  return true;
+}
+
+export function iniciativaDatas(t: Initiative): { start: Date | null; end: Date | null } {
+  const planned = toDay(parseConclusionDate(t.plannedEndDate));
+  const real = toDay(parseConclusionDate(t.realEndDate));
+  return {
+    start: toDay(parseConclusionDate(t.startDate)),
+    end: (isConcluida(t) && real) || planned || real,
+  };
+}
+
+function tarefaDatas(t: Task): { start: Date | null; end: Date | null } {
+  const done = Boolean(t.done) || /conclu/i.test(String(t.status || ""));
+  return {
+    start: toDay(parseConclusionDate(t.startDate)) ?? toDay(parseConclusionDate(t.createdAt)),
+    end:
+      toDay(parseConclusionDate(t.endDate)) ??
+      toDay(parseConclusionDate(t.dueDate)) ??
+      (done ? toDay(parseConclusionDate(t.completedAt)) : null),
+  };
+}
+
+/** Aplica Responsável e Período às iniciativas e às tarefas (cada tarefa pelo seu próprio responsável). */
+export function applyGerencialFilter(todos: Initiative[], tasks: Task[], f: GerencialFilter) {
+  const byOwner = (owner: string) => f.owners.length === 0 || f.owners.some((o) => sameName(o, owner || ""));
+  const iniciativas = todos.filter((t) => {
+    if (!byOwner(t.owner)) return false;
+    const { start, end } = iniciativaDatas(t);
+    return overlapsPeriod(start, end, f);
+  });
+  const tarefas = tasks.filter((t) => {
+    if (!byOwner(t.owner)) return false;
+    const { start, end } = tarefaDatas(t);
+    return overlapsPeriod(start, end, f);
+  });
+  const periodoAtivo = Boolean(f.start || f.end);
+  const semData = periodoAtivo
+    ? todos.filter((t) => byOwner(t.owner)).filter((t) => { const d = iniciativaDatas(t); return !d.start && !d.end; }).length
+    : 0;
+  return { iniciativas, tarefas, semData };
+}
 
 /**
  * Visão Gerencial — mede, por EIXO ESTRATÉGICO (Categoria de Ganho já marcada

@@ -1,16 +1,48 @@
 "use client";
 
-import { useMemo } from "react";
-import { BarChart3, CheckSquare, Gauge, Layers, ListChecks, TrendingUp } from "lucide-react";
+import { useMemo, useState } from "react";
+import { BarChart3, Calendar, CheckSquare, Gauge, Layers, ListChecks, TrendingUp, User } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
+import { Input } from "@/components/ui/input";
+import { MultiSelect } from "@/components/ui/multi-select";
+import { SelectField } from "@/components/ui/select-field";
 import { useTodos } from "@/components/providers/todos-provider";
 import { useTasks } from "@/components/providers/tasks-provider";
 import { useResponsaveis } from "@/components/providers/responsaveis-provider";
 import { useAuth } from "@/components/providers/auth-provider";
-import { hideInactiveOwners } from "@/lib/todo-utils";
-import { gerencialStats } from "@/lib/gerencial-utils";
+import { hideInactiveOwners, parseConclusionDate } from "@/lib/todo-utils";
+import { applyGerencialFilter, gerencialStats } from "@/lib/gerencial-utils";
 
 const nf = (n: number) => n.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
+
+type PeriodPreset = "all" | "month" | "lastMonth" | "quarter" | "year" | "custom";
+
+const PERIOD_OPTIONS: { value: PeriodPreset; label: string }[] = [
+  { value: "all", label: "Todo o período" },
+  { value: "month", label: "Este mês" },
+  { value: "lastMonth", label: "Mês passado" },
+  { value: "quarter", label: "Trimestre atual" },
+  { value: "year", label: "Este ano" },
+  { value: "custom", label: "Período customizado" },
+];
+
+const fmtDay = (d: Date) => d.toLocaleDateString("pt-BR");
+
+function periodRange(preset: PeriodPreset, customStart: string, customEnd: string): { start: Date | null; end: Date | null; label: string } {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth();
+  const day = (yy: number, mm: number, dd: number) => new Date(yy, mm, dd, 12);
+  let start: Date | null = null;
+  let end: Date | null = null;
+  if (preset === "month") { start = day(y, m, 1); end = day(y, m + 1, 0); }
+  else if (preset === "lastMonth") { start = day(y, m - 1, 1); end = day(y, m, 0); }
+  else if (preset === "quarter") { const q = Math.floor(m / 3) * 3; start = day(y, q, 1); end = day(y, q + 3, 0); }
+  else if (preset === "year") { start = day(y, 0, 1); end = day(y, 11, 31); }
+  else if (preset === "custom") { start = parseConclusionDate(customStart); end = parseConclusionDate(customEnd); }
+  const label = start && end ? `${fmtDay(start)} a ${fmtDay(end)}` : start ? `desde ${fmtDay(start)}` : end ? `até ${fmtDay(end)}` : "";
+  return { start, end, label };
+}
 
 export function GerencialClient() {
   const { todos } = useTodos();
@@ -22,7 +54,25 @@ export function GerencialClient() {
     () => (isAdmin ? todos : hideInactiveOwners(todos, inactiveNames)),
     [todos, isAdmin, inactiveNames],
   );
-  const r = useMemo(() => gerencialStats(base, tasks), [base, tasks]);
+  const [owners, setOwners] = useState<string[]>([]);
+  const [preset, setPreset] = useState<PeriodPreset>("all");
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd] = useState("");
+
+  const ownerOptions = useMemo(() => {
+    const set = new Set<string>();
+    base.forEach((t) => t.owner?.trim() && set.add(t.owner.trim()));
+    tasks.forEach((t) => t.owner?.trim() && set.add(t.owner.trim()));
+    return [...set].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [base, tasks]);
+
+  const range = useMemo(() => periodRange(preset, customStart, customEnd), [preset, customStart, customEnd]);
+  const filtered = useMemo(
+    () => applyGerencialFilter(base, tasks, { owners, start: range.start, end: range.end }),
+    [base, tasks, owners, range],
+  );
+  const r = useMemo(() => gerencialStats(filtered.iniciativas, filtered.tarefas), [filtered]);
+  const hasFilter = owners.length > 0 || preset !== "all";
 
   return (
     <div className="space-y-6">
@@ -31,6 +81,66 @@ export function GerencialClient() {
         subtitle="Quantidade de iniciativas e tarefas por eixo estratégico (categoria de ganho), com conclusão, prioridade e esforço — leitura automática do que está cadastrado."
         showNewButton={false}
       />
+
+      {/* Filtros */}
+      <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_8px_30px_rgba(15,23,42,0.06)]">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <MultiSelect
+            label="Responsável"
+            icon={<User className="h-4 w-4" />}
+            options={ownerOptions}
+            value={owners}
+            onChange={setOwners}
+            placeholder="Todos"
+          />
+          <SelectField
+            label="Período"
+            icon={<Calendar className="h-4 w-4" />}
+            value={preset}
+            onChange={(e) => setPreset(e.target.value as PeriodPreset)}
+          >
+            {PERIOD_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </SelectField>
+          {preset === "custom" ? (
+            <>
+              <label className="block space-y-1.5">
+                <span className="block text-[11px] font-bold uppercase tracking-wide text-slate-500">De</span>
+                <Input type="date" value={customStart} onChange={(e) => setCustomStart(e.target.value)} />
+              </label>
+              <label className="block space-y-1.5">
+                <span className="block text-[11px] font-bold uppercase tracking-wide text-slate-500">Até</span>
+                <Input type="date" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} />
+              </label>
+            </>
+          ) : null}
+        </div>
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500">
+          <span>
+            {hasFilter ? (
+              <>
+                Considerando <b className="text-slate-700">{r.totalIniciativas}</b> iniciativas e{" "}
+                <b className="text-slate-700">{r.totalTarefas}</b> tarefas
+                {range.label ? <> com atividade em <b className="text-slate-700">{range.label}</b></> : null}
+                {owners.length ? <> · {owners.length === 1 ? owners[0] : `${owners.length} responsáveis`}</> : null}
+                {filtered.semData > 0 ? ` · ${filtered.semData} iniciativa(s) sem datas não entram no período` : null}
+              </>
+            ) : (
+              "Sem filtros: todas as iniciativas e tarefas cadastradas."
+            )}
+          </span>
+          {hasFilter ? (
+            <button
+              type="button"
+              className="font-semibold text-blue-600 hover:underline"
+              onClick={() => { setOwners([]); setPreset("all"); setCustomStart(""); setCustomEnd(""); }}
+            >
+              Limpar filtros
+            </button>
+          ) : null}
+        </div>
+      </div>
 
       {/* KPIs gerais */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
