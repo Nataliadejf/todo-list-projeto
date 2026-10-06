@@ -229,7 +229,6 @@ export function InitiativeForm({ editing, onSaved, onCancelEdit }: InitiativeFor
                 <Field fieldKey="size" value={form.size} onChange={updateField} required options={TAMANHO_OPTIONS} />
               </div>
               <Field fieldKey="gainDescription" value={form.gainDescription} onChange={updateField} />
-              <Field fieldKey="efficacyIndicator" value={form.efficacyIndicator} onChange={updateField} />
               <div className="space-y-2 pt-1">
                 <h4 className="text-sm font-bold text-slate-800">Indicadores de eficácia</h4>
                 <InitiativeIndicators
