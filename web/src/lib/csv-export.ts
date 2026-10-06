@@ -1,7 +1,41 @@
 import { EDITABLE_KEYS, LABEL_MAP } from "./constants";
+import { indicatorResult, parseIndicatorsData } from "./indicators";
 import type { Initiative, Task } from "./types";
 
 const EXPORT_KEYS = EDITABLE_KEYS;
+
+const ptNumber = (n: number) => String(n).replace(".", ",");
+
+// Colunas dos indicadores de eficácia: resposta, justificativa e N indicadores (N = maior quantidade entre as iniciativas).
+function indicatorHeaders(maxItems: number): string[] {
+  const headers = ["Possui indicador de eficácia?", "Justificativa (sem indicador)"];
+  for (let i = 1; i <= maxItems; i += 1) {
+    headers.push(
+      `Indicador ${i} - Nome`, `Indicador ${i} - Unidade`, `Indicador ${i} - Ponto de partida`,
+      `Indicador ${i} - Ponto de chegada`, `Indicador ${i} - Realizado`,
+      `Indicador ${i} - Ganho / retorno`, `Indicador ${i} - % da meta`,
+    );
+  }
+  return headers;
+}
+
+function indicatorCells(todo: Initiative, maxItems: number): string[] {
+  const data = parseIndicatorsData(todo.indicatorsData);
+  const cells = [data.has, data.has === "Não" ? data.justification : ""];
+  for (let i = 0; i < maxItems; i += 1) {
+    const item = data.has === "Sim" ? data.items[i] : undefined;
+    if (!item) {
+      cells.push("", "", "", "", "", "", "");
+      continue;
+    }
+    const result = indicatorResult(item);
+    cells.push(
+      item.name, item.unit, item.base, item.target, item.achieved,
+      result ? ptNumber(result.gain) : "", result?.pct != null ? ptNumber(result.pct) : "",
+    );
+  }
+  return cells;
+}
 
 function escapeCsvCell(value: unknown) {
   const s = String(value ?? "");
@@ -71,9 +105,14 @@ export function downloadTasksCsv(tasks: Task[], initiativeName: Map<number, stri
 }
 
 export function downloadInitiativesCsv(todos: Initiative[]) {
-  const headerLine = EXPORT_KEYS.map((key) => escapeCsvCell(headerLabel(key))).join(";");
+  const maxItems = Math.max(1, ...todos.map((t) => parseIndicatorsData(t.indicatorsData).items.length));
+  const headerLine = [...EXPORT_KEYS.map((key) => headerLabel(key)), ...indicatorHeaders(maxItems)]
+    .map((h) => escapeCsvCell(h))
+    .join(";");
   const dataLines = todos.map((todo) =>
-    EXPORT_KEYS.map((key) => escapeCsvCell(cellValue(todo, key))).join(";"),
+    [...EXPORT_KEYS.map((key) => cellValue(todo, key)), ...indicatorCells(todo, maxItems)]
+      .map((cell) => escapeCsvCell(cell))
+      .join(";"),
   );
   const csv = `\uFEFF${[headerLine, ...dataLines].join("\r\n")}`;
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
