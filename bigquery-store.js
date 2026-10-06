@@ -19,7 +19,7 @@ const monthKeys = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set'
 const textFields = [
     'id', 'area', 'front', 'initiative', 'owner', 'backup', 'efficacyIndicator', 'description', 'deliveries', 'gainCategory', 'gainDescription', 'size',
     'weight', 'status', 'startDate', 'plannedEndDate', 'realEndDate', 'deadlineDays', 'deadlinePercent', 'progressPercent',
-    'severity', 'urgency', 'strategy', 'priority', 'impediment', 'notes', 'weightedDelivery', 'mother', 'completedAt',
+    'severity', 'urgency', 'strategy', 'priority', 'impediment', 'notes', 'weightedDelivery', 'mother', 'completedAt', 'indicatorsData',
 ];
 const boolFields = [...monthKeys, 'completed', 'approved', 'deprioritized'];
 const todoColumns = ['dbId', ...textFields, ...boolFields];
@@ -208,6 +208,7 @@ async function ensureSchema() {
     await query(`ALTER TABLE ${tableRef('todos')} ADD COLUMN IF NOT EXISTS mother STRING`).catch(() => {});
     await query(`ALTER TABLE ${tableRef('todos')} ADD COLUMN IF NOT EXISTS completedAt STRING`).catch(() => {});
     await query(`ALTER TABLE ${tableRef('tasks')} ADD COLUMN IF NOT EXISTS completedAt STRING`).catch(() => {});
+    await query(`ALTER TABLE ${tableRef('todos')} ADD COLUMN IF NOT EXISTS indicatorsData STRING`).catch(() => {});
 }
 
 async function ensureTable(dataset, name, schema) {

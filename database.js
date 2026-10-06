@@ -35,6 +35,7 @@ const createTableSql = `
         weightedDelivery TEXT,
         mother TEXT,
         completedAt TEXT,
+        indicatorsData TEXT,
         jan BOOLEAN DEFAULT false,
         fev BOOLEAN DEFAULT false,
         mar BOOLEAN DEFAULT false,
@@ -194,6 +195,11 @@ async function ensureApprovalColumns() {
         if (isPg) await adapter.pool.query('ALTER TABLE todos ADD COLUMN IF NOT EXISTS completedAt TEXT');
         else await run('ALTER TABLE todos ADD COLUMN completedAt TEXT');
         console.log('Coluna completedAt (iniciativas) adicionada ao banco.');
+    }
+    if (!columnNames.includes('indicatorsdata') && !columnNames.includes('indicatorsData')) {
+        if (isPg) await adapter.pool.query('ALTER TABLE todos ADD COLUMN IF NOT EXISTS indicatorsData TEXT');
+        else await run('ALTER TABLE todos ADD COLUMN indicatorsData TEXT');
+        console.log('Coluna indicatorsData (indicadores da iniciativa) adicionada ao banco.');
     }
 
     if (columnNames.includes('approved')) return;
@@ -468,11 +474,11 @@ function getAdapter() {
 const INSERT_COLUMNS = `
     id, area, front, initiative, owner, backup, efficacyIndicator, description, deliveries, gainCategory, gainDescription, size,
     weight, status, startDate, plannedEndDate, realEndDate, deadlineDays, deadlinePercent, progressPercent,
-    severity, urgency, strategy, priority, impediment, notes, weightedDelivery, mother, completedAt,
+    severity, urgency, strategy, priority, impediment, notes, weightedDelivery, mother, completedAt, indicatorsData,
     jan, fev, mar, abr, mai, jun, jul, ago, "set", "out", nov, dez, completed, approved, deprioritized
 `;
 
-const INSERT_PLACEHOLDERS = Array(44).fill('?').join(', ');
+const INSERT_PLACEHOLDERS = Array(45).fill('?').join(', ');
 
 const INSERT_SQL = `INSERT INTO todos (${INSERT_COLUMNS}) VALUES (${INSERT_PLACEHOLDERS})`;
 
@@ -481,7 +487,7 @@ function buildInsertParams(item) {
         item.id, item.area, item.front, item.initiative, item.owner, item.backup, item.efficacyIndicator, item.description, item.deliveries,
         item.gainCategory, item.gainDescription, item.size, item.weight, item.status, item.startDate,
         item.plannedEndDate, item.realEndDate, item.deadlineDays, item.deadlinePercent, item.progressPercent,
-        item.severity, item.urgency, item.strategy, item.priority, item.impediment, item.notes, item.weightedDelivery, item.mother, item.completedAt,
+        item.severity, item.urgency, item.strategy, item.priority, item.impediment, item.notes, item.weightedDelivery, item.mother, item.completedAt, item.indicatorsData ?? '',
         item.jan, item.fev, item.mar, item.abr, item.mai, item.jun, item.jul, item.ago, item.set, item.out,
         item.nov, item.dez, item.completed, item.approved, item.deprioritized,
     ];
@@ -489,8 +495,8 @@ function buildInsertParams(item) {
 
 async function insertTodo(item) {
     const params = buildInsertParams(item);
-    if (params.length !== 44) {
-        throw new Error(`Parâmetros inválidos no insert (${params.length}/44).`);
+    if (params.length !== 45) {
+        throw new Error(`Parâmetros inválidos no insert (${params.length}/45).`);
     }
 
     const result = await run(INSERT_SQL, params);
@@ -525,7 +531,7 @@ const UPDATE_SQL = `
     UPDATE todos SET
         id = ?, area = ?, front = ?, initiative = ?, owner = ?, backup = ?, efficacyIndicator = ?, description = ?, deliveries = ?, gainCategory = ?, gainDescription = ?, size = ?,
         weight = ?, status = ?, startDate = ?, plannedEndDate = ?, realEndDate = ?, deadlineDays = ?, deadlinePercent = ?, progressPercent = ?,
-        severity = ?, urgency = ?, strategy = ?, priority = ?, impediment = ?, notes = ?, weightedDelivery = ?, mother = ?, completedAt = ?,
+        severity = ?, urgency = ?, strategy = ?, priority = ?, impediment = ?, notes = ?, weightedDelivery = ?, mother = ?, completedAt = ?, indicatorsData = ?,
         jan = ?, fev = ?, mar = ?, abr = ?, mai = ?, jun = ?, jul = ?, ago = ?, "set" = ?, "out" = ?, nov = ?, dez = ?, completed = ?,
         approved = ?, deprioritized = ?
     WHERE "dbId" = ?

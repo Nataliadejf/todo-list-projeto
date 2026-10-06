@@ -11,6 +11,8 @@ import {
   PROGRESS_OPTIONS,
   TAMANHO_OPTIONS,
 } from "@/lib/constants";
+import { InitiativeIndicators } from "@/components/sections/initiative-indicators";
+import { parseIndicatorsData, serializeIndicatorsData, validateIndicatorsData } from "@/lib/indicators";
 import { useResponsaveis } from "@/components/providers/responsaveis-provider";
 import { useAuth } from "@/components/providers/auth-provider";
 import { downloadInitiativesCsv } from "@/lib/csv-export";
@@ -67,6 +69,7 @@ function emptyInitiative(): InitiativeInput {
     notes: "",
     weightedDelivery: "",
     mother: "",
+    indicatorsData: "",
     completed: false,
     approved: false,
     deprioritized: false,
@@ -109,6 +112,9 @@ export function InitiativeForm({ editing, onSaved, onCancelEdit }: InitiativeFor
       setForm(newInitiative());
     }
   }, [editing, newInitiative]);
+
+  const indicators = useMemo(() => parseIndicatorsData(form.indicatorsData), [form.indicatorsData]);
+  const indicatorsError = useMemo(() => validateIndicatorsData(indicators), [indicators]);
 
   const requiredValid = useMemo(
     () =>
@@ -158,6 +164,10 @@ export function InitiativeForm({ editing, onSaved, onCancelEdit }: InitiativeFor
     event.preventDefault();
     if (!requiredValid) {
       setMessage("Preencha os campos obrigatórios (*): Área, Frente, Iniciativa, Responsável, Categoria Ganho, Tam e Status.");
+      return;
+    }
+    if (indicatorsError) {
+      setMessage(indicatorsError);
       return;
     }
     setSaving(true);
@@ -219,6 +229,14 @@ export function InitiativeForm({ editing, onSaved, onCancelEdit }: InitiativeFor
               </div>
               <Field fieldKey="gainDescription" value={form.gainDescription} onChange={updateField} />
               <Field fieldKey="efficacyIndicator" value={form.efficacyIndicator} onChange={updateField} />
+              <div className="space-y-2 pt-1">
+                <h4 className="text-sm font-bold text-slate-800">Indicadores de eficácia</h4>
+                <InitiativeIndicators
+                  value={indicators}
+                  onChange={(next) => updateField("indicatorsData", serializeIndicatorsData(next))}
+                />
+                {indicatorsError && indicators.has ? <p className="text-xs text-amber-600">{indicatorsError}</p> : null}
+              </div>
             </section>
 
             <section className="space-y-3 rounded-2xl border border-slate-200 p-4">

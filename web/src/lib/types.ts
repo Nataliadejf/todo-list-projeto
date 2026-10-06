@@ -59,6 +59,8 @@ export interface Initiative {
   notes: string;
   weightedDelivery: string;
   mother: string;
+  /** JSON (IndicatorsData) com a resposta "possui indicador?" e os indicadores da iniciativa. */
+  indicatorsData: string;
   /** Preenchido pelo servidor quando a iniciativa é concluída (ISO). Não editável no formulário. */
   completedAt: string;
   completed: boolean;
@@ -79,6 +81,20 @@ export interface Initiative {
 }
 
 export type InitiativeInput = Omit<Initiative, "dbId" | "completedAt">;
+
+export interface InitiativeIndicator {
+  name: string;
+  unit: string;
+  base: string;
+  target: string;
+  gain: string;
+}
+
+export interface IndicatorsData {
+  has: "Sim" | "Não" | "";
+  justification: string;
+  items: InitiativeIndicator[];
+}
 
 export type TaskStatus = "A fazer" | "Em andamento" | "Concluído";
 
