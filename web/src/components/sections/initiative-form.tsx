@@ -114,7 +114,8 @@ export function InitiativeForm({ editing, onSaved, onCancelEdit }: InitiativeFor
   }, [editing, newInitiative]);
 
   const indicators = useMemo(() => parseIndicatorsData(form.indicatorsData), [form.indicatorsData]);
-  const indicatorsError = useMemo(() => validateIndicatorsData(indicators), [indicators]);
+  const isConcluded = form.status === "Concluído";
+  const indicatorsError = useMemo(() => validateIndicatorsData(indicators, isConcluded), [indicators, isConcluded]);
 
   const requiredValid = useMemo(
     () =>
@@ -232,6 +233,7 @@ export function InitiativeForm({ editing, onSaved, onCancelEdit }: InitiativeFor
               <div className="space-y-2 pt-1">
                 <h4 className="text-sm font-bold text-slate-800">Indicadores de eficácia</h4>
                 <InitiativeIndicators
+                  concluded={isConcluded}
                   value={indicators}
                   onChange={(next) => updateField("indicatorsData", serializeIndicatorsData(next))}
                 />

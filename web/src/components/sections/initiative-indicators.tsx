@@ -1,7 +1,7 @@
 "use client";
 
 import { Plus, Trash2 } from "lucide-react";
-import { INDICATOR_UNITS, MARKET_INDICATORS, emptyIndicator } from "@/lib/indicators";
+import { INDICATOR_UNITS, MARKET_INDICATORS, emptyIndicator, indicatorResult, toNumber } from "@/lib/indicators";
 import type { IndicatorsData, InitiativeIndicator } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,9 +14,10 @@ const selectClass =
 interface Props {
   value: IndicatorsData;
   onChange: (next: IndicatorsData) => void;
+  concluded?: boolean;
 }
 
-export function InitiativeIndicators({ value, onChange }: Props) {
+export function InitiativeIndicators({ value, onChange, concluded = false }: Props) {
   function patchItem(index: number, patch: Partial<InitiativeIndicator>) {
     onChange({ ...value, items: value.items.map((it, i) => (i === index ? { ...it, ...patch } : it)) });
   }
@@ -81,11 +82,10 @@ export function InitiativeIndicators({ value, onChange }: Props) {
           </datalist>
 
           {value.items.map((item, index) => {
-            const base = Number(item.base.replace(",", "."));
-            const target = Number(item.target.replace(",", "."));
-            const delta = item.base.trim() !== "" && item.target.trim() !== "" && Number.isFinite(base) && Number.isFinite(target)
-              ? Math.round((target - base) * 100) / 100
-              : null;
+            const base = toNumber(item.base);
+            const target = toNumber(item.target);
+            const delta = base !== null && target !== null ? Math.round((target - base) * 100) / 100 : null;
+            const result = indicatorResult(item);
             return (
               <div key={index} className="space-y-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
                 <div className="flex items-center justify-between">
@@ -136,14 +136,38 @@ export function InitiativeIndicators({ value, onChange }: Props) {
                     <Input id={`ind-target-${index}`} inputMode="decimal" value={item.target} onChange={(e) => patchItem(index, { target: e.target.value })} placeholder="Meta" />
                     {delta !== null ? (
                       <p className="text-[11px] text-slate-400">
-                        Variação: {delta > 0 ? "+" : ""}{delta.toLocaleString("pt-BR")} {item.unit}
+                        Variação prevista: {delta > 0 ? "+" : ""}{delta.toLocaleString("pt-BR")} {item.unit}
                       </p>
                     ) : null}
                   </div>
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor={`ind-gain-${index}`}>Ganho / retorno esperado</Label>
-                  <Input id={`ind-gain-${index}`} value={item.gain} onChange={(e) => patchItem(index, { gain: e.target.value })} placeholder="Ex.: R$ 120 mil/ano economizados, 10 h/semana liberadas" />
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor={`ind-achieved-${index}`}>Realizado{concluded ? " *" : ""}</Label>
+                    <Input
+                      id={`ind-achieved-${index}`}
+                      inputMode="decimal"
+                      value={item.achieved}
+                      onChange={(e) => patchItem(index, { achieved: e.target.value })}
+                      placeholder="Resultado obtido"
+                    />
+                    <p className="text-[11px] text-slate-400">
+                      {concluded ? "Obrigatório: a iniciativa está concluída." : "Preencha ao concluir a iniciativa."}
+                    </p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Ganho / retorno</Label>
+                    <div className="flex h-10 items-center rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 text-sm">
+                      {result ? (
+                        <span className={result.gain >= 0 ? "font-semibold text-emerald-700" : "font-semibold text-rose-600"}>
+                          {result.gain > 0 ? "+" : ""}{result.gain.toLocaleString("pt-BR")} {item.unit}
+                          {result.pct !== null ? <span className="ml-2 font-normal text-slate-500">({result.pct.toLocaleString("pt-BR")}% da meta)</span> : null}
+                        </span>
+                      ) : (
+                        <span className="text-slate-400">Realizado − ponto de partida</span>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             );

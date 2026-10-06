@@ -87,7 +87,8 @@ export interface InitiativeIndicator {
   unit: string;
   base: string;
   target: string;
-  gain: string;
+  /** Resultado realizado ao concluir a iniciativa; o ganho/retorno é realizado − ponto de partida. */
+  achieved: string;
 }
 
 export interface IndicatorsData {

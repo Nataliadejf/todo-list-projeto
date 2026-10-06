@@ -30,7 +30,7 @@ export const MARKET_INDICATORS: { name: string; unit: string }[] = [
 ];
 
 export function emptyIndicator(): InitiativeIndicator {
-  return { name: "", unit: "%", base: "", target: "", gain: "" };
+  return { name: "", unit: "%", base: "", target: "", achieved: "" };
 }
 
 export function emptyIndicatorsData(): IndicatorsData {
@@ -50,7 +50,7 @@ export function parseIndicatorsData(raw: string | null | undefined): IndicatorsD
             unit: String(i?.unit ?? "%"),
             base: String(i?.base ?? ""),
             target: String(i?.target ?? ""),
-            gain: String(i?.gain ?? ""),
+            achieved: String(i?.achieved ?? ""),
           }))
         : [],
     };
@@ -64,8 +64,26 @@ export function serializeIndicatorsData(data: IndicatorsData): string {
   return JSON.stringify(data);
 }
 
-/** Mensagem do que falta preencher (null = válido). */
-export function validateIndicatorsData(data: IndicatorsData): string | null {
+export function toNumber(value: string): number | null {
+  const s = String(value ?? "").trim().replace(",", ".");
+  if (s === "") return null;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+}
+
+/** Ganho/retorno = realizado − ponto de partida; pct = quanto da variação prevista foi entregue. */
+export function indicatorResult(item: InitiativeIndicator): { gain: number; pct: number | null } | null {
+  const base = toNumber(item.base);
+  const achieved = toNumber(item.achieved);
+  if (base === null || achieved === null) return null;
+  const target = toNumber(item.target);
+  const gain = Math.round((achieved - base) * 100) / 100;
+  const planned = target !== null ? target - base : 0;
+  return { gain, pct: planned !== 0 ? Math.round(((achieved - base) / planned) * 1000) / 10 : null };
+}
+
+/** Mensagem do que falta preencher (null = válido). `concluded`: com a iniciativa concluída, o realizado é obrigatório. */
+export function validateIndicatorsData(data: IndicatorsData, concluded = false): string | null {
   if (!data.has) return "Responda se a iniciativa possui indicador de eficácia (Sim ou Não).";
   if (data.has === "Não") {
     return data.justification.trim() ? null : "Justifique por que a iniciativa não possui indicador de eficácia.";
@@ -73,5 +91,9 @@ export function validateIndicatorsData(data: IndicatorsData): string | null {
   if (data.items.length === 0) return "Adicione ao menos um indicador de eficácia.";
   const bad = data.items.findIndex((i) => !i.name.trim() || !i.unit || i.base.trim() === "" || i.target.trim() === "");
   if (bad >= 0) return `Indicador ${bad + 1}: informe nome, unidade, ponto de partida e ponto de chegada.`;
+  if (concluded) {
+    const missing = data.items.findIndex((i) => i.achieved.trim() === "");
+    if (missing >= 0) return `Indicador ${missing + 1}: com a iniciativa concluída, informe o realizado.`;
+  }
   return null;
 }
