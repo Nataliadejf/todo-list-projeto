@@ -1,7 +1,7 @@
 "use client";
 
 import { Plus, Trash2 } from "lucide-react";
-import { INDICATOR_UNITS, MARKET_INDICATORS, emptyIndicator, indicatorResult, toNumber } from "@/lib/indicators";
+import { INDICATOR_UNITS, MARKET_INDICATORS, UNIT_LABELS, emptyIndicator, indicatorResult, toNumber } from "@/lib/indicators";
 import type { IndicatorsData, InitiativeIndicator } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,11 +29,7 @@ export function InitiativeIndicators({ value, onChange, concluded = false }: Pro
 
   function answer(has: "Sim" | "Não") {
     if (has === value.has) return;
-    onChange({
-      ...value,
-      has,
-      items: has === "Sim" && value.items.length === 0 ? [emptyIndicator()] : value.items,
-    });
+    onChange({ ...value, has });
   }
 
   return (
@@ -121,7 +117,7 @@ export function InitiativeIndicators({ value, onChange, concluded = false }: Pro
                       onChange={(e) => patchItem(index, { unit: e.target.value })}
                     >
                       {INDICATOR_UNITS.map((u) => (
-                        <option key={u} value={u}>{u}</option>
+                        <option key={u} value={u}>{UNIT_LABELS[u] ?? u}</option>
                       ))}
                     </select>
                   </div>
@@ -173,9 +169,12 @@ export function InitiativeIndicators({ value, onChange, concluded = false }: Pro
             );
           })}
 
+          {value.items.length === 0 ? (
+            <p className="text-xs text-slate-500">Cadastre o indicador de eficácia da iniciativa. É possível adicionar mais de um.</p>
+          ) : null}
           <Button type="button" variant="secondary" onClick={() => onChange({ ...value, items: [...value.items, emptyIndicator()] })}>
             <Plus className="h-4 w-4" />
-            Adicionar indicador
+            {value.items.length === 0 ? "Adicionar indicador" : "Adicionar outro indicador"}
           </Button>
         </div>
       ) : null}

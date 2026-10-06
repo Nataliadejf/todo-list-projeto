@@ -2,6 +2,20 @@ import type { IndicatorsData, InitiativeIndicator } from "./types";
 
 export const INDICATOR_UNITS = ["%", "Qtde", "R$", "R$ mil", "H/H", "Horas", "Dias", "Ton", "Índice", "Pontos"] as const;
 
+// Texto exibido na lista de unidades (o valor gravado continua sendo a sigla).
+export const UNIT_LABELS: Record<string, string> = {
+  "%": "% (percentual)",
+  Qtde: "Qtde (quantidade)",
+  "R$": "R$ (reais)",
+  "R$ mil": "R$ mil (milhares de reais)",
+  "H/H": "H/H (horas-homem)",
+  Horas: "Horas",
+  Dias: "Dias",
+  Ton: "Ton (toneladas)",
+  Índice: "Índice (valor adimensional)",
+  Pontos: "Pontos",
+};
+
 // Indicadores de uso comum em operações, processos e finanças (sugestões — o texto também pode ser livre).
 export const MARKET_INDICATORS: { name: string; unit: string }[] = [
   { name: "Lead time do processo", unit: "Dias" },
