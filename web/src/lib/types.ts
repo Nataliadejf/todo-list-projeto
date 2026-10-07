@@ -89,6 +89,10 @@ export interface InitiativeIndicator {
   target: string;
   /** Resultado realizado ao concluir a iniciativa; o ganho/retorno é realizado − ponto de partida. */
   achieved: string;
+  /** "maior" = quanto maior, melhor (aumentar); "menor" = quanto menor, melhor (reduzir). */
+  direction: "maior" | "menor";
+  /** Memória de cálculo: fórmula, fonte dos dados, periodicidade e como o ponto de partida foi medido. */
+  memory: string;
 }
 
 export interface IndicatorsData {

@@ -17,34 +17,62 @@ export const UNIT_LABELS: Record<string, string> = {
 };
 
 // Indicadores de uso comum em operações, processos e finanças (sugestões — o texto também pode ser livre).
-export const MARKET_INDICATORS: { name: string; unit: string }[] = [
-  { name: "Lead time do processo", unit: "Dias" },
-  { name: "Tempo de ciclo", unit: "Horas" },
-  { name: "Taxa de retrabalho", unit: "%" },
-  { name: "Taxa de erros / não conformidades", unit: "%" },
-  { name: "Nº de não conformidades em auditoria", unit: "Qtde" },
-  { name: "Aderência ao processo / padrão", unit: "%" },
-  { name: "SLA cumprido", unit: "%" },
-  { name: "OTIF (On Time In Full)", unit: "%" },
-  { name: "Nível de serviço", unit: "%" },
-  { name: "Acuracidade de estoque", unit: "%" },
-  { name: "Giro de estoque", unit: "Índice" },
-  { name: "Produtividade (unidades por hora)", unit: "Qtde" },
-  { name: "Horas economizadas (H/H)", unit: "H/H" },
-  { name: "Redução de custo", unit: "R$" },
-  { name: "Custo evitado", unit: "R$" },
-  { name: "Receita incremental", unit: "R$" },
-  { name: "Margem de contribuição", unit: "%" },
-  { name: "Inadimplência", unit: "%" },
-  { name: "Prazo médio de recebimento (PMR)", unit: "Dias" },
-  { name: "Satisfação do cliente (NPS / CSAT)", unit: "Pontos" },
-  { name: "Adoção de ferramenta / sistema", unit: "%" },
-  { name: "Horas de treinamento por colaborador", unit: "Horas" },
-  { name: "Turnover", unit: "%" },
+export const MARKET_INDICATORS: { name: string; unit: string; direction: "maior" | "menor" }[] = [
+  { name: "Lead time do processo", unit: "Dias", direction: "menor" },
+  { name: "Tempo de ciclo", unit: "Horas", direction: "menor" },
+  { name: "Taxa de retrabalho", unit: "%", direction: "menor" },
+  { name: "Taxa de erros / não conformidades", unit: "%", direction: "menor" },
+  { name: "Nº de não conformidades em auditoria", unit: "Qtde", direction: "menor" },
+  { name: "Aderência ao processo / padrão", unit: "%", direction: "maior" },
+  { name: "SLA cumprido", unit: "%", direction: "maior" },
+  { name: "OTIF (On Time In Full)", unit: "%", direction: "maior" },
+  { name: "Nível de serviço", unit: "%", direction: "maior" },
+  { name: "Acuracidade de estoque", unit: "%", direction: "maior" },
+  { name: "Giro de estoque", unit: "Índice", direction: "maior" },
+  { name: "Produtividade (unidades por hora)", unit: "Qtde", direction: "maior" },
+  { name: "Horas economizadas (H/H)", unit: "H/H", direction: "maior" },
+  { name: "Redução de custo", unit: "R$", direction: "maior" },
+  { name: "Custo evitado", unit: "R$", direction: "maior" },
+  { name: "Receita incremental", unit: "R$", direction: "maior" },
+  { name: "Margem de contribuição", unit: "%", direction: "maior" },
+  { name: "Inadimplência", unit: "%", direction: "menor" },
+  { name: "Prazo médio de recebimento (PMR)", unit: "Dias", direction: "menor" },
+  { name: "Satisfação do cliente (NPS / CSAT)", unit: "Pontos", direction: "maior" },
+  { name: "Adoção de ferramenta / sistema", unit: "%", direction: "maior" },
+  { name: "Horas de treinamento por colaborador", unit: "Horas", direction: "maior" },
+  { name: "Turnover", unit: "%", direction: "menor" },
 ];
 
+export const DIRECTION_LABELS = {
+  maior: "Maior é melhor (aumentar)",
+  menor: "Menor é melhor (reduzir)",
+} as const;
+
+// Exemplos de memória de cálculo para alguns indicadores comuns.
+const MEMORY_EXAMPLES: Record<string, string> = {
+  "OTIF (On Time In Full)":
+    "OTIF (%) = (pedidos entregues no prazo e completos ÷ total de pedidos faturados no mês) × 100.\nFonte: relatório de expedição do ERP, extração mensal.\nPonto de partida: média dos 3 últimos meses (jan–mar/2026).\nPeriodicidade: mensal. Responsável pela apuração: Logística.",
+  "Lead time do processo":
+    "Lead time (dias) = data de conclusão do pedido − data de abertura, média dos pedidos concluídos no mês.\nFonte: sistema de chamados/ERP, extração mensal.\nPonto de partida: média dos 3 últimos meses. Desconsiderar pedidos cancelados.",
+  "Taxa de retrabalho":
+    "Retrabalho (%) = (nº de registros devolvidos para correção ÷ total de registros processados) × 100.\nFonte: log do processo. Periodicidade: mensal.",
+  "Inadimplência":
+    "Inadimplência (%) = (valor vencido há mais de 30 dias ÷ carteira total a receber) × 100.\nFonte: relatório de contas a receber, fechamento do mês.",
+  "Custo evitado":
+    "Custo evitado (R$) = (custo unitário anterior − custo unitário atual) × volume anual.\nPremissas: volume médio dos últimos 12 meses; custos conforme contrato vigente. Validação: Controladoria.",
+  "Horas economizadas (H/H)":
+    "H/H economizadas = (tempo médio antes − tempo médio depois, em horas) × nº de execuções por mês.\nFonte: cronometragem de amostra de 20 execuções antes e depois da melhoria.",
+};
+
+const GENERIC_MEMORY_EXAMPLE =
+  "Indicador (unidade) = numerador ÷ denominador × 100.\nNumerador: o que é contado (ex.: pedidos entregues no prazo).\nDenominador: universo considerado (ex.: total de pedidos do mês).\nFonte dos dados: sistema/relatório e quem extrai.\nPonto de partida: como e quando foi medido (ex.: média dos 3 últimos meses).\nPeriodicidade da medição: mensal.";
+
+export function memoryExample(name: string): string {
+  return MEMORY_EXAMPLES[name.trim()] ?? GENERIC_MEMORY_EXAMPLE;
+}
+
 export function emptyIndicator(): InitiativeIndicator {
-  return { name: "", unit: "%", base: "", target: "", achieved: "" };
+  return { name: "", unit: "%", base: "", target: "", achieved: "", direction: "maior", memory: "" };
 }
 
 export function emptyIndicatorsData(): IndicatorsData {
@@ -65,6 +93,8 @@ export function parseIndicatorsData(raw: string | null | undefined): IndicatorsD
             base: String(i?.base ?? ""),
             target: String(i?.target ?? ""),
             achieved: String(i?.achieved ?? ""),
+            direction: i?.direction === "menor" ? "menor" : "maior",
+            memory: String(i?.memory ?? ""),
           }))
         : [],
     };
@@ -85,13 +115,17 @@ export function toNumber(value: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-/** Ganho/retorno = realizado − ponto de partida; pct = quanto da variação prevista foi entregue. */
+/**
+ * Ganho/retorno na direção do indicador: "maior" = realizado − partida; "menor" = partida − realizado
+ * (positivo = melhorou). pct = quanto da variação prevista foi entregue (vale nas duas direções).
+ */
 export function indicatorResult(item: InitiativeIndicator): { gain: number; pct: number | null } | null {
   const base = toNumber(item.base);
   const achieved = toNumber(item.achieved);
   if (base === null || achieved === null) return null;
   const target = toNumber(item.target);
-  const gain = Math.round((achieved - base) * 100) / 100;
+  const sign = item.direction === "menor" ? -1 : 1;
+  const gain = Math.round(sign * (achieved - base) * 100) / 100;
   const planned = target !== null ? target - base : 0;
   return { gain, pct: planned !== 0 ? Math.round(((achieved - base) / planned) * 1000) / 10 : null };
 }

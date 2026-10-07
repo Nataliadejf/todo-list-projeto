@@ -1,7 +1,7 @@
 "use client";
 
 import { Plus, Trash2 } from "lucide-react";
-import { INDICATOR_UNITS, MARKET_INDICATORS, UNIT_LABELS, emptyIndicator, indicatorResult, toNumber } from "@/lib/indicators";
+import { DIRECTION_LABELS, INDICATOR_UNITS, MARKET_INDICATORS, UNIT_LABELS, emptyIndicator, indicatorResult, memoryExample, toNumber } from "@/lib/indicators";
 import type { IndicatorsData, InitiativeIndicator } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +24,7 @@ export function InitiativeIndicators({ value, onChange, concluded = false }: Pro
 
   function pickName(index: number, name: string) {
     const known = MARKET_INDICATORS.find((m) => m.name.toLowerCase() === name.trim().toLowerCase());
-    patchItem(index, known ? { name: known.name, unit: known.unit } : { name });
+    patchItem(index, known ? { name: known.name, unit: known.unit, direction: known.direction } : { name });
   }
 
   function answer(has: "Sim" | "Não") {
@@ -124,6 +124,25 @@ export function InitiativeIndicators({ value, onChange, concluded = false }: Pro
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="space-y-1.5">
+                    <Label htmlFor={`ind-dir-${index}`}>Direção do indicador *</Label>
+                    <select
+                      id={`ind-dir-${index}`}
+                      className={selectClass}
+                      value={item.direction}
+                      onChange={(e) => patchItem(index, { direction: e.target.value as "maior" | "menor" })}
+                    >
+                      <option value="maior">{DIRECTION_LABELS.maior}</option>
+                      <option value="menor">{DIRECTION_LABELS.menor}</option>
+                    </select>
+                  </div>
+                  <p className="self-end pb-2 text-[11px] text-slate-400">
+                    {item.direction === "menor"
+                      ? "O ganho é calculado como ponto de partida − realizado (redução = ganho)."
+                      : "O ganho é calculado como realizado − ponto de partida (aumento = ganho)."}
+                  </p>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
                     <Label htmlFor={`ind-base-${index}`}>Ponto de partida *</Label>
                     <Input id={`ind-base-${index}`} inputMode="decimal" value={item.base} onChange={(e) => patchItem(index, { base: e.target.value })} placeholder="Hoje" />
                   </div>
@@ -133,6 +152,11 @@ export function InitiativeIndicators({ value, onChange, concluded = false }: Pro
                     {delta !== null ? (
                       <p className="text-[11px] text-slate-400">
                         Variação prevista: {delta > 0 ? "+" : ""}{delta.toLocaleString("pt-BR")} {item.unit}
+                      </p>
+                    ) : null}
+                    {delta !== null && delta !== 0 && (item.direction === "menor" ? delta > 0 : delta < 0) ? (
+                      <p className="text-[11px] text-amber-600">
+                        A meta vai na direção oposta à escolhida ({item.direction === "menor" ? "reduzir" : "aumentar"}). Confira os valores.
                       </p>
                     ) : null}
                   </div>
@@ -160,10 +184,31 @@ export function InitiativeIndicators({ value, onChange, concluded = false }: Pro
                           {result.pct !== null ? <span className="ml-2 font-normal text-slate-500">({result.pct.toLocaleString("pt-BR")}% da meta)</span> : null}
                         </span>
                       ) : (
-                        <span className="text-slate-400">Realizado − ponto de partida</span>
+                        <span className="text-slate-400">{item.direction === "menor" ? "Partida − realizado" : "Realizado − ponto de partida"}</span>
                       )}
                     </div>
                   </div>
+                </div>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <Label htmlFor={`ind-memory-${index}`}>Memória de cálculo</Label>
+                    <button
+                      type="button"
+                      className="text-[11px] font-semibold text-blue-600 hover:underline"
+                      onClick={() => patchItem(index, { memory: memoryExample(item.name) })}
+                      title="Preenche o campo com um modelo para você adaptar"
+                    >
+                      {item.memory.trim() ? "Substituir pelo exemplo" : "Usar exemplo"}
+                    </button>
+                  </div>
+                  <Textarea
+                    id={`ind-memory-${index}`}
+                    rows={4}
+                    value={item.memory}
+                    onChange={(e) => patchItem(index, { memory: e.target.value })}
+                    placeholder={memoryExample(item.name)}
+                  />
+                  <p className="text-[11px] text-slate-400">Descreva a fórmula, a fonte dos dados, como o ponto de partida foi medido e a periodicidade.</p>
                 </div>
               </div>
             );

@@ -11,9 +11,9 @@ function indicatorHeaders(maxItems: number): string[] {
   const headers = ["Possui indicador de eficácia?", "Justificativa (sem indicador)"];
   for (let i = 1; i <= maxItems; i += 1) {
     headers.push(
-      `Indicador ${i} - Nome`, `Indicador ${i} - Unidade`, `Indicador ${i} - Ponto de partida`,
-      `Indicador ${i} - Ponto de chegada`, `Indicador ${i} - Realizado`,
-      `Indicador ${i} - Ganho / retorno`, `Indicador ${i} - % da meta`,
+      `Indicador ${i} - Nome`, `Indicador ${i} - Unidade`, `Indicador ${i} - Direção`,
+      `Indicador ${i} - Ponto de partida`, `Indicador ${i} - Ponto de chegada`, `Indicador ${i} - Realizado`,
+      `Indicador ${i} - Ganho / retorno`, `Indicador ${i} - % da meta`, `Indicador ${i} - Memória de cálculo`,
     );
   }
   return headers;
@@ -25,13 +25,15 @@ function indicatorCells(todo: Initiative, maxItems: number): string[] {
   for (let i = 0; i < maxItems; i += 1) {
     const item = data.has === "Sim" ? data.items[i] : undefined;
     if (!item) {
-      cells.push("", "", "", "", "", "", "");
+      cells.push("", "", "", "", "", "", "", "", "");
       continue;
     }
     const result = indicatorResult(item);
     cells.push(
-      item.name, item.unit, item.base, item.target, item.achieved,
+      item.name, item.unit, item.direction === "menor" ? "Menor é melhor" : "Maior é melhor",
+      item.base, item.target, item.achieved,
       result ? ptNumber(result.gain) : "", result?.pct != null ? ptNumber(result.pct) : "",
+      item.memory,
     );
   }
   return cells;
