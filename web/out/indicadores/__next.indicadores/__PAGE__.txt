@@ -1,0 +1,6 @@
+1:"$Sreact.fragment"
+2:"$Sreact.suspense"
+3:I[21676,["615","static/chunks/615-421284c7527de0df.js","746","static/chunks/746-656cd38433f3bc97.js","213","static/chunks/213-ef037c118b50b7a8.js","868","static/chunks/app/indicadores/page-24916bafe8cd702f.js"],"IndicadoresClient"]
+4:I[90484,[],"OutletBoundary"]
+0:{"rsc":["$","$1","c",{"children":[["$","$2",null,{"fallback":["$","p",null,{"className":"text-sm text-slate-500","children":"Carregando indicadores..."}],"children":["$","$L3",null,{}]}],null,["$","$L4",null,{"children":["$","$2",null,{"name":"Next.MetadataOutlet","children":"$@5"}]}]]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"0uRDniN17KBKGl3JWkyYF"}
+5:null

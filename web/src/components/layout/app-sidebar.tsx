@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { CheckCircle2, FolderKanban, Gauge, KeyRound, ListChecks, ListTodo, LogOut, Rocket, ShieldCheck, Target } from "lucide-react";
+import { BarChart3, CheckCircle2, FolderKanban, Gauge, KeyRound, ListChecks, ListTodo, LogOut, Rocket, ShieldCheck, Target } from "lucide-react";
 import { BRAND, NAV_ITEMS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { useTodos } from "@/components/providers/todos-provider";
@@ -14,6 +14,7 @@ const iconMap = {
   folder: FolderKanban,
   gauge: Gauge,
   target: Target,
+  chart: BarChart3,
   rocket: Rocket,
   list: ListChecks,
   check: ListTodo,
