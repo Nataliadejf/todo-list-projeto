@@ -203,12 +203,12 @@ export function InitiativeIndicators({ value, onChange, concluded = false }: Pro
                   </div>
                   <Textarea
                     id={`ind-memory-${index}`}
-                    rows={4}
+                    rows={2}
                     value={item.memory}
                     onChange={(e) => patchItem(index, { memory: e.target.value })}
                     placeholder={memoryExample(item.name)}
                   />
-                  <p className="text-[11px] text-slate-400">Descreva a fórmula, a fonte dos dados, como o ponto de partida foi medido e a periodicidade.</p>
+                  <p className="text-[11px] text-slate-400">Explique como você chegou ao resultado informado, em uma fórmula simples. Ex.: quantidade vendida × preço unitário.</p>
                 </div>
               </div>
             );

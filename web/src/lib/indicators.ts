@@ -50,22 +50,17 @@ export const DIRECTION_LABELS = {
 
 // Exemplos de memória de cálculo para alguns indicadores comuns.
 const MEMORY_EXAMPLES: Record<string, string> = {
-  "OTIF (On Time In Full)":
-    "OTIF (%) = (pedidos entregues no prazo e completos ÷ total de pedidos faturados no mês) × 100.\nFonte: relatório de expedição do ERP, extração mensal.\nPonto de partida: média dos 3 últimos meses (jan–mar/2026).\nPeriodicidade: mensal. Responsável pela apuração: Logística.",
-  "Lead time do processo":
-    "Lead time (dias) = data de conclusão do pedido − data de abertura, média dos pedidos concluídos no mês.\nFonte: sistema de chamados/ERP, extração mensal.\nPonto de partida: média dos 3 últimos meses. Desconsiderar pedidos cancelados.",
-  "Taxa de retrabalho":
-    "Retrabalho (%) = (nº de registros devolvidos para correção ÷ total de registros processados) × 100.\nFonte: log do processo. Periodicidade: mensal.",
-  "Inadimplência":
-    "Inadimplência (%) = (valor vencido há mais de 30 dias ÷ carteira total a receber) × 100.\nFonte: relatório de contas a receber, fechamento do mês.",
-  "Custo evitado":
-    "Custo evitado (R$) = (custo unitário anterior − custo unitário atual) × volume anual.\nPremissas: volume médio dos últimos 12 meses; custos conforme contrato vigente. Validação: Controladoria.",
-  "Horas economizadas (H/H)":
-    "H/H economizadas = (tempo médio antes − tempo médio depois, em horas) × nº de execuções por mês.\nFonte: cronometragem de amostra de 20 execuções antes e depois da melhoria.",
+  "OTIF (On Time In Full)": "Pedidos entregues no prazo e completos ÷ total de pedidos faturados × 100",
+  "Lead time do processo": "Data de conclusão − data de abertura (média dos pedidos do mês)",
+  "Taxa de retrabalho": "Registros devolvidos para correção ÷ total de registros processados × 100",
+  "Inadimplência": "Valor vencido há mais de 30 dias ÷ total a receber × 100",
+  "Custo evitado": "(Custo unitário anterior − custo unitário atual) × volume anual",
+  "Horas economizadas (H/H)": "(Tempo antes − tempo depois, em horas) × nº de execuções por mês",
+  "Redução de custo": "Despesa do período anterior − despesa do período atual",
+  "Receita incremental": "Quantidade vendida × preço unitário",
 };
 
-const GENERIC_MEMORY_EXAMPLE =
-  "Indicador (unidade) = numerador ÷ denominador × 100.\nNumerador: o que é contado (ex.: pedidos entregues no prazo).\nDenominador: universo considerado (ex.: total de pedidos do mês).\nFonte dos dados: sistema/relatório e quem extrai.\nPonto de partida: como e quando foi medido (ex.: média dos 3 últimos meses).\nPeriodicidade da medição: mensal.";
+const GENERIC_MEMORY_EXAMPLE = "Quantidade vendida × preço unitário";
 
 export function memoryExample(name: string): string {
   return MEMORY_EXAMPLES[name.trim()] ?? GENERIC_MEMORY_EXAMPLE;
