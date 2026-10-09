@@ -18,6 +18,7 @@ export interface IndicatorRow {
   achieved: number | null;
   gain: number | null;
   pct: number | null;
+  pctBasis: "variacao" | "meta" | null;
   memory: string;
   state: IndicatorState;
 }
@@ -114,6 +115,7 @@ export function summarizeIndicators(todos: Initiative[]): IndicatorsSummary {
           achieved,
           gain: result?.gain ?? null,
           pct,
+          pctBasis: result?.basis ?? null,
           memory: item.memory,
           state,
         });

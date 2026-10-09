@@ -117,7 +117,7 @@ export function toNumber(value: string): number | null {
  * Ganho/retorno na direção do indicador: "maior" = realizado − partida; "menor" = partida − realizado
  * (positivo = melhorou). pct = quanto da variação prevista foi entregue (vale nas duas direções).
  */
-export function indicatorResult(item: InitiativeIndicator): { gain: number; pct: number | null } | null {
+export function indicatorResult(item: InitiativeIndicator): { gain: number; pct: number | null; basis: "variacao" | "meta" } | null {
   const base = toNumber(item.base);
   const achieved = toNumber(item.achieved);
   if (base === null || achieved === null) return null;
@@ -125,7 +125,16 @@ export function indicatorResult(item: InitiativeIndicator): { gain: number; pct:
   const sign = item.direction === "menor" ? -1 : 1;
   const gain = Math.round(sign * (achieved - base) * 100) / 100;
   const planned = target !== null ? target - base : 0;
-  return { gain, pct: planned !== 0 ? Math.round(((achieved - base) / planned) * 1000) / 10 : null };
+  if (planned !== 0) {
+    return { gain, pct: Math.round(((achieved - base) / planned) * 1000) / 10, basis: "variacao" };
+  }
+  // Partida = meta (ex.: contagem acumulada até uma meta): sem variação prevista, mede-se realizado ÷ meta.
+  let pct: number | null = null;
+  if (target !== null && target !== 0) {
+    const ratio = item.direction === "menor" ? (achieved !== 0 ? target / achieved : null) : achieved / target;
+    pct = ratio === null ? null : Math.round(ratio * 1000) / 10;
+  }
+  return { gain, pct, basis: "meta" };
 }
 
 /** Mensagem do que falta preencher (null = válido). `concluded`: com a iniciativa concluída, o realizado é obrigatório. */

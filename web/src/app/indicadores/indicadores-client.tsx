@@ -291,7 +291,12 @@ function DetailRow({ r }: { r: IndicatorRow }) {
           </span>
         )}
       </td>
-      <td className="px-3 py-2.5 text-right tabular-nums">{r.pct === null ? "—" : `${nf(r.pct)}%`}</td>
+      <td
+        className="px-3 py-2.5 text-right tabular-nums"
+        title={r.pctBasis === "meta" ? "Partida = meta: calculado como realizado ÷ meta" : r.pctBasis === "variacao" ? "Avanço da partida até a meta" : undefined}
+      >
+        {r.pct === null ? "—" : `${nf(r.pct)}%`}
+      </td>
       <td className="py-2.5 pl-3">
         <span className={cn("inline-block rounded-full px-2.5 py-0.5 text-[11px] font-semibold", st.className)}>{st.label}</span>
         {r.concluded && r.state === "sem_realizado" ? (

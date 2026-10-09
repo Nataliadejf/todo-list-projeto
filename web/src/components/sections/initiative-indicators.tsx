@@ -181,7 +181,14 @@ export function InitiativeIndicators({ value, onChange, concluded = false }: Pro
                       {result ? (
                         <span className={result.gain >= 0 ? "font-semibold text-emerald-700" : "font-semibold text-rose-600"}>
                           {result.gain > 0 ? "+" : ""}{result.gain.toLocaleString("pt-BR")} {item.unit}
-                          {result.pct !== null ? <span className="ml-2 font-normal text-slate-500">({result.pct.toLocaleString("pt-BR")}% da meta)</span> : null}
+                          {result.pct !== null ? (
+                            <span
+                              className="ml-2 font-normal text-slate-500"
+                              title={result.basis === "meta" ? "Partida = meta: calculado como realizado ÷ meta" : undefined}
+                            >
+                              ({result.pct.toLocaleString("pt-BR")}% da meta{result.basis === "meta" ? " · realizado ÷ meta" : ""})
+                            </span>
+                          ) : null}
                         </span>
                       ) : (
                         <span className="text-slate-400">{item.direction === "menor" ? "Partida − realizado" : "Realizado − ponto de partida"}</span>
