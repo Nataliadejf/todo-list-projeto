@@ -103,9 +103,12 @@ export function serializeIndicatorsData(data: IndicatorsData): string {
   return JSON.stringify(data);
 }
 
+/** Lê números no formato brasileiro: "180.000.000", "1.234,56", "12,5", "12.5", "R$ 1.000". Vazio/inválido = null. */
 export function toNumber(value: string): number | null {
-  const s = String(value ?? "").trim().replace(",", ".");
+  let s = String(value ?? "").replace(/[R$%\s]/g, "");
   if (s === "") return null;
+  if (s.includes(",")) s = s.replace(/\./g, "").replace(",", ".");
+  else if (/^-?\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, "");
   const n = Number(s);
   return Number.isFinite(n) ? n : null;
 }
@@ -134,6 +137,10 @@ export function validateIndicatorsData(data: IndicatorsData, concluded = false):
   if (data.items.length === 0) return "Adicione ao menos um indicador de eficácia.";
   const bad = data.items.findIndex((i) => !i.name.trim() || !i.unit || i.base.trim() === "" || i.target.trim() === "");
   if (bad >= 0) return `Indicador ${bad + 1}: informe nome, unidade, ponto de partida e ponto de chegada.`;
+  const notNumber = data.items.findIndex(
+    (i) => toNumber(i.base) === null || toNumber(i.target) === null || (i.achieved.trim() !== "" && toNumber(i.achieved) === null),
+  );
+  if (notNumber >= 0) return `Indicador ${notNumber + 1}: partida, chegada e realizado devem ser números (ex.: 1.500 ou 12,5).`;
   if (concluded) {
     const missing = data.items.findIndex((i) => i.achieved.trim() === "");
     if (missing >= 0) return `Indicador ${missing + 1}: com a iniciativa concluída, informe o realizado.`;
